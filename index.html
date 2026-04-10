@@ -1,3 +1,9 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>StakeForge</title>
+
 <style>
 body {
   margin: 0;
@@ -20,7 +26,6 @@ body {
   font-size: 20px;
 }
 
-/* BUTTON */
 button {
   padding: 8px 12px;
   border-radius: 6px;
@@ -110,43 +115,35 @@ input {
 
 <body>
 
+<!-- NAVBAR -->
 <div class="navbar">
   <div class="logo">⚡ StakeForge</div>
 
   <div>
+    <button id="createBtn" onclick="openCreate()" style="display:none;">+ Create Market</button>
     <button onclick="openLogin()">Login</button>
     <button onclick="openRegister()">Register</button>
   </div>
 </div>
 
+<!-- TABS -->
 <div class="tabs">
   <div class="tab">Feed</div>
 </div>
 
+<!-- CONTENT -->
 <div class="container">
-
-  <!-- CREATE MARKET -->
-  <div id="createBox" class="hidden">
-    <h3>Create Market</h3>
-    <input id="title" placeholder="Liverpool vs Arsenal">
-    <input id="odd1" placeholder="Odds 1">
-    <input id="oddX" placeholder="Odds X">
-    <input id="odd2" placeholder="Odds 2">
-    <input id="volatility" placeholder="Volatility %">
-    <button onclick="createMarket()">Create</button>
-  </div>
-
   <div id="events"></div>
-
 </div>
 
 <!-- LOGIN -->
 <div id="loginModal" class="modal hidden">
   <div class="modal-box">
     <h3>Login</h3>
-    <input id="loginEmail">
+    <input id="loginEmail" placeholder="email">
     <input id="loginPass" type="password">
     <button onclick="login()">Login</button>
+    <button onclick="closeModals()">Close</button>
   </div>
 </div>
 
@@ -154,9 +151,26 @@ input {
 <div id="registerModal" class="modal hidden">
   <div class="modal-box">
     <h3>Register</h3>
-    <input id="regEmail">
+    <input id="regEmail" placeholder="email">
     <input id="regPass" type="password">
     <button onclick="register()">Register</button>
+    <button onclick="closeModals()">Close</button>
+  </div>
+</div>
+
+<!-- CREATE MARKET -->
+<div id="createModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Create Market</h3>
+
+    <input id="title" placeholder="Liverpool vs Arsenal">
+    <input id="odd1" placeholder="Odds 1">
+    <input id="oddX" placeholder="Odds X">
+    <input id="odd2" placeholder="Odds 2">
+    <input id="volatility" placeholder="Volatility %">
+
+    <button onclick="createMarket()">Create</button>
+    <button onclick="closeModals()">Close</button>
   </div>
 </div>
 
@@ -165,11 +179,18 @@ let user = JSON.parse(localStorage.getItem("user"));
 let users = JSON.parse(localStorage.getItem("users") || "[]");
 let events = JSON.parse(localStorage.getItem("events") || "[]");
 
+// MODALS
 function openLogin() {
   document.getElementById("loginModal").classList.remove("hidden");
 }
 function openRegister() {
   document.getElementById("registerModal").classList.remove("hidden");
+}
+function openCreate() {
+  document.getElementById("createModal").classList.remove("hidden");
+}
+function closeModals() {
+  document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden"));
 }
 
 // REGISTER
@@ -179,7 +200,9 @@ function register() {
 
   users.push({ email, pass, balance: 1000 });
   localStorage.setItem("users", JSON.stringify(users));
+
   alert("Registered!");
+  closeModals();
 }
 
 // LOGIN
@@ -193,9 +216,9 @@ function login() {
   user = found;
   localStorage.setItem("user", JSON.stringify(user));
 
-  document.getElementById("createBox").classList.remove("hidden");
-  document.getElementById("loginModal").classList.add("hidden");
+  document.getElementById("createBtn").style.display = "inline-block";
 
+  closeModals();
   render();
 }
 
@@ -212,6 +235,7 @@ function createMarket() {
   events.push(market);
   localStorage.setItem("events", JSON.stringify(events));
 
+  closeModals();
   render();
 }
 
@@ -223,7 +247,7 @@ function selectOdd(el) {
   if (!user) {
     alert("Login first!");
   } else {
-    alert("Selected bet!");
+    alert("Bet selected (next step: stake)");
   }
 }
 
@@ -252,10 +276,10 @@ function render() {
   });
 }
 
+// INIT
 if (user) {
-  document.getElementById("createBox").classList.remove("hidden");
+  document.getElementById("createBtn").style.display = "inline-block";
 }
-
 render();
 </script>
 
