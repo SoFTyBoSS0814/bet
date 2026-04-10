@@ -1,1 +1,412 @@
-asd
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StakeForge | P2P Betting</title>
+
+<style>
+:root {
+  --primary: #00d4ff;
+  --secondary: #2c4f60;
+  --dark: #1a2a33;
+  --bg: #0f171e;
+  --text: #ffffff;
+  --card-bg: #1d2d3a;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* NAVBAR */
+.navbar {
+  background: var(--dark);
+  padding: 10px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--secondary);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 24px;
+  color: var(--primary);
+  letter-spacing: 1px;
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+button {
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.btn-primary { background: var(--primary); color: #000; }
+.btn-primary:hover { background: #00b8e6; transform: translateY(-2px); }
+
+.btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+.btn-outline:hover { background: var(--primary); color: #000; }
+
+/* TABS */
+.tabs {
+  background: var(--dark);
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  border-bottom: 1px solid #334756;
+}
+
+.tab {
+  padding: 15px 25px;
+  cursor: pointer;
+  color: #a0aab2;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.tab:hover, .tab.active {
+  color: var(--primary);
+  border-bottom: 3px solid var(--primary);
+}
+
+/* CONTAINER */
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+}
+
+.section { display: none; }
+.section.active { display: block; }
+
+/* WALLET & PROFILE CARD */
+.profile-card {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border-left: 5px solid var(--primary);
+  display: flex;
+  justify-content: space-between;
+}
+
+.wallet-box {
+  background: rgba(0,0,0,0.3);
+  padding: 10px 15px;
+  border-radius: 8px;
+}
+
+.btc-address {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--primary);
+  background: #000;
+  padding: 5px;
+  margin-top: 5px;
+  display: block;
+}
+
+/* CARD / MATCHES */
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.odds {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.odd {
+  flex: 1;
+  background: #2a3e4d;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid #3d5a6d;
+}
+
+.odd:hover { background: #3d5a6d; border-color: var(--primary); }
+.odd b { color: var(--primary); font-size: 18px; }
+
+/* MODAL */
+.modal {
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.85);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index: 1000;
+}
+
+.hidden { display:none; }
+
+.modal-box {
+  background: var(--card-bg);
+  padding: 30px;
+  border-radius: 15px;
+  width: 350px;
+  border: 1px solid var(--secondary);
+}
+
+input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  background: #0f171e;
+  border: 1px solid #334756;
+  color: white;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.footer-text { text-align: center; color: #666; margin-top: 50px; }
+
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <div class="logo">⚡ STAKEFORGE</div>
+
+  <div class="nav-buttons">
+    <button id="createBtn" class="btn-primary" onclick="openCreate()" style="display:none;">+ Create Market</button>
+    <div id="guestButtons">
+        <button class="btn-outline" onclick="openLogin()">Login</button>
+        <button class="btn-primary" onclick="openRegister()">Register</button>
+    </div>
+    <div id="userArea" style="display:none;">
+        <span id="navUsername" style="margin-right:10px; font-weight:bold;"></span>
+        <button class="btn-outline" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('matches')">Matches</div>
+  <div class="tab" onclick="switchTab('profile')">Profile & Wallet</div>
+  <div class="tab" onclick="switchTab('contact')">Contact Us</div>
+</div>
+
+<div class="container">
+  
+  <div id="matches" class="section active">
+    <div id="events"></div>
+  </div>
+
+  <div id="profile" class="section">
+    <div id="profileContent">
+        </div>
+  </div>
+
+  <div id="contact" class="section">
+    <div class="card">
+        <h2>Support & Contact</h2>
+        <p>Email: support@stakeforge.p2p</p>
+        <p>Telegram: @StakeForgeOfficial</p>
+        <p>Our platform is decentralized and 100% Peer-to-Peer.</p>
+    </div>
+  </div>
+
+  <div class="footer-text">© 2026 StakeForge - The P2P Betting Revolution</div>
+</div>
+
+<div id="loginModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Login</h3>
+    <input id="loginEmail" placeholder="Email">
+    <input id="loginPass" type="password" placeholder="Password">
+    <button class="btn-primary" style="width:100%" onclick="login()">Enter</button>
+    <button class="btn-outline" style="width:100%; margin-top:10px;" onclick="closeModals()">Cancel</button>
+  </div>
+</div>
+
+<div id="registerModal" class="modal hidden">
+    <div class="modal-box">
+      <h3>Register</h3>
+      <input id="regUser" placeholder="Username">
+      <input id="regEmail" placeholder="Email">
+      <input id="regPass" type="password" placeholder="Password">
+      <button class="btn-primary" style="width:100%" onclick="register()">Create Account</button>
+      <button class="btn-outline" style="width:100%; margin-top:10px;" onclick="closeModals()">Cancel</button>
+    </div>
+  </div>
+
+<div id="createModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Create Market</h3>
+    <input id="title" placeholder="Event (e.g. BTC to $100k?)">
+    <input id="odd1" placeholder="Home Odds (1)">
+    <input id="oddX" placeholder="Draw Odds (X)">
+    <input id="odd2" placeholder="Away Odds (2)">
+    <input id="volatility" placeholder="Volatility %">
+    <button class="btn-primary" style="width:100%" onclick="createMarket()">Launch Market</button>
+    <button class="btn-outline" style="width:100%; margin-top:10px;" onclick="closeModals()">Cancel</button>
+  </div>
+</div>
+
+<script>
+let user = JSON.parse(localStorage.getItem("user"));
+let users = JSON.parse(localStorage.getItem("users") || "[]");
+let events = JSON.parse(localStorage.getItem("events") || "[]");
+
+// SYSTEM
+function switchTab(tabId) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+    if(tabId === 'profile') renderProfile();
+}
+
+function openLogin() { document.getElementById("loginModal").classList.remove("hidden"); }
+function openRegister() { document.getElementById("registerModal").classList.remove("hidden"); }
+function openCreate() { document.getElementById("createModal").classList.remove("hidden"); }
+function closeModals() { document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden")); }
+
+// AUTH
+function register() {
+  const username = regUser.value;
+  const email = regEmail.value;
+  const pass = regPass.value;
+  
+  const btcAddress = "bc1q" + Math.random().toString(36).substring(2, 15);
+  
+  users.push({ 
+    username, email, pass, 
+    demoBalance: 10000, 
+    realBalance: 0.0000,
+    btcAddress: btcAddress 
+  });
+  localStorage.setItem("users", JSON.stringify(users));
+  alert("Account created! You can now login.");
+  closeModals();
+}
+
+function login() {
+  const email = loginEmail.value;
+  const pass = loginPass.value;
+  const found = users.find(u => u.email === email && u.pass === pass);
+  
+  if (!found) return alert("Invalid credentials");
+  user = found;
+  localStorage.setItem("user", JSON.stringify(user));
+  updateUI();
+  closeModals();
+}
+
+function logout() {
+    localStorage.removeItem("user");
+    location.reload();
+}
+
+function updateUI() {
+    if(user) {
+        document.getElementById("createBtn").style.display = "inline-block";
+        document.getElementById("guestButtons").style.display = "none";
+        document.getElementById("userArea").style.display = "flex";
+        document.getElementById("navUsername").innerText = user.username;
+    }
+}
+
+// MARKET LOGIC
+function createMarket() {
+  const market = {
+    id: Date.now(),
+    title: title.value,
+    odds: [odd1.value, oddX.value, odd2.value],
+    volatility: volatility.value,
+    creator: user.username // Email helyett Username!
+  };
+  events.push(market);
+  localStorage.setItem("events", JSON.stringify(events));
+  closeModals();
+  renderMatches();
+}
+
+function renderMatches() {
+  const container = document.getElementById("events");
+  container.innerHTML = events.length ? "" : "<p>No active matches. Create one!</p>";
+  events.forEach(e => {
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between;">
+        <b>${e.title}</b>
+        <span style="color:var(--primary)">${e.volatility}% Vol.</span>
+      </div>
+      <small style="color:#666">Market Maker: ${e.creator}</small>
+      <div class="odds">
+        <div class="odd" onclick="selectOdd('${e.title}', '1')">1<br><b>${e.odds[0]}</b></div>
+        <div class="odd" onclick="selectOdd('${e.title}', 'X')">X<br><b>${e.odds[1]}</b></div>
+        <div class="odd" onclick="selectOdd('${e.title}', '2')">2<br><b>${e.odds[2]}</b></div>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function renderProfile() {
+    const container = document.getElementById("profileContent");
+    if(!user) {
+        container.innerHTML = "<h3>Please login to view your profile.</h3>";
+        return;
+    }
+    container.innerHTML = `
+        <div class="profile-card">
+            <div>
+                <h2>Welcome, ${user.username}!</h2>
+                <p>Email: ${user.email}</p>
+            </div>
+            <div class="wallet-box">
+                <div style="color:var(--primary); font-size:12px;">REAL BTC BALANCE</div>
+                <div style="font-size:24px; font-weight:bold;">₿ ${user.realBalance.toFixed(4)}</div>
+                <div style="color:#aaa; font-size:12px; margin-top:10px;">DEMO BALANCE</div>
+                <div style="font-size:18px;">$ ${user.demoBalance}</div>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Your Personal BTC Deposit Address</h3>
+            <p>Send BTC to this address to fund your REAL account:</p>
+            <span class="btc-address">${user.btcAddress}</span>
+            <small style="color:orange; display:block; margin-top:10px;">⚠ Only send BTC to this address. Credits after 3 confirmations.</small>
+        </div>
+    `;
+}
+
+function selectOdd(match, type) {
+    if(!user) return openLogin();
+    alert(`Betting on ${match} - Option ${type}. Confirm stake in the next step!`);
+}
+
+// INIT
+updateUI();
+renderMatches();
+</script>
+
+</body>
+</html>
