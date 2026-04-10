@@ -9,7 +9,6 @@
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* Navbar bővítése */
         .navbar { background: #1a2a33; padding: 10px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; min-height: 60px; }
         .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; text-decoration: none; }
         
@@ -21,8 +20,7 @@
         .container { max-width: 800px; margin: auto; padding: 20px; }
         .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .odds { display: flex; gap: 10px; margin-top: 15px; }
-        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
-        .odd:hover { border-color: var(--primary); }
+        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
         .odd b { color: var(--primary); font-size: 20px; display: block; }
         
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
@@ -32,7 +30,8 @@
         .modal-box { background: var(--card); padding: 25px; border-radius: 15px; width: 400px; border: 1px solid #2c4f60; }
         input, select { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
         label { font-size: 12px; color: #888; font-weight: bold; }
-        .balance-display-big { font-weight: bold; padding: 10px 0; font-size: 20px; }
+        
+        .balance-hint { font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline; float: right; }
     </style>
 </head>
 <body>
@@ -56,9 +55,7 @@
                 <span id="nav-demo-balance" style="color: var(--demo); font-weight: bold;">0</span>
             </div>
         </div>
-        
         <button class="btn-primary" onclick="openModal('createModal')">+ Create</button>
-        
         <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid #334756; padding-left: 15px;">
             <span id="user-display" style="font-weight: bold; font-size: 14px;"></span>
             <button onclick="logout()" style="background:none; border: 1px solid #ff4444; color:#ff4444; padding:4px 8px; border-radius:4px; cursor:pointer; font-size: 12px;">Logout</button>
@@ -68,7 +65,7 @@
 
 <div class="container">
     <h2>Live P2P Markets</h2>
-    <div id="market-list">Kapcsolódás...</div>
+    <div id="market-list">Töltés...</div>
 </div>
 
 <div id="createModal" class="modal hidden">
@@ -77,31 +74,32 @@
         <label>Esemény neve</label>
         <input id="m-title" placeholder="pl. Taktaszada vs Taktaharkány">
         
-        <div style="display:flex; gap:15px; align-items: flex-end;">
-            <div style="flex:1.2;">
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;">
                 <label>Számla típusa</label>
-                <select id="m-type" onchange="updateModalBalance()">
+                <select id="m-type" onchange="updateModalBalanceHint()">
                     <option value="REAL">REAL Account</option>
                     <option value="DEMO">DEMO Account</option>
                 </select>
             </div>
             <div style="flex:1;">
-                <label>Max Volatility</label>
-                <div id="m-balance-display" class="balance-display-big">---</div>
+                <label>Volatilitás (Tét)</label>
+                <span class="balance-hint" onclick="fillMax()">Max: <span id="m-max-val">0</span></span>
+                <input id="m-volatility" type="number" placeholder="Pl. 3000">
             </div>
         </div>
 
-        <label>Deadline</label>
+        <label>Fogadási határidő (Deadline)</label>
         <input id="m-deadline" type="datetime-local">
         
-        <label>Oddsok</label>
+        <label>Oddsok (1 - X - 2)</label>
         <div style="display:flex; gap:5px;">
             <input id="m-o1" type="number" step="0.01" placeholder="1.00">
             <input id="m-ox" type="number" step="0.01" placeholder="1.00">
             <input id="m-o2" type="number" step="0.01" placeholder="1.00">
         </div>
         
-        <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="handleCreateMarket()">Piac Megnyitása</button>
+        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="handleCreateMarket()">Piac Megnyitása</button>
         <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px;">Mégse</p>
     </div>
 </div>
@@ -117,10 +115,7 @@
     let currentUser = JSON.parse(localStorage.getItem("user"));
 
     window.onload = () => { 
-        if(currentUser) {
-            updateUI();
-            refreshUserBalances(); // Egyenlegek betöltése a fejlécbe
-        }
+        if(currentUser) { updateUI(); refreshUserBalances(); }
         fetchMarkets(); 
     };
 
@@ -132,46 +127,47 @@
         }
     }
 
-    // Felhasználói egyenlegek frissítése a fejlécben
     async function refreshUserBalances() {
         if (!currentUser) return;
-        const { data, error } = await _supabase.from('profiles').select('real_balance, demo_balance').eq('id', currentUser.id).single();
+        const { data } = await _supabase.from('profiles').select('real_balance, demo_balance').eq('id', currentUser.id).single();
         if (data) {
             document.getElementById("nav-real-balance").innerText = data.real_balance.toFixed(2) + " €";
             document.getElementById("nav-demo-balance").innerText = "DEMO " + data.demo_balance;
+            // Frissítjük a modalban is a "Max" feliratot
+            updateModalBalanceHint();
         }
     }
 
-    // Modal belső egyenleg kijelzője
-    async function updateModalBalance() {
+    async function updateModalBalanceHint() {
         if (!currentUser) return;
         const type = document.getElementById("m-type").value;
         const field = (type === "REAL") ? "real_balance" : "demo_balance";
-        const display = document.getElementById("m-balance-display");
-
         const { data } = await _supabase.from('profiles').select(field).eq('id', currentUser.id).single();
         if (data) {
-            const val = data[field] || 0;
-            display.innerText = `${type} ${val}`;
-            display.style.color = (type === "DEMO") ? "var(--demo)" : "var(--primary)";
-            display.dataset.amount = val;
+            document.getElementById("m-max-val").innerText = data[field];
         }
+    }
+
+    function fillMax() {
+        document.getElementById("m-volatility").value = document.getElementById("m-max-val").innerText;
     }
 
     async function handleCreateMarket() {
         const title = document.getElementById("m-title").value;
         const deadline = document.getElementById("m-deadline").value;
-        const balance = parseFloat(document.getElementById("m-balance-display").dataset.amount || 0);
-        const type = document.getElementById("m-type").value;
+        const volatility = parseFloat(document.getElementById("m-volatility").value);
+        const maxAllowed = parseFloat(document.getElementById("m-max-val").innerText);
 
-        if(!title || !deadline) { alert("Tölts ki mindent!"); return; }
+        if(!title || !deadline || isNaN(volatility)) { alert("Tölts ki minden mezőt!"); return; }
+        if(volatility <= 0) { alert("A volatilitás nem lehet nulla!"); return; }
+        if(volatility > maxAllowed) { alert("Nincs elég fedezeted a számlán!"); return; }
 
         const { error } = await _supabase.from('markets').insert([{
             title: title,
             creator_name: currentUser.username,
-            type: type,
+            type: document.getElementById("m-type").value,
             stake: 0, 
-            max_stake: balance,
+            max_stake: volatility,
             start_time: new Date(deadline).toISOString(),
             odd_1: parseFloat(document.getElementById("m-o1").value) || 1,
             odd_x: parseFloat(document.getElementById("m-ox").value) || 1,
@@ -179,7 +175,7 @@
         }]);
 
         if (error) alert(error.message);
-        else { closeModals(); fetchMarkets(); alert("Sikeres megnyitás!"); }
+        else { closeModals(); fetchMarkets(); alert("Piac létrehozva!"); }
     }
 
     async function fetchMarkets() {
@@ -206,28 +202,25 @@
         });
     }
 
-    // AUTH
+    // AUTH FUNKCIÓK
     async function handleRegister() {
         const u = document.getElementById("r-user").value;
         const e = document.getElementById("r-email").value;
         const p = document.getElementById("r-pass").value;
         const { error } = await _supabase.from('profiles').insert([{ username: u, email: e, password: p, real_balance: 0, demo_balance: 5000 }]);
-        if (error) alert(error.message); else { alert("Siker!"); closeModals(); }
+        if (error) alert(error.message); else { alert("Sikeres regisztráció!"); closeModals(); }
     }
 
     async function handleLogin() {
         const e = document.getElementById("l-email").value;
         const p = document.getElementById("l-pass").value;
         const { data } = await _supabase.from('profiles').select('*').eq('email', e).eq('password', p).single();
-        if (data) { 
-            localStorage.setItem("user", JSON.stringify(data)); 
-            location.reload(); 
-        } else alert("Hiba!");
+        if (data) { localStorage.setItem("user", JSON.stringify(data)); location.reload(); } else alert("Hiba!");
     }
 
     function openModal(id) { 
         document.getElementById(id).classList.remove("hidden"); 
-        if(id === 'createModal') updateModalBalance(); 
+        if(id === 'createModal') updateModalBalanceHint();
     }
     function closeModals() { document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden")); }
     function logout() { localStorage.removeItem("user"); location.reload(); }
