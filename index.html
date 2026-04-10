@@ -7,7 +7,7 @@
     <title>StakeForge | P2P Cloud Betting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; }
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         .navbar { background: #1a2a33; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; }
         .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; }
@@ -20,9 +20,10 @@
         .hidden { display: none !important; }
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-box { background: var(--card); padding: 25px; border-radius: 15px; width: 400px; border: 1px solid #2c4f60; }
-        input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
         label { font-size: 12px; color: #888; font-weight: bold; }
-        .balance-info { color: var(--primary); font-weight: bold; padding: 10px 0; font-size: 18px; }
+        .balance-info { font-weight: bold; padding: 10px 0; font-size: 20px; }
+        .type-label { font-size: 10px; padding: 2px 5px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -42,7 +43,7 @@
 
 <div class="container">
     <h2>Live P2P Markets</h2>
-    <div id="market-list">Kapcsolódás az adatbázishoz...</div>
+    <div id="market-list">Betöltés...</div>
 </div>
 
 <div id="createModal" class="modal hidden">
@@ -51,17 +52,17 @@
         <label>Esemény neve</label>
         <input id="m-title" placeholder="pl. Taktaszada vs Taktaharkány">
         
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1;">
-                <label>Típus</label>
+        <div style="display:flex; gap:15px; align-items: flex-end;">
+            <div style="flex:1.2;">
+                <label>Számla típusa</label>
                 <select id="m-type" onchange="updateAvailableBalance()">
                     <option value="REAL">REAL Account</option>
                     <option value="DEMO">DEMO Account</option>
                 </select>
             </div>
             <div style="flex:1;">
-                <label>Rendelkezésre álló tőke</label>
-                <div id="m-balance-display" class="balance-info">Lekérés...</div>
+                <label>Max Volatility</label>
+                <div id="m-balance-display" class="balance-info">---</div>
             </div>
         </div>
 
@@ -70,12 +71,12 @@
         
         <label>Oddsok (1 - X - 2)</label>
         <div style="display:flex; gap:5px;">
-            <input id="m-o1" type="number" step="0.01" placeholder="1.5">
-            <input id="m-ox" type="number" step="0.01" placeholder="3.2">
-            <input id="m-o2" type="number" step="0.01" placeholder="2.1">
+            <input id="m-o1" type="number" step="0.01" placeholder="1.00">
+            <input id="m-ox" type="number" step="0.01" placeholder="1.00">
+            <input id="m-o2" type="number" step="0.01" placeholder="1.00">
         </div>
         
-        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="handleCreateMarket()">Piac Megnyitása</button>
+        <button class="btn-primary" style="width:100%; margin-top:20px; font-size: 16px;" onclick="handleCreateMarket()">Piac Megnyitása</button>
         <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px;">Mégse</p>
     </div>
 </div>
@@ -100,17 +101,20 @@
         }
     }
 
-    // EGYENLEG LEKÉRÉSE A PROFILBÓL
+    // EGYENLEG LEKÉRÉSE ÉS JELZÉSE (DEMO/REAL)
     async function updateAvailableBalance() {
         if (!currentUser) return;
         const type = document.getElementById("m-type").value;
         const field = (type === "REAL") ? "real_balance" : "demo_balance";
+        const display = document.getElementById("m-balance-display");
 
         const { data, error } = await _supabase.from('profiles').select(field).eq('id', currentUser.id).single();
         if (data) {
             const val = data[field] || 0;
-            document.getElementById("m-balance-display").innerText = val + " €";
-            document.getElementById("m-balance-display").dataset.amount = val;
+            // Itt adjuk hozzá a prefixet (DEMO vagy REAL)
+            display.innerText = `${type} ${val}`;
+            display.style.color = (type === "DEMO") ? "#ffcc00" : "#00d4ff";
+            display.dataset.amount = val;
         }
     }
 
@@ -118,15 +122,16 @@
         const title = document.getElementById("m-title").value;
         const deadline = document.getElementById("m-deadline").value;
         const balance = parseFloat(document.getElementById("m-balance-display").dataset.amount || 0);
+        const type = document.getElementById("m-type").value;
 
         if(!title || !deadline) { alert("Minden mezőt tölts ki!"); return; }
 
         const { error } = await _supabase.from('markets').insert([{
             title: title,
             creator_name: currentUser.username,
-            type: document.getElementById("m-type").value,
+            type: type,
             stake: 0, 
-            max_stake: balance, // A rendszer által lekért egyenleg lesz a limit
+            max_stake: balance,
             start_time: new Date(deadline).toISOString(),
             odd_1: parseFloat(document.getElementById("m-o1").value) || 1,
             odd_x: parseFloat(document.getElementById("m-ox").value) || 1,
@@ -134,7 +139,7 @@
         }]);
 
         if (error) alert(error.message);
-        else { closeModals(); fetchMarkets(); alert("Piac sikeresen létrehozva!"); }
+        else { closeModals(); fetchMarkets(); alert(`Piac létrehozva ${type} számlával!`); }
     }
 
     async function fetchMarkets() {
@@ -144,10 +149,14 @@
         list.innerHTML = data.length ? "" : "Nincsenek aktív piacok.";
         data.forEach(m => {
             const isMe = currentUser && m.creator_name === currentUser.username;
+            const typeColor = m.type === "DEMO" ? "#ffcc00" : "#00d4ff";
+            
             list.innerHTML += `<div class="card">
-                <div style="display:flex; justify-content:space-between">
+                <div style="display:flex; justify-content:space-between; align-items: center;">
                     <b>${m.title}</b>
-                    <span style="color:var(--primary); font-size:12px; font-weight:bold;">LIMIT: ${m.max_stake} €</span>
+                    <span style="color:${typeColor}; font-size:12px; font-weight:bold; border: 1px solid ${typeColor}; padding: 2px 5px; border-radius: 4px;">
+                        ${m.type} ${m.max_stake}
+                    </span>
                 </div>
                 <div class="odds" style="${isMe ? 'opacity:0.3; pointer-events:none;' : ''}">
                     <div class="odd">1<b>${m.odd_1}</b></div>
@@ -158,12 +167,14 @@
         });
     }
 
-    // AUTH
+    // AUTH (Regisztrációnál alap DEMO egyenleg beállítva)
     async function handleRegister() {
         const u = document.getElementById("r-user").value;
         const e = document.getElementById("r-email").value;
         const p = document.getElementById("r-pass").value;
-        const { error } = await _supabase.from('profiles').insert([{ username: u, email: e, password: p, real_balance: 0, demo_balance: 5000 }]);
+        const { error } = await _supabase.from('profiles').insert([{ 
+            username: u, email: e, password: p, real_balance: 0, demo_balance: 5000 
+        }]);
         if (error) alert(error.message); else { alert("Siker! Jelentkezz be."); closeModals(); }
     }
 
