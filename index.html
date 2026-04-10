@@ -1,9 +1,3 @@
-<!DOCTYPE html>
-<html lang="hu">
-<head>
-<meta charset="UTF-8">
-<title>Bet Wars Clone</title>
-
 <style>
 body {
   margin: 0;
@@ -13,7 +7,7 @@ body {
 
 /* NAVBAR */
 .navbar {
-  background: #2f5f73;
+  background: #2c4f60;
   color: white;
   padding: 15px 30px;
   display: flex;
@@ -26,14 +20,13 @@ body {
   font-size: 20px;
 }
 
-.menu {
-  display: flex;
-  gap: 20px;
-}
-
-.menu a {
-  color: white;
-  text-decoration: none;
+/* BUTTON */
+button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  margin-left: 5px;
 }
 
 /* TABS */
@@ -44,13 +37,8 @@ body {
 }
 
 .tab {
-  padding: 15px 25px;
+  padding: 15px;
   color: white;
-  cursor: pointer;
-}
-
-.tab.active {
-  border-bottom: 3px solid orange;
 }
 
 /* CONTAINER */
@@ -66,13 +54,6 @@ body {
   border-radius: 10px;
   padding: 15px;
   margin-top: 15px;
-}
-
-/* HEADER */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 10px;
 }
 
 /* ODDS */
@@ -94,114 +75,159 @@ body {
   background: #dbeeff;
 }
 
-/* LOGIN BUTTON */
-.login-btn {
-  background: white;
-  color: #2f5f73;
-  padding: 8px 15px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
+.selected {
+  background: #00d4ff !important;
+  color: black;
 }
 
 /* MODAL */
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top:0; left:0;
+  width:100%; height:100%;
   background: rgba(0,0,0,0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display:flex;
+  justify-content:center;
+  align-items:center;
 }
 
-.hidden {
-  display: none;
-}
+.hidden { display:none; }
 
 .modal-box {
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  width: 300px;
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  width:300px;
 }
 
 input {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
+  width:100%;
+  padding:10px;
+  margin-top:10px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- NAVBAR -->
 <div class="navbar">
-  <div class="logo">BET-WARS</div>
+  <div class="logo">⚡ StakeForge</div>
 
-  <div class="menu">
-    <a href="#">Kezdőlap</a>
-    <a href="#">Felhasználók</a>
-    <a href="#">Csoportok</a>
+  <div>
+    <button onclick="openLogin()">Login</button>
+    <button onclick="openRegister()">Register</button>
   </div>
-
-  <button class="login-btn" onclick="openLogin()">Login</button>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
-  <div class="tab active">Feed</div>
-  <div class="tab">Böngészés</div>
-  <div class="tab">Saját események</div>
+  <div class="tab">Feed</div>
 </div>
 
-<!-- CONTENT -->
 <div class="container">
+
+  <!-- CREATE MARKET -->
+  <div id="createBox" class="hidden">
+    <h3>Create Market</h3>
+    <input id="title" placeholder="Liverpool vs Arsenal">
+    <input id="odd1" placeholder="Odds 1">
+    <input id="oddX" placeholder="Odds X">
+    <input id="odd2" placeholder="Odds 2">
+    <input id="volatility" placeholder="Volatility %">
+    <button onclick="createMarket()">Create</button>
+  </div>
 
   <div id="events"></div>
 
 </div>
 
-<!-- LOGIN MODAL -->
+<!-- LOGIN -->
 <div id="loginModal" class="modal hidden">
   <div class="modal-box">
     <h3>Login</h3>
-    <input id="email" placeholder="email">
-    <input id="pass" type="password" placeholder="password">
+    <input id="loginEmail">
+    <input id="loginPass" type="password">
     <button onclick="login()">Login</button>
   </div>
 </div>
 
+<!-- REGISTER -->
+<div id="registerModal" class="modal hidden">
+  <div class="modal-box">
+    <h3>Register</h3>
+    <input id="regEmail">
+    <input id="regPass" type="password">
+    <button onclick="register()">Register</button>
+  </div>
+</div>
+
 <script>
-let user = null;
+let user = JSON.parse(localStorage.getItem("user"));
+let users = JSON.parse(localStorage.getItem("users") || "[]");
+let events = JSON.parse(localStorage.getItem("events") || "[]");
 
-// SAMPLE EVENTS (mint backend helyett)
-let events = [
-  {
-    title: "Liverpool vs Arsenal",
-    odds: [2.1, 3.2, 2.8]
-  },
-  {
-    title: "Real Madrid vs Barca",
-    odds: [1.9, 3.5, 2.4]
-  }
-];
-
-// LOGIN
 function openLogin() {
   document.getElementById("loginModal").classList.remove("hidden");
 }
-
-function login() {
-  user = { email: document.getElementById("email").value };
-  alert("Logged in!");
-  document.getElementById("loginModal").classList.add("hidden");
+function openRegister() {
+  document.getElementById("registerModal").classList.remove("hidden");
 }
 
-// RENDER EVENTS
+// REGISTER
+function register() {
+  const email = regEmail.value;
+  const pass = regPass.value;
+
+  users.push({ email, pass, balance: 1000 });
+  localStorage.setItem("users", JSON.stringify(users));
+  alert("Registered!");
+}
+
+// LOGIN
+function login() {
+  const email = loginEmail.value;
+  const pass = loginPass.value;
+
+  const found = users.find(u => u.email === email && u.pass === pass);
+  if (!found) return alert("Wrong login");
+
+  user = found;
+  localStorage.setItem("user", JSON.stringify(user));
+
+  document.getElementById("createBox").classList.remove("hidden");
+  document.getElementById("loginModal").classList.add("hidden");
+
+  render();
+}
+
+// CREATE MARKET
+function createMarket() {
+  const market = {
+    id: Date.now(),
+    title: title.value,
+    odds: [odd1.value, oddX.value, odd2.value],
+    volatility: volatility.value,
+    creator: user.email
+  };
+
+  events.push(market);
+  localStorage.setItem("events", JSON.stringify(events));
+
+  render();
+}
+
+// CLICK ODDS
+function selectOdd(el) {
+  document.querySelectorAll(".odd").forEach(o => o.classList.remove("selected"));
+  el.classList.add("selected");
+
+  if (!user) {
+    alert("Login first!");
+  } else {
+    alert("Selected bet!");
+  }
+}
+
+// RENDER
 function render() {
   const container = document.getElementById("events");
   container.innerHTML = "";
@@ -211,20 +237,23 @@ function render() {
     div.className = "card";
 
     div.innerHTML = `
-      <div class="card-header">
-        <b>${e.title}</b>
-        <span>LIVE</span>
-      </div>
+      <b>${e.title}</b><br>
+      <small>Creator: ${e.creator}</small><br>
+      <small>Volatility: ${e.volatility}%</small>
 
       <div class="odds">
-        <div class="odd">1<br>${e.odds[0]}</div>
-        <div class="odd">X<br>${e.odds[1]}</div>
-        <div class="odd">2<br>${e.odds[2]}</div>
+        <div class="odd" onclick="selectOdd(this)">1<br>${e.odds[0]}</div>
+        <div class="odd" onclick="selectOdd(this)">X<br>${e.odds[1]}</div>
+        <div class="odd" onclick="selectOdd(this)">2<br>${e.odds[2]}</div>
       </div>
     `;
 
     container.appendChild(div);
   });
+}
+
+if (user) {
+  document.getElementById("createBox").classList.remove("hidden");
 }
 
 render();
