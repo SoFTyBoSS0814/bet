@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -9,41 +8,67 @@
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
-        .navbar { background: #1a2a33; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; }
-        .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; }
+        
+        /* Navbar bővítése */
+        .navbar { background: #1a2a33; padding: 10px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; min-height: 60px; }
+        .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; text-decoration: none; }
+        
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .wallet-info { display: flex; gap: 15px; background: rgba(0,0,0,0.2); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 13px; }
+        .wallet-item { display: flex; flex-direction: column; line-height: 1.2; }
+        .wallet-label { font-size: 10px; color: #888; text-transform: uppercase; }
+        
         .container { max-width: 800px; margin: auto; padding: 20px; }
         .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .odds { display: flex; gap: 10px; margin-top: 15px; }
-        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        .odd:hover { border-color: var(--primary); }
         .odd b { color: var(--primary); font-size: 20px; display: block; }
+        
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .hidden { display: none !important; }
+        
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-box { background: var(--card); padding: 25px; border-radius: 15px; width: 400px; border: 1px solid #2c4f60; }
         input, select { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
         label { font-size: 12px; color: #888; font-weight: bold; }
-        .balance-info { font-weight: bold; padding: 10px 0; font-size: 20px; }
-        .type-label { font-size: 10px; padding: 2px 5px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+        .balance-display-big { font-weight: bold; padding: 10px 0; font-size: 20px; }
     </style>
 </head>
 <body>
 
 <div class="navbar">
-    <div class="logo">STAKEFORGE</div>
-    <div id="logged-out-ui">
-        <button onclick="openModal('loginModal')" style="background:none; color:white; border:none; cursor:pointer; margin-right:15px;">Login</button>
+    <a href="#" class="logo">STAKEFORGE</a>
+    
+    <div id="logged-out-ui" class="nav-right">
+        <button onclick="openModal('loginModal')" style="background:none; color:white; border:none; cursor:pointer;">Login</button>
         <button class="btn-primary" onclick="openModal('regModal')">Register</button>
     </div>
-    <div id="logged-in-ui" class="hidden">
-        <button class="btn-primary" onclick="openModal('createModal')">+ Create Market</button>
-        <span id="user-display" style="font-weight: bold; color: var(--primary); margin-left: 15px;"></span>
-        <button onclick="logout()" style="background:none; border: 1px solid #ff4444; color:#ff4444; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:10px;">Logout</button>
+
+    <div id="logged-in-ui" class="nav-right hidden">
+        <div class="wallet-info">
+            <div class="wallet-item">
+                <span class="wallet-label">Real</span>
+                <span id="nav-real-balance" style="color: var(--primary); font-weight: bold;">0.00 €</span>
+            </div>
+            <div class="wallet-item">
+                <span class="wallet-label">Demo</span>
+                <span id="nav-demo-balance" style="color: var(--demo); font-weight: bold;">0</span>
+            </div>
+        </div>
+        
+        <button class="btn-primary" onclick="openModal('createModal')">+ Create</button>
+        
+        <div style="display: flex; align-items: center; gap: 10px; border-left: 1px solid #334756; padding-left: 15px;">
+            <span id="user-display" style="font-weight: bold; font-size: 14px;"></span>
+            <button onclick="logout()" style="background:none; border: 1px solid #ff4444; color:#ff4444; padding:4px 8px; border-radius:4px; cursor:pointer; font-size: 12px;">Logout</button>
+        </div>
     </div>
 </div>
 
 <div class="container">
     <h2>Live P2P Markets</h2>
-    <div id="market-list">Betöltés...</div>
+    <div id="market-list">Kapcsolódás...</div>
 </div>
 
 <div id="createModal" class="modal hidden">
@@ -55,28 +80,28 @@
         <div style="display:flex; gap:15px; align-items: flex-end;">
             <div style="flex:1.2;">
                 <label>Számla típusa</label>
-                <select id="m-type" onchange="updateAvailableBalance()">
+                <select id="m-type" onchange="updateModalBalance()">
                     <option value="REAL">REAL Account</option>
                     <option value="DEMO">DEMO Account</option>
                 </select>
             </div>
             <div style="flex:1;">
                 <label>Max Volatility</label>
-                <div id="m-balance-display" class="balance-info">---</div>
+                <div id="m-balance-display" class="balance-display-big">---</div>
             </div>
         </div>
 
-        <label>Fogadási határidő (Deadline)</label>
+        <label>Deadline</label>
         <input id="m-deadline" type="datetime-local">
         
-        <label>Oddsok (1 - X - 2)</label>
+        <label>Oddsok</label>
         <div style="display:flex; gap:5px;">
             <input id="m-o1" type="number" step="0.01" placeholder="1.00">
             <input id="m-ox" type="number" step="0.01" placeholder="1.00">
             <input id="m-o2" type="number" step="0.01" placeholder="1.00">
         </div>
         
-        <button class="btn-primary" style="width:100%; margin-top:20px; font-size: 16px;" onclick="handleCreateMarket()">Piac Megnyitása</button>
+        <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="handleCreateMarket()">Piac Megnyitása</button>
         <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px;">Mégse</p>
     </div>
 </div>
@@ -91,7 +116,13 @@
 
     let currentUser = JSON.parse(localStorage.getItem("user"));
 
-    window.onload = () => { updateUI(); fetchMarkets(); };
+    window.onload = () => { 
+        if(currentUser) {
+            updateUI();
+            refreshUserBalances(); // Egyenlegek betöltése a fejlécbe
+        }
+        fetchMarkets(); 
+    };
 
     function updateUI() {
         if (currentUser) {
@@ -101,19 +132,28 @@
         }
     }
 
-    // EGYENLEG LEKÉRÉSE ÉS JELZÉSE (DEMO/REAL)
-    async function updateAvailableBalance() {
+    // Felhasználói egyenlegek frissítése a fejlécben
+    async function refreshUserBalances() {
+        if (!currentUser) return;
+        const { data, error } = await _supabase.from('profiles').select('real_balance, demo_balance').eq('id', currentUser.id).single();
+        if (data) {
+            document.getElementById("nav-real-balance").innerText = data.real_balance.toFixed(2) + " €";
+            document.getElementById("nav-demo-balance").innerText = "DEMO " + data.demo_balance;
+        }
+    }
+
+    // Modal belső egyenleg kijelzője
+    async function updateModalBalance() {
         if (!currentUser) return;
         const type = document.getElementById("m-type").value;
         const field = (type === "REAL") ? "real_balance" : "demo_balance";
         const display = document.getElementById("m-balance-display");
 
-        const { data, error } = await _supabase.from('profiles').select(field).eq('id', currentUser.id).single();
+        const { data } = await _supabase.from('profiles').select(field).eq('id', currentUser.id).single();
         if (data) {
             const val = data[field] || 0;
-            // Itt adjuk hozzá a prefixet (DEMO vagy REAL)
             display.innerText = `${type} ${val}`;
-            display.style.color = (type === "DEMO") ? "#ffcc00" : "#00d4ff";
+            display.style.color = (type === "DEMO") ? "var(--demo)" : "var(--primary)";
             display.dataset.amount = val;
         }
     }
@@ -124,7 +164,7 @@
         const balance = parseFloat(document.getElementById("m-balance-display").dataset.amount || 0);
         const type = document.getElementById("m-type").value;
 
-        if(!title || !deadline) { alert("Minden mezőt tölts ki!"); return; }
+        if(!title || !deadline) { alert("Tölts ki mindent!"); return; }
 
         const { error } = await _supabase.from('markets').insert([{
             title: title,
@@ -139,20 +179,19 @@
         }]);
 
         if (error) alert(error.message);
-        else { closeModals(); fetchMarkets(); alert(`Piac létrehozva ${type} számlával!`); }
+        else { closeModals(); fetchMarkets(); alert("Sikeres megnyitás!"); }
     }
 
     async function fetchMarkets() {
         const { data, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById("market-list");
         if (error) return;
-        list.innerHTML = data.length ? "" : "Nincsenek aktív piacok.";
+        list.innerHTML = data.length ? "" : "Nincs aktív piac.";
         data.forEach(m => {
             const isMe = currentUser && m.creator_name === currentUser.username;
-            const typeColor = m.type === "DEMO" ? "#ffcc00" : "#00d4ff";
-            
+            const typeColor = m.type === "DEMO" ? "var(--demo)" : "var(--primary)";
             list.innerHTML += `<div class="card">
-                <div style="display:flex; justify-content:space-between; align-items: center;">
+                <div style="display:flex; justify-content:space-between">
                     <b>${m.title}</b>
                     <span style="color:${typeColor}; font-size:12px; font-weight:bold; border: 1px solid ${typeColor}; padding: 2px 5px; border-radius: 4px;">
                         ${m.type} ${m.max_stake}
@@ -167,27 +206,28 @@
         });
     }
 
-    // AUTH (Regisztrációnál alap DEMO egyenleg beállítva)
+    // AUTH
     async function handleRegister() {
         const u = document.getElementById("r-user").value;
         const e = document.getElementById("r-email").value;
         const p = document.getElementById("r-pass").value;
-        const { error } = await _supabase.from('profiles').insert([{ 
-            username: u, email: e, password: p, real_balance: 0, demo_balance: 5000 
-        }]);
-        if (error) alert(error.message); else { alert("Siker! Jelentkezz be."); closeModals(); }
+        const { error } = await _supabase.from('profiles').insert([{ username: u, email: e, password: p, real_balance: 0, demo_balance: 5000 }]);
+        if (error) alert(error.message); else { alert("Siker!"); closeModals(); }
     }
 
     async function handleLogin() {
         const e = document.getElementById("l-email").value;
         const p = document.getElementById("l-pass").value;
         const { data } = await _supabase.from('profiles').select('*').eq('email', e).eq('password', p).single();
-        if (data) { localStorage.setItem("user", JSON.stringify(data)); location.reload(); } else alert("Hiba!");
+        if (data) { 
+            localStorage.setItem("user", JSON.stringify(data)); 
+            location.reload(); 
+        } else alert("Hiba!");
     }
 
     function openModal(id) { 
         document.getElementById(id).classList.remove("hidden"); 
-        if(id === 'createModal') updateAvailableBalance(); 
+        if(id === 'createModal') updateModalBalance(); 
     }
     function closeModals() { document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden")); }
     function logout() { localStorage.removeItem("user"); location.reload(); }
