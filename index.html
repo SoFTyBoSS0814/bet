@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -148,31 +149,24 @@ label { font-size: 12px; color: #aaa; margin-top: 10px; display: block; }
   <div class="modal-box">
     <h3>New P2P Market</h3>
     <div id="createStatus" class="status-msg"></div>
-    
     <label>Event Name</label>
     <input id="title" placeholder="Arsenal vs Liverpool">
-    
     <label>Kick-off / Death Time</label>
     <input id="startTime" type="datetime-local">
-
     <label>Select Account</label>
     <select id="marketType" onchange="updateCreateBalanceInfo()">
         <option value="REAL">REAL Account (€)</option>
         <option value="DEMO">DEMO Account (Coins)</option>
     </select>
-    
     <div id="createBalanceInfo" style="font-size: 13px; color: var(--primary); margin-bottom: 5px; font-weight: bold;"></div>
-
     <label>Your Initial Liquidity (Stake)</label>
     <input id="liquidity" type="number" placeholder="0.00" oninput="validateLiquidity()">
-
     <label>Market Odds (1 - X - 2)</label>
     <div style="display:flex; gap:5px;">
         <input id="odd1" placeholder="1.0">
         <input id="oddX" placeholder="1.0">
         <input id="odd2" placeholder="1.0">
     </div>
-    
     <button id="submitCreateBtn" class="btn-primary" style="width:100%; margin-top:15px;" onclick="createMarket()">Create & Lock Funds</button>
     <button class="btn-outline" style="width:100%; margin-top:10px;" onclick="closeModals()">Cancel</button>
   </div>
@@ -183,14 +177,10 @@ label { font-size: 12px; color: #aaa; margin-top: 10px; display: block; }
       <h3 id="betMatchTitle">Place Bet</h3>
       <div id="betStatus" class="status-msg"></div>
       <p id="betSelectionText" style="color:var(--primary); font-weight:bold;"></p>
-      
       <div id="betBalanceInfo" style="font-size: 13px; color: var(--primary); font-weight: bold; margin-bottom: 5px;"></div>
-      
       <label>Stake Amount</label>
       <input id="betAmount" type="number" placeholder="0.00" oninput="validateBetAmount()">
-      
       <div id="potentialWin" style="margin: 10px 0; font-size: 14px; color: var(--success);"></div>
-      
       <button id="submitBetBtn" class="btn-primary" style="width:100%; margin-top:10px;" onclick="confirmBet()">Confirm Bet</button>
       <button class="btn-outline" style="width:100%; margin-top:10px;" onclick="closeModals()">Cancel</button>
     </div>
@@ -234,17 +224,13 @@ function validateBetAmount() {
     const amount = parseFloat(document.getElementById("betAmount").value);
     const btn = document.getElementById("submitBetBtn");
     if(!currentBettingOn || isNaN(amount) || amount <= 0) { btn.disabled = true; return; }
-    
     if(currentBettingOn.type === "REAL" && amount > user.realBalance) btn.disabled = true;
     else if(currentBettingOn.type === "DEMO" && amount > user.demoBalance) btn.disabled = true;
     else btn.disabled = false;
-
     if(!btn.disabled) {
         const win = amount * parseFloat(currentBettingOn.oddsValue);
         document.getElementById("potentialWin").innerText = `Várható nyeremény: ${win.toFixed(2)} ${currentBettingOn.type === 'REAL' ? '€' : 'Coin'}`;
-    } else {
-        document.getElementById("potentialWin").innerText = "";
-    }
+    } else { document.getElementById("potentialWin").innerText = ""; }
 }
 
 function switchTab(tabId) {
@@ -271,21 +257,18 @@ function closeModals() {
 }
 
 function register() {
-  const username = regUser.value;
-  const email = regEmail.value;
-  const pass = regPass.value;
+  const username = regUser.value; const email = regEmail.value; const pass = regPass.value;
   if(!username || !email || !pass) return showStatus("regStatus", "Hiányzó adatok!", false);
   users.push({ username, email, pass, demoBalance: 3000, realBalance: 1000, btcAddress: "bc1q" + Math.random().toString(36).substring(2, 10) });
   localStorage.setItem("users", JSON.stringify(users));
-  showStatus("regStatus", "Sikeres regisztráció! Jelentkezz be.", true);
+  showStatus("regStatus", "Sikeres! Jelentkezz be.", true);
   setTimeout(openLogin, 1000);
 }
 
 function login() {
   const found = users.find(u => u.email === loginEmail.value && u.pass === loginPass.value);
-  if (!found) return showStatus("loginStatus", "Helytelen adatok!", false);
-  user = found;
-  localStorage.setItem("user", JSON.stringify(user));
+  if (!found) return showStatus("loginStatus", "Hiba!", false);
+  user = found; localStorage.setItem("user", JSON.stringify(user));
   updateUI(); closeModals(); renderMatches();
 }
 
@@ -301,9 +284,7 @@ function updateUI() {
 }
 
 function createMarket() {
-    const amount = parseFloat(liquidity.value);
-    const type = marketType.value;
-    const start = startTime.value;
+    const amount = parseFloat(liquidity.value); const type = marketType.value; const start = startTime.value;
     if(type === "REAL") user.realBalance -= amount; else user.demoBalance -= amount;
     events.push({ id: Date.now(), title: title.value, type: type, stake: amount, startTime: start, odds: [odd1.value || "2.0", oddX.value || "3.0", odd2.value || "2.0"], creator: user.username });
     saveAll(); closeModals(); renderMatches();
@@ -345,10 +326,7 @@ function renderMatches() {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
-      <div style="display:flex; justify-content:space-between;">
-        <b>${e.title}</b>
-        <span class="badge ${e.type === 'REAL' ? 'badge-real' : 'badge-demo'}">${e.type} | Pool: ${e.stake}</span>
-      </div>
+      <div style="display:flex; justify-content:space-between;"><b>${e.title}</b><span class="badge ${e.type === 'REAL' ? 'badge-real' : 'badge-demo'}">${e.type} | Pool: ${e.stake}</span></div>
       <div class="odds" style="${isLocked ? 'pointer-events:none; opacity:0.5;' : ''}">
         <div class="odd" onclick="openBetModal(${e.id}, 0)">1<b>${e.odds[0]}</b></div>
         <div class="odd" onclick="openBetModal(${e.id}, 1)">X<b>${e.odds[1]}</b></div>
@@ -361,11 +339,14 @@ function renderMatches() {
 function renderProfile() {
     const container = document.getElementById("profileContent");
     if(!user) return;
-
-    // ALAP PROFIL ÉS EGYENLEG (MINDIG LÁTSZIK)
     let html = `
         <div class="profile-card">
-            <div><h2>${user.username}</h2><p>${user.email}</p></div>
+            <div>
+                <p style="margin:0; font-size:12px; color:#aaa;">Username:</p>
+                <h2 style="margin-top:0; margin-bottom:10px;">${user.username}</h2>
+                <p style="margin:0; font-size:12px; color:#aaa;">eMail address:</p>
+                <p style="margin:0; font-weight:bold;">${user.email}</p>
+            </div>
             <div class="wallet-box">
                 <div style="font-size:11px;">REAL BALANCE</div>
                 <div style="font-size:22px; font-weight:bold;">${user.realBalance.toFixed(2)} €</div>
@@ -374,8 +355,6 @@ function renderProfile() {
             </div>
         </div>
     `;
-
-    // MAGYARORSZÁGI KORLÁTOZÁS FELIRAT
     if(userCountry === "HU") {
         html += `
             <div class="card" style="border: 1px solid var(--error); background: rgba(255, 68, 68, 0.05);">
@@ -386,7 +365,6 @@ function renderProfile() {
     } else {
         html += `<div class="card"><h3>BTC Deposit Address</h3><span style="font-family:monospace; background:#000; padding:10px; display:block;">${user.btcAddress}</span></div>`;
     }
-
     container.innerHTML = html;
 }
 
