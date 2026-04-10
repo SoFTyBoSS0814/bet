@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -7,91 +6,53 @@
     <title>StakeForge | P2P Cloud Betting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { 
-            --primary: #00d4ff; 
-            --primary-hover: #00b8e6;
-            --bg: #0f171e; 
-            --text: #e1e8ed; 
-            --text-muted: #8899a6;
-            --card: #192734; 
-            --card-hover: #1f3140;
-            --demo: #ffcc00; 
-            --danger: #e0245e;
-            --input-bg: #10171e;
-            --input-border: #38444d;
-            --section-bg: #15202b;
-        }
-
-        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; }
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* NAVBAR */
-        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); position: sticky; top: 0; z-index: 100; height: 70px; }
+        /* NAVBAR - EREDETI STÍLUS */
+        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; height: 70px; }
         .nav-left-group { display: flex; align-items: center; gap: 30px; }
-        .nav-links { display: flex; gap: 15px; }
-        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 15px; cursor: pointer; transition: 0.2s; font-weight: bold; padding: 10px; border-radius: 20px; }
-        .nav-links a:hover, .nav-links a.active { color: var(--primary); background: rgba(0, 212, 255, 0.1); }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: #aaa; text-decoration: none; font-size: 15px; cursor: pointer; transition: 0.2s; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
         .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; text-decoration: none; }
         
         .nav-right { display: flex; align-items: center; gap: 15px; }
-        .wallet-info { display: flex; gap: 12px; background: var(--input-bg); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--input-border); font-size: 15px; font-weight: bold; }
+        .wallet-info { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 15px; font-weight: bold; }
         
-        .btn-logout { background: none; border: 1px solid var(--danger); color: var(--danger); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: 0.2s; font-weight: bold; }
-        .btn-logout:hover { background: rgba(224, 36, 94, 0.1); }
+        .btn-logout { background: none; border: 1px solid #ff4444; color: #ff4444; padding: 0 15px; border-radius: 6px; cursor: pointer; font-size: 13px; height: 40px; transition: 0.2s; font-weight: bold; }
 
-        /* MAIN CONTAINER */
+        /* MARKETS HEADER */
         .container { max-width: 900px; margin: auto; padding: 20px; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .btn-primary-trigger { background: var(--primary); color: #fff; border: none; padding: 12px 24px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
-        .btn-primary-trigger:hover { background: var(--primary-hover); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-create-inline { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
 
-        /* CARD */
-        .card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--input-border); position: relative; transition: 0.2s; }
-        .card:hover { background: var(--card-hover); border-color: #4b5a66; }
-        .card-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; display: block; color: #fff; }
-        .btn-edit-card { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); color: var(--text); border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .btn-edit-card:hover { background: rgba(255,255,255,0.2); }
-
-        .odds-row { display: flex; gap: 12px; margin-top: 15px; }
-        .odd-box { flex: 1; background: var(--input-bg); padding: 15px; text-align: center; border-radius: 12px; border: 1px solid var(--input-border); }
-        .odd-box span { font-size: 12px; color: var(--text-muted); display: block; }
-        .odd-box b { font-size: 22px; color: var(--primary); }
-
-        /* DARK & MODIFIED CREATE MODAL */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
-        .modal-box { background: var(--card); color: var(--text); padding: 30px; border-radius: 20px; width: 850px; max-width: 100%; border: 1px solid var(--input-border); box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
-        .modal-header { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 25px; }
-        .modal-btn { padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; font-size: 14px; transition: 0.2s; }
-        .modal-btn:hover { opacity: 0.8; }
+        /* CARD STYLE */
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 18px; border-left: 5px solid var(--primary); position: relative; }
+        .odds { display: flex; gap: 10px; margin-top: 15px; }
+        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; }
+        .odd b { color: var(--primary); font-size: 22px; display: block; }
         
-        .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
-        .m-input { width: 100%; padding: 14px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 12px; font-size: 15px; color: var(--text); box-sizing: border-box; transition: 0.2s; }
-        .m-input:focus { border-color: var(--primary); outline: none; background: #1a2734; }
+        /* ÚJ PIAC LÉTREHOZÁS MODAL - SÖTÉT STÍLUSBAN */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 850px; max-width: 95vw; border: 1px solid #2c4f60; color: #fff; }
         
-        .m-textarea { resize: vertical; font-family: inherit; }
-
-        .config-bar { background: var(--section-bg); border: 1px solid var(--input-border); padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 30px; margin-bottom: 25px; }
-        .bar-item { display: flex; flex-direction: column; gap: 6px; }
-        .bar-item label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin: 0; font-weight: bold; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
+        .m-btn { padding: 10px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; font-size: 14px; }
         
-        .market-group-container { background: var(--section-bg); border: 1px solid var(--input-border); border-radius: 16px; padding: 20px; }
-        .group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--input-border); }
-        .group-title-input { background: none; border: none; font-size: 18px; font-weight: bold; color: var(--text); width: 60%; padding: 5px; }
-        .group-title-input:focus { outline: none; border-bottom: 1px solid var(--primary); }
-        .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text); border: none; padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; font-weight: bold; }
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
-
-        .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .outcome-card { background: var(--input-bg); border: 1px solid var(--input-border); padding: 18px; border-radius: 12px; transition: 0.2s; }
-        .outcome-card:hover { border-color: var(--primary); }
-        .outcome-label { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0 18px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; }
+        label { font-size: 12px; color: #888; font-weight: bold; text-transform: uppercase; }
         
-        .add-outcome-card { display: flex; align-items: center; justify-content: center; border: 2px dashed var(--input-border); border-radius: 12px; cursor: pointer; color: var(--text-muted); font-weight: bold; font-size: 14px; transition: 0.2s; min-height: 80px; }
-        .add-outcome-card:hover { border-color: var(--text-muted); color: var(--text); background: rgba(255,255,255,0.02); }
+        /* HORIZONTÁLIS BEÁLLÍTÁSSÁV */
+        .config-row { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border: 1px solid #334756; }
+        .config-item { display: flex; flex-direction: column; }
+        .config-item label { margin-bottom: 4px; font-size: 10px; }
+        .config-item input, .config-item select { margin: 0; padding: 8px; width: auto; }
 
-        .check-item { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .check-item input { width: 18px; height: 18px; accent-color: var(--primary); margin: 0; }
-        .check-item span { font-size: 14px; color: var(--text); }
+        /* ODDS CSOPORT */
+        .odds-group { border: 1px solid #334756; border-radius: 10px; padding: 20px; background: rgba(255,255,255,0.03); }
+        .odds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .odd-input-card { background: #0b1218; border: 1px solid #334756; padding: 15px; border-radius: 8px; }
 
         .hidden { display: none !important; }
     </style>
@@ -102,10 +63,10 @@
     <div class="nav-left-group">
         <a href="#" class="logo">STAKEFORGE</a>
         <div class="nav-links">
-            <a id="link-markets" onclick="showSection('markets')" class="active">Piacok</a>
-            <a id="link-wallet" onclick="showSection('wallet')">Tárca</a>
-            <a id="link-account" onclick="showSection('account')">Fiók</a>
-            <a id="link-settings" onclick="showSection('settings')">Beállítások</a>
+            <a id="link-markets" onclick="showSection('markets')" class="active">Markets</a>
+            <a id="link-wallet" onclick="showSection('wallet')">Wallet</a>
+            <a id="link-account" onclick="showSection('account')">Account</a>
+            <a id="link-settings" onclick="showSection('settings')">Settings</a>
         </div>
     </div>
     <div class="nav-right">
@@ -113,105 +74,83 @@
             <span id="nav-real" style="color:var(--primary)">0.00 €</span>
             <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
         </div>
-        <button class="btn-logout" onclick="logout()">Kijelentkezés</button>
+        <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
 </div>
 
 <div class="container">
     <div id="section-markets">
         <div class="section-header">
-            <h2>Aktív Piacok</h2>
-            <button class="btn-primary-trigger" onclick="openCreateModal()">+ Új Piac</button>
+            <h2>Live P2P Markets</h2>
+            <button class="btn-create-inline" onclick="openCreateModal()">+ Create Market</button>
         </div>
         <div id="market-list">Töltés...</div>
     </div>
-    </div>
+</div>
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
-        <div class="modal-header">
-            <button class="modal-btn" style="background: rgba(255,255,255,0.1); color: var(--text);">📋 Beillesztés</button>
-            <button class="modal-btn" style="background: var(--primary); color: #fff;" onclick="handleMarketSubmit()">💾 Piac Mentése</button>
-            <button class="modal-btn" style="background: var(--danger); color: #fff;" onclick="closeModals()">❌ Mégse</button>
+        <div class="modal-actions">
+            <button class="m-btn" style="background: #334756; color: #fff;">📋 Beillesztés</button>
+            <button class="m-btn" style="background: var(--primary); color: #000;" onclick="handleMarketSubmit()">💾 Mentés</button>
+            <button class="m-btn" style="background: #ff4444; color: #fff;" onclick="closeModals()">❌ Mégse</button>
         </div>
 
-        <input type="hidden" id="edit-id">
-        
         <div style="display: flex; gap: 20px;">
-            <div style="flex: 2;" class="input-group">
-                <label>Esemény Neve *</label>
-                <input id="m-title" class="m-input" placeholder="pl. Manchester City vs Real Madrid">
+            <div style="flex: 2;">
+                <label>Esemény neve *</label>
+                <input id="m-title" placeholder="pl. Gerwyn Price - Michael Smith">
             </div>
-            <div style="flex: 1;" class="input-group">
-                <label>Határidő (Deadline) *</label>
-                <input id="m-deadline" type="datetime-local" class="m-input">
+            <div style="flex: 1;">
+                <label>Határidő *</label>
+                <input id="m-deadline" type="datetime-local">
             </div>
         </div>
 
-        <div class="input-group">
-            <label>Leírás / Megjegyzés / Szabályok</label>
-            <textarea id="m-note" class="m-input m-textarea" rows="3" placeholder="Például: Csak rendes játékidő, sérültek listája..."></textarea>
-        </div>
+        <label>Leírás / Megjegyzés</label>
+        <textarea id="m-note" rows="2" placeholder="Szabályok..."></textarea>
 
-        <div class="config-bar">
-            <label class="check-item">
-                <input type="checkbox" id="m-full-bal">
-                <span>Teljes egyenleg</span>
-            </label>
-            
-            <div style="border-left: 1px solid var(--input-border); height: 30px;"></div>
-            
-            <div class="bar-item">
-                <label>Költségvetés (€)</label>
-                <input id="m-vol" type="number" class="m-input" style="width: 120px; padding: 10px;" value="1000">
+        <div class="config-row">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="m-full-bal" style="width: 18px; margin: 0;">
+                <label style="margin: 0;">Teljes egyenleg</label>
             </div>
-            
-            <div class="bar-item">
-                <label>Számla Típusa</label>
-                <select id="m-type" class="m-input" onchange="refreshBalances()" style="padding: 10px; width: 160px;">
-                    <option value="REAL">REAL (€)</option>
-                    <option value="DEMO" selected>DEMO (D)</option>
+            <div class="config-item">
+                <label>Költségvetés</label>
+                <input id="m-vol" type="number" style="width: 100px;" value="1000">
+            </div>
+            <div class="config-item">
+                <label>Számla típusa</label>
+                <select id="m-type" onchange="refreshBalances()" style="width: 150px;">
+                    <option value="REAL">REAL</option>
+                    <option value="DEMO" selected>DEMO</option>
                 </select>
             </div>
-            
             <div style="flex-grow: 1; text-align: right;">
-                <span id="m-max-display" style="font-size: 14px; font-weight: bold; color: var(--primary);">Egyenleg: 0.00</span>
+                <span id="m-max-display" style="color: var(--primary); font-weight: bold;">Egyenleg: 0.00</span>
             </div>
         </div>
 
-        <div class="market-group-container">
-            <div class="group-header">
-                <input id="m-group-title" class="group-title-input" value="Mérkőzés Győztese" placeholder="Piaccsoport neve, pl. Gólszám">
-                <button class="btn-secondary">➕ Új Csoport</button>
+        <div class="odds-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <input id="m-group-title" style="margin: 0; width: 60%; background: none; border: none; border-bottom: 1px solid #334756; font-weight: bold; font-size: 16px;" value="Mérkőzés győztese">
+                <button class="m-btn" style="background: #2a3e4d; font-size: 12px;">➕ Új csoport</button>
             </div>
             
-            <div class="outcome-grid">
-                <div class="outcome-card">
-                    <label class="outcome-label">Hazai (1)</label>
-                    <div style="display: flex; gap: 10px; margin-top: 8px;">
-                        <input id="m-o1-name" class="m-input" style="padding: 10px;" value="Hazai Team">
-                        <input id="m-o1" type="number" step="0.01" class="m-input" style="width: 90px; padding: 10px; text-align: center;" placeholder="1.00">
+            <div class="odds-grid">
+                <div class="odd-input-card">
+                    <label>Kimenetel (1)</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <input id="m-o1-name" style="margin: 0;" value="Hazai">
+                        <input id="m-o1" type="number" step="0.01" style="width: 80px; margin: 0; text-align: center;" placeholder="1.95">
                     </div>
                 </div>
-                
-                <div class="outcome-card" id="box-x">
-                    <label class="outcome-label">Döntetlen (X)</label>
-                    <div style="display: flex; gap: 10px; margin-top: 8px;">
-                        <input id="m-ox-name" class="m-input" style="padding: 10px;" value="Döntetlen">
-                        <input id="m-ox" type="number" step="0.01" class="m-input" style="width: 90px; padding: 10px; text-align: center;" placeholder="0">
+                <div class="odd-input-card">
+                    <label>Kimenetel (2)</label>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <input id="m-o2-name" style="margin: 0;" value="Vendég">
+                        <input id="m-o2" type="number" step="0.01" style="width: 80px; margin: 0; text-align: center;" placeholder="1.95">
                     </div>
-                </div>
-                
-                <div class="outcome-card">
-                    <label class="outcome-label">Vendég (2)</label>
-                    <div style="display: flex; gap: 10px; margin-top: 8px;">
-                        <input id="m-o2-name" class="m-input" style="padding: 10px;" value="Vendég Team">
-                        <input id="m-o2" type="number" step="0.01" class="m-input" style="width: 90px; padding: 10px; text-align: center;" placeholder="1.00">
-                    </div>
-                </div>
-                
-                <div class="add-outcome-card">
-                    ➕ Kimenetel Hozzáadása
                 </div>
             </div>
         </div>
@@ -231,11 +170,6 @@
         fetchMarkets();
     };
 
-    function showSection(id) {
-        // Navigációs logika (egyedileg kell kitölteni)
-        alert("Szekció váltás: " + id);
-    }
-
     async function refreshBalances() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(data) {
@@ -248,26 +182,18 @@
         }
     }
 
-    function openCreateModal() {
-        document.getElementById("createModal").classList.remove("hidden");
-        refreshBalances();
-    }
-
+    function openCreateModal() { document.getElementById("createModal").classList.remove("hidden"); refreshBalances(); }
     function closeModals() { document.getElementById("createModal").classList.add("hidden"); }
 
     async function handleMarketSubmit() {
         const vol = parseFloat(document.getElementById("m-vol").value);
         const type = document.getElementById("m-type").value;
-        const currentBal = balances[type];
-
-        if(vol > currentBal) return alert("Nincs elég fedezet a számlán!");
+        if(vol > balances[type]) return alert("Nincs elég fedezet!");
 
         const payload = {
             title: document.getElementById("m-title").value,
-            group_title: document.getElementById("m-group-title").value, // Új mező mentése
-            note: document.getElementById("m-note").value,
+            group_title: document.getElementById("m-group-title").value,
             odd_1: parseFloat(document.getElementById("m-o1").value),
-            odd_x: parseFloat(document.getElementById("m-ox").value) || null,
             odd_2: parseFloat(document.getElementById("m-o2").value),
             start_time: new Date(document.getElementById("m-deadline").value).toISOString(),
             creator_name: currentUser.username,
@@ -276,8 +202,7 @@
         };
 
         const { error } = await _supabase.from('markets').insert([payload]);
-        if(error) alert("Hiba: " + error.message);
-        else location.reload();
+        if(error) alert(error.message); else location.reload();
     }
 
     async function fetchMarkets() {
@@ -285,17 +210,13 @@
         const list = document.getElementById("market-list");
         list.innerHTML = "";
         data.forEach(m => {
-            const isMe = m.creator_name === currentUser.username;
-            const badgeColor = m.type === "DEMO" ? "var(--demo)" : "var(--primary)";
             list.innerHTML += `
                 <div class="card">
-                    ${isMe ? `<button class="btn-edit-card">SZERKESZTÉS</button>` : ''}
-                    <span class="card-title">${m.title}</span>
-                    <span style="font-size:12px; color:var(--text-muted);">Csoport: ${m.group_title || 'Nincs megadva'} | Létrehozta: ${m.creator_name}</span>
-                    <div class="odds-row">
-                        <div class="odd-box"><span>1</span><b>${m.odd_1}</b></div>
-                        ${m.odd_x ? `<div class="odd-box"><span>X</span><b>${m.odd_x}</b></div>` : ''}
-                        <div class="odd-box"><span>2</span><b>${m.odd_2}</b></div>
+                    <b style="font-size:18px;">${m.title}</b><br>
+                    <small style="color:#888;">${m.group_title || 'Market'} | Creator: ${m.creator_name}</small>
+                    <div class="odds">
+                        <div class="odd">1<b>${m.odd_1}</b></div>
+                        <div class="odd">2<b>${m.odd_2}</b></div>
                     </div>
                 </div>`;
         });
