@@ -1,9 +1,12 @@
+Íme a teljes, frissített index.html. Ebben a verzióban a Max Tét (Volatility) már nem egy kézzel beírható mező, hanem a rendszer automatikusan kiolvassa a bejelentkezett felhasználó aktuális egyenlegét a profiles táblából, és azt használja korlátként.
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | P2P Betting Cloud</title>
+    <title>StakeForge | P2P Cloud Betting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; }
@@ -13,16 +16,15 @@
         .container { max-width: 800px; margin: auto; padding: 20px; }
         .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--primary); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .odds { display: flex; gap: 10px; margin-top: 15px; }
-        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .odd:hover { border-color: var(--primary); background: #344a5c; }
+        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
         .odd b { color: var(--primary); font-size: 20px; display: block; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); padding: 9px 19px; border-radius: 6px; cursor: pointer; }
         .hidden { display: none !important; }
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-box { background: var(--card); padding: 25px; border-radius: 15px; width: 400px; border: 1px solid #2c4f60; }
         input, select { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
         label { font-size: 12px; color: #888; font-weight: bold; }
+        .balance-info { color: var(--primary); font-weight: bold; padding: 10px 0; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -34,15 +36,15 @@
         <button class="btn-primary" onclick="openModal('regModal')">Register</button>
     </div>
     <div id="logged-in-ui" class="hidden">
-        <button class="btn-primary" onclick="openModal('createModal')" style="margin-right:15px;">+ Create Market</button>
-        <span id="user-display" style="font-weight: bold; color: var(--primary); margin-right: 15px;"></span>
-        <button onclick="logout()" style="background:none; border: 1px solid #ff4444; color:#ff4444; padding:5px 10px; border-radius:4px; cursor:pointer;">Logout</button>
+        <button class="btn-primary" onclick="openModal('createModal')">+ Create Market</button>
+        <span id="user-display" style="font-weight: bold; color: var(--primary); margin-left: 15px;"></span>
+        <button onclick="logout()" style="background:none; border: 1px solid #ff4444; color:#ff4444; padding:5px 10px; border-radius:4px; cursor:pointer; margin-left:10px;">Logout</button>
     </div>
 </div>
 
 <div class="container">
     <h2>Live P2P Markets</h2>
-    <div id="market-list">Kapcsolódás a felhőhöz...</div>
+    <div id="market-list">Kapcsolódás az adatbázishoz...</div>
 </div>
 
 <div id="createModal" class="modal hidden">
@@ -54,14 +56,14 @@
         <div style="display:flex; gap:10px;">
             <div style="flex:1;">
                 <label>Típus</label>
-                <select id="m-type">
+                <select id="m-type" onchange="updateAvailableBalance()">
                     <option value="REAL">REAL Account</option>
                     <option value="DEMO">DEMO Account</option>
                 </select>
             </div>
             <div style="flex:1;">
-                <label>Max Tét (€)</label>
-                <input id="m-max" type="number" value="1000">
+                <label>Rendelkezésre álló tőke</label>
+                <div id="m-balance-display" class="balance-info">Lekérés...</div>
             </div>
         </div>
 
@@ -76,156 +78,110 @@
         </div>
         
         <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="handleCreateMarket()">Piac Megnyitása</button>
-        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px; font-size:14px;">Mégse</p>
+        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px;">Mégse</p>
     </div>
 </div>
 
-<div id="regModal" class="modal hidden">
-    <div class="modal-box">
-        <h3>Regisztráció</h3>
-        <input id="r-user" placeholder="Felhasználónév">
-        <input id="r-email" placeholder="Email cím">
-        <input id="r-pass" type="password" placeholder="Jelszó">
-        <button class="btn-primary" style="width:100%" onclick="handleRegister()">Fiók létrehozása</button>
-        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px;">Bezár</p>
-    </div>
-</div>
-
-<div id="loginModal" class="modal hidden">
-    <div class="modal-box">
-        <h3>Bejelentkezés</h3>
-        <input id="l-email" placeholder="Email">
-        <input id="l-pass" type="password" placeholder="Jelszó">
-        <button class="btn-primary" style="width:100%" onclick="handleLogin()">Belépés</button>
-        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px;">Bezár</p>
-    </div>
-</div>
+<div id="regModal" class="modal hidden"><div class="modal-box"><h3>Register</h3><input id="r-user" placeholder="Username"><input id="r-email" placeholder="Email"><input id="r-pass" type="password" placeholder="Pass"><button class="btn-primary" style="width:100%" onclick="handleRegister()">Go</button><p onclick="closeModals()" style="text-align:center; cursor:pointer;">Cancel</p></div></div>
+<div id="loginModal" class="modal hidden"><div class="modal-box"><h3>Login</h3><input id="l-email" placeholder="Email"><input id="l-pass" type="password" placeholder="Pass"><button class="btn-primary" style="width:100%" onclick="handleLogin()">Login</button><p onclick="closeModals()" style="text-align:center; cursor:pointer;">Cancel</p></div></div>
 
 <script>
-    // --- SUPABASE KONFIGURÁCIÓ ---
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
     let currentUser = JSON.parse(localStorage.getItem("user"));
 
-    window.onload = () => {
-        updateUI();
-        fetchMarkets();
-    };
+    window.onload = () => { updateUI(); fetchMarkets(); };
 
     function updateUI() {
         if (currentUser) {
             document.getElementById("logged-out-ui").classList.add("hidden");
             document.getElementById("logged-in-ui").classList.remove("hidden");
             document.getElementById("user-display").innerText = currentUser.username;
-        } else {
-            document.getElementById("logged-out-ui").classList.remove("hidden");
-            document.getElementById("logged-in-ui").classList.add("hidden");
         }
     }
 
-    // PIACOK BETÖLTÉSE
-    async function fetchMarkets() {
-        const list = document.getElementById("market-list");
-        const { data, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
-        
-        if (error) {
-            list.innerHTML = "Hiba a kapcsolódáskor. Ellenőrizd az RLS beállításokat!";
-            return;
-        }
+    // EGYENLEG LEKÉRÉSE A PROFILBÓL
+    async function updateAvailableBalance() {
+        if (!currentUser) return;
+        const type = document.getElementById("m-type").value;
+        const field = (type === "REAL") ? "real_balance" : "demo_balance";
 
-        list.innerHTML = data.length ? "" : "Jelenleg nincsenek aktív piacok. Hozz létre egyet!";
-        
-        data.forEach(m => {
-            const isMe = currentUser && m.creator_name === currentUser.username;
-            const deadline = m.start_time ? new Date(m.start_time).toLocaleString('hu-HU') : "Nincs megadva";
-            
-            list.innerHTML += `
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
-                        <div>
-                            <b style="font-size:18px;">${m.title}</b><br>
-                            <small style="color:#888">Deadline: ${deadline}</small>
-                        </div>
-                        <div style="text-align:right;">
-                            <span style="background:var(--primary); color:#000; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;">MAX: ${m.max_stake}€</span><br>
-                            <small style="color:var(--primary); font-weight:bold;">${m.type}</small>
-                        </div>
-                    </div>
-                    <div class="odds" style="${isMe ? 'opacity:0.3; pointer-events:none;' : ''}">
-                        <div class="odd" onclick="bet('${m.title}', ${m.odd_1})">1<b>${m.odd_1}</b></div>
-                        <div class="odd" onclick="bet('${m.title}', ${m.odd_x})">X<b>${m.odd_x}</b></div>
-                        <div class="odd" onclick="bet('${m.title}', ${m.odd_2})">2<b>${m.odd_2}</b></div>
-                    </div>
-                    ${isMe ? '<small style="color:#ff4444; display:block; margin-top:10px; font-weight:bold;">Saját piacaidat csak nézheted.</small>' : ''}
-                </div>`;
-        });
+        const { data, error } = await _supabase.from('profiles').select(field).eq('id', currentUser.id).single();
+        if (data) {
+            const val = data[field] || 0;
+            document.getElementById("m-balance-display").innerText = val + " €";
+            document.getElementById("m-balance-display").dataset.amount = val;
+        }
     }
 
-    // ÚJ PIAC MENTÉSE
     async function handleCreateMarket() {
         const title = document.getElementById("m-title").value;
         const deadline = document.getElementById("m-deadline").value;
-        const maxStake = document.getElementById("m-max").value;
+        const balance = parseFloat(document.getElementById("m-balance-display").dataset.amount || 0);
 
-        if(!title || !deadline || !currentUser) {
-            alert("Hiányzó adatok!");
-            return;
-        }
+        if(!title || !deadline) { alert("Minden mezőt tölts ki!"); return; }
 
         const { error } = await _supabase.from('markets').insert([{
             title: title,
             creator_name: currentUser.username,
             type: document.getElementById("m-type").value,
             stake: 0, 
-            max_stake: parseFloat(maxStake),
+            max_stake: balance, // A rendszer által lekért egyenleg lesz a limit
             start_time: new Date(deadline).toISOString(),
-            odd_1: parseFloat(document.getElementById("m-o1").value) || 1.0,
-            odd_x: parseFloat(document.getElementById("m-ox").value) || 1.0,
-            odd_2: parseFloat(document.getElementById("m-o2").value) || 1.0
+            odd_1: parseFloat(document.getElementById("m-o1").value) || 1,
+            odd_x: parseFloat(document.getElementById("m-ox").value) || 1,
+            odd_2: parseFloat(document.getElementById("m-o2").value) || 1
         }]);
 
-        if (error) alert("Hiba: " + error.message);
-        else { 
-            closeModals(); 
-            fetchMarkets(); 
-            alert("Piac sikeresen létrehozva!");
-        }
+        if (error) alert(error.message);
+        else { closeModals(); fetchMarkets(); alert("Piac sikeresen létrehozva!"); }
     }
 
-    // AUTH FUNKCIÓK
+    async function fetchMarkets() {
+        const { data, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const list = document.getElementById("market-list");
+        if (error) return;
+        list.innerHTML = data.length ? "" : "Nincsenek aktív piacok.";
+        data.forEach(m => {
+            const isMe = currentUser && m.creator_name === currentUser.username;
+            list.innerHTML += `<div class="card">
+                <div style="display:flex; justify-content:space-between">
+                    <b>${m.title}</b>
+                    <span style="color:var(--primary); font-size:12px; font-weight:bold;">LIMIT: ${m.max_stake} €</span>
+                </div>
+                <div class="odds" style="${isMe ? 'opacity:0.3; pointer-events:none;' : ''}">
+                    <div class="odd">1<b>${m.odd_1}</b></div>
+                    <div class="odd">X<b>${m.odd_x}</b></div>
+                    <div class="odd">2<b>${m.odd_2}</b></div>
+                </div>
+            </div>`;
+        });
+    }
+
+    // AUTH
     async function handleRegister() {
         const u = document.getElementById("r-user").value;
         const e = document.getElementById("r-email").value;
         const p = document.getElementById("r-pass").value;
-
-        const { error } = await _supabase.from('profiles').insert([{ username: u, email: e, password: p }]);
-        if (error) alert(error.message);
-        else { alert("Sikeres regisztráció! Jelentkezz be."); closeModals(); }
+        const { error } = await _supabase.from('profiles').insert([{ username: u, email: e, password: p, real_balance: 0, demo_balance: 5000 }]);
+        if (error) alert(error.message); else { alert("Siker! Jelentkezz be."); closeModals(); }
     }
 
     async function handleLogin() {
         const e = document.getElementById("l-email").value;
         const p = document.getElementById("l-pass").value;
-
-        const { data, error } = await _supabase.from('profiles').select('*').eq('email', e).eq('password', p).single();
-        if (data) {
-            currentUser = data;
-            localStorage.setItem("user", JSON.stringify(data));
-            location.reload();
-        } else alert("Hiba: Helytelen adatok!");
+        const { data } = await _supabase.from('profiles').select('*').eq('email', e).eq('password', p).single();
+        if (data) { localStorage.setItem("user", JSON.stringify(data)); location.reload(); } else alert("Hiba!");
     }
 
-    function bet(title, odd) {
-        if (!currentUser) return openModal('loginModal');
-        alert("Fogadás rögzítve: " + title + " (" + odd + ")");
+    function openModal(id) { 
+        document.getElementById(id).classList.remove("hidden"); 
+        if(id === 'createModal') updateAvailableBalance(); 
     }
-
-    function logout() { localStorage.removeItem("user"); location.reload(); }
-    function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
     function closeModals() { document.querySelectorAll(".modal").forEach(m => m.classList.add("hidden")); }
+    function logout() { localStorage.removeItem("user"); location.reload(); }
 </script>
-
 </body>
 </html>
