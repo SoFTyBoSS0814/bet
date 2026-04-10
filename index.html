@@ -2,97 +2,136 @@
 <html lang="hu">
 <head>
 <meta charset="UTF-8">
-<title>Betting Platform</title>
+<title>Bet Wars Clone</title>
 
 <style>
 body {
   margin: 0;
   font-family: Arial;
-  color: white;
-  background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
+  background: #eef2f5;
 }
 
 /* NAVBAR */
 .navbar {
+  background: #2f5f73;
+  color: white;
+  padding: 15px 30px;
   display: flex;
   justify-content: space-between;
-  padding: 15px 30px;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0,255,255,0.2);
+  align-items: center;
 }
 
 .logo {
-  color: #00f5ff;
   font-weight: bold;
   font-size: 20px;
 }
 
-.nav-buttons button {
-  margin-left: 10px;
+.menu {
+  display: flex;
+  gap: 20px;
 }
 
-/* MAIN */
+.menu a {
+  color: white;
+  text-decoration: none;
+}
+
+/* TABS */
+.tabs {
+  background: #3b6f85;
+  display: flex;
+  justify-content: center;
+}
+
+.tab {
+  padding: 15px 25px;
+  color: white;
+  cursor: pointer;
+}
+
+.tab.active {
+  border-bottom: 3px solid orange;
+}
+
+/* CONTAINER */
 .container {
-  max-width: 1000px;
+  max-width: 900px;
   margin: auto;
   padding: 20px;
 }
 
 /* CARD */
 .card {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(0,255,255,0.2);
-  border-radius: 12px;
+  background: white;
+  border-radius: 10px;
   padding: 15px;
   margin-top: 15px;
-  box-shadow: 0 0 15px rgba(0,255,255,0.1);
 }
 
-/* INPUTS */
-input {
+/* HEADER */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+/* ODDS */
+.odds {
+  display: flex;
+  gap: 10px;
+}
+
+.odd {
+  flex: 1;
+  background: #f0f0f0;
   padding: 10px;
-  margin: 5px;
   border-radius: 8px;
-  border: none;
-}
-
-/* BUTTON */
-button {
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: none;
-  background: #00f5ff;
-  color: black;
-  font-weight: bold;
+  text-align: center;
   cursor: pointer;
 }
 
-button:hover {
-  background: #00c3cc;
+.odd:hover {
+  background: #dbeeff;
 }
 
-.hidden {
-  display: none;
+/* LOGIN BUTTON */
+.login-btn {
+  background: white;
+  color: #2f5f73;
+  padding: 8px 15px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
 }
 
+/* MODAL */
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.6);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+.hidden {
+  display: none;
+}
+
 .modal-box {
-  background: #111;
+  background: white;
   padding: 20px;
   border-radius: 10px;
   width: 300px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
 }
 </style>
 </head>
@@ -101,26 +140,28 @@ button:hover {
 
 <!-- NAVBAR -->
 <div class="navbar">
-  <div class="logo">BET WARS DEMO</div>
-  <div class="nav-buttons">
-    <button onclick="openLogin()">Login</button>
-    <button onclick="openRegister()">Register</button>
+  <div class="logo">BET-WARS</div>
+
+  <div class="menu">
+    <a href="#">Kezdőlap</a>
+    <a href="#">Felhasználók</a>
+    <a href="#">Csoportok</a>
   </div>
+
+  <button class="login-btn" onclick="openLogin()">Login</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active">Feed</div>
+  <div class="tab">Böngészés</div>
+  <div class="tab">Saját események</div>
 </div>
 
 <!-- CONTENT -->
 <div class="container">
 
-  <h2>Live Markets</h2>
-
-  <!-- CREATE MARKET (csak login után) -->
-  <div id="createBox" class="hidden">
-    <h3>Create Market</h3>
-    <input id="title" placeholder="Liverpool vs Arsenal">
-    <button onclick="createMarket()">Create</button>
-  </div>
-
-  <div id="markets"></div>
+  <div id="events"></div>
 
 </div>
 
@@ -128,110 +169,65 @@ button:hover {
 <div id="loginModal" class="modal hidden">
   <div class="modal-box">
     <h3>Login</h3>
-    <input id="loginEmail" placeholder="email"><br>
-    <input id="loginPass" type="password" placeholder="password"><br>
+    <input id="email" placeholder="email">
+    <input id="pass" type="password" placeholder="password">
     <button onclick="login()">Login</button>
-    <button onclick="closeModals()">Close</button>
-  </div>
-</div>
-
-<!-- REGISTER MODAL -->
-<div id="registerModal" class="modal hidden">
-  <div class="modal-box">
-    <h3>Register</h3>
-    <input id="regEmail" placeholder="email"><br>
-    <input id="regPass" type="password" placeholder="password"><br>
-    <button onclick="register()">Register</button>
-    <button onclick="closeModals()">Close</button>
   </div>
 </div>
 
 <script>
-let user = JSON.parse(localStorage.getItem("user"));
-let users = JSON.parse(localStorage.getItem("users") || "[]");
-let markets = JSON.parse(localStorage.getItem("markets") || "[]");
+let user = null;
 
-// MODALS
+// SAMPLE EVENTS (mint backend helyett)
+let events = [
+  {
+    title: "Liverpool vs Arsenal",
+    odds: [2.1, 3.2, 2.8]
+  },
+  {
+    title: "Real Madrid vs Barca",
+    odds: [1.9, 3.5, 2.4]
+  }
+];
+
+// LOGIN
 function openLogin() {
   document.getElementById("loginModal").classList.remove("hidden");
 }
-function openRegister() {
-  document.getElementById("registerModal").classList.remove("hidden");
-}
-function closeModals() {
-  document.getElementById("loginModal").classList.add("hidden");
-  document.getElementById("registerModal").classList.add("hidden");
-}
 
-// REGISTER
-function register() {
-  const email = document.getElementById("regEmail").value;
-  const pass = document.getElementById("regPass").value;
-
-  const newUser = { email, pass, balance: 1000 };
-  users.push(newUser);
-  localStorage.setItem("users", JSON.stringify(users));
-
-  alert("Registered!");
-  closeModals();
-}
-
-// LOGIN
 function login() {
-  const email = document.getElementById("loginEmail").value;
-  const pass = document.getElementById("loginPass").value;
-
-  const found = users.find(u => u.email === email && u.pass === pass);
-
-  if (!found) {
-    alert("Wrong login");
-    return;
-  }
-
-  user = found;
-  localStorage.setItem("user", JSON.stringify(user));
-
-  document.getElementById("createBox").classList.remove("hidden");
-  closeModals();
+  user = { email: document.getElementById("email").value };
+  alert("Logged in!");
+  document.getElementById("loginModal").classList.add("hidden");
 }
 
-// CREATE MARKET
-function createMarket() {
-  const title = document.getElementById("title").value;
-
-  const market = {
-    id: Date.now(),
-    title,
-    creator: user.email
-  };
-
-  markets.push(market);
-  localStorage.setItem("markets", JSON.stringify(markets));
-
-  renderMarkets();
-}
-
-// RENDER
-function renderMarkets() {
-  const container = document.getElementById("markets");
+// RENDER EVENTS
+function render() {
+  const container = document.getElementById("events");
   container.innerHTML = "";
 
-  markets.forEach(m => {
+  events.forEach(e => {
     const div = document.createElement("div");
     div.className = "card";
+
     div.innerHTML = `
-      <b>${m.title}</b><br>
-      <small>by ${m.creator}</small>
+      <div class="card-header">
+        <b>${e.title}</b>
+        <span>LIVE</span>
+      </div>
+
+      <div class="odds">
+        <div class="odd">1<br>${e.odds[0]}</div>
+        <div class="odd">X<br>${e.odds[1]}</div>
+        <div class="odd">2<br>${e.odds[2]}</div>
+      </div>
     `;
+
     container.appendChild(div);
   });
 }
 
-// INIT
-renderMarkets();
-if (user) {
-  document.getElementById("createBox").classList.remove("hidden");
-}
+render();
 </script>
 
 </body>
