@@ -1,8 +1,4 @@
-Ha az RLS már alapból le van tiltva (Disabled), akkor a gondot a böngésző biztonsági beállítása (CSP - Content Security Policy) okozza, amit a konzolon is láttál. A böngésző "veszélyesnek" ítéli a Supabase-től érkező válaszokat, mert nem tudja, hogy megbízhat-e benne.
 
-Itt a teljesen újratervezett index.html, ami megkerüli ezt a problémát, és garantáltan kirajzolja a gombokat akkor is, ha a Supabase épp akadozik.
-
-HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
