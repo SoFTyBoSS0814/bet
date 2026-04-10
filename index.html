@@ -1,4 +1,10 @@
+Értettem a módosításokat! Finomítottam a logikát: mostantól a magyar IP nem gátolja a piacok létrehozását (sem DEMO, sem REAL módban), az egyenlegek pedig mindig láthatóak maradnak a profilnál. Kizárólag a konkrét BTC befizetési cím és a kifizetési opciók kapták meg a korlátozó feliratot.
 
+Emellett a kérésednek megfelelően a kód alaphelyzetbe állítja az events listát (törli a korábbi marketeket).
+
+Íme a frissített index.html:
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -266,7 +272,11 @@ label { font-size: 12px; color: #aaa; margin-top: 10px; display: block; }
 <script>
 let user = JSON.parse(localStorage.getItem("user"));
 let users = JSON.parse(localStorage.getItem("users") || "[]");
-let events = JSON.parse(localStorage.getItem("events") || "[]");
+
+// A kérésedre töröljük a korábban tárolt marketeket az indításkor
+localStorage.removeItem("events");
+let events = [];
+
 let userCountry = "";
 
 // INITIALIZATION
@@ -296,10 +306,7 @@ function showStatus(elementId, message, isSuccess) {
 function openLogin() { closeModals(); document.getElementById("loginModal").classList.remove("hidden"); }
 function openRegister() { closeModals(); document.getElementById("registerModal").classList.remove("hidden"); }
 function openCreate() { 
-    if(userCountry === "HU") {
-        alert("Magyarország területéről a market létrehozás korlátozott.");
-        return;
-    }
+    // Magyarországról is engedélyezzük a market létrehozást
     document.getElementById("createModal").classList.remove("hidden"); 
 }
 function closeModals() { 
@@ -419,20 +426,8 @@ function renderProfile() {
     const container = document.getElementById("profileContent");
     if(!user) return;
 
-    if(userCountry === "HU") {
-        container.innerHTML = `
-            <div class="profile-card">
-                <div><h2>${user.username}</h2><p>${user.email}</p></div>
-            </div>
-            <div class="card" style="border: 1px solid var(--error); background: rgba(255, 68, 68, 0.05);">
-                <h3 style="color: var(--error); margin-top:0;">⚠️ Korlátozás</h3>
-                <p style="font-weight: bold;">Magyarország területéről nem elérhető a be/kifizetés.</p>
-                <p style="color: #aaa; font-size: 14px;">A helyi szabályozások miatt a pénzügyi tranzakciók tiltottak az Ön régiójában.</p>
-            </div>`;
-        return;
-    }
-
-    container.innerHTML = `
+    // Az egyenleget minden esetben mutatjuk
+    let profileHTML = `
         <div class="profile-card">
             <div><h2>${user.username}</h2><p>${user.email}</p></div>
             <div class="wallet-box">
@@ -442,11 +437,27 @@ function renderProfile() {
                 <div style="font-size:18px;">${user.demoBalance}</div>
             </div>
         </div>
-        <div class="card">
-            <h3>BTC Deposit Address</h3>
-            <span class="btc-address">${user.btcAddress}</span>
-        </div>
     `;
+
+    // Csak a be/kifizetés rész kap korlátozást HU IP esetén
+    if(userCountry === "HU") {
+        profileHTML += `
+            <div class="card" style="border: 1px solid var(--error); background: rgba(255, 68, 68, 0.05);">
+                <h3 style="color: var(--error); margin-top:0;">⚠️ Tranzakciók Korlátozva</h3>
+                <p style="font-weight: bold;">Magyarország területéről nem elérhető a be/kifizetés.</p>
+                <p style="color: #aaa; font-size: 14px;">A helyi szabályozások miatt a pénzügyi tranzakciók funkciói (BTC deposit/withdraw) le vannak tiltva.</p>
+            </div>
+        `;
+    } else {
+        profileHTML += `
+            <div class="card">
+                <h3>BTC Deposit Address</h3>
+                <span class="btc-address">${user.btcAddress}</span>
+            </div>
+        `;
+    }
+
+    container.innerHTML = profileHTML;
 }
 
 function bet(match, pick, isLocked) {
