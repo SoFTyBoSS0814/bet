@@ -1,3 +1,10 @@
+Értem a kérést. Átalakítom a piac létrehozó modalt sötét témájúvá, eltávolítom a fix "Mérkőzés győztese" feliratot, és lecserélem egy szerkeszthető címmezőre, ahol megadhatod a csoport címét.
+
+A vizuális megjelenést is jelentősen módosítom – új gombstílusokkal, lekerekítésekkel és panel elrendezésekkel –, hogy az ne legyen felismerhető az eredeti forráshoz képest, de megtartsa a strukturált funkcionalitást.
+
+Íme a sötét témájú, teljesen átalakított index.html:
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -6,55 +13,92 @@
     <title>StakeForge | P2P Cloud Betting</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --modal-bg: #f4f7f9; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; }
+        :root { 
+            --primary: #00d4ff; 
+            --primary-hover: #00b8e6;
+            --bg: #0f171e; 
+            --text: #e1e8ed; 
+            --text-muted: #8899a6;
+            --card: #192734; 
+            --card-hover: #1f3140;
+            --demo: #ffcc00; 
+            --danger: #e0245e;
+            --input-bg: #10171e;
+            --input-border: #38444d;
+            --section-bg: #15202b;
+        }
+
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; }
         
         /* NAVBAR */
-        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; height: 70px; }
+        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--input-border); position: sticky; top: 0; z-index: 100; height: 70px; }
         .nav-left-group { display: flex; align-items: center; gap: 30px; }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a { color: #aaa; text-decoration: none; font-size: 15px; cursor: pointer; transition: 0.2s; font-weight: 500; }
-        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 15px; cursor: pointer; transition: 0.2s; font-weight: bold; padding: 10px; border-radius: 20px; }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); background: rgba(0, 212, 255, 0.1); }
         .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; text-decoration: none; }
         
         .nav-right { display: flex; align-items: center; gap: 15px; }
-        .wallet-info { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 15px; font-weight: bold; }
+        .wallet-info { display: flex; gap: 12px; background: var(--input-bg); padding: 8px 15px; border-radius: 20px; border: 1px solid var(--input-border); font-size: 15px; font-weight: bold; }
         
-        .btn-logout { background: none; border: 1px solid #ff4444; color: #ff4444; padding: 0 15px; border-radius: 6px; cursor: pointer; font-size: 13px; height: 40px; transition: 0.2s; font-weight: bold; }
+        .btn-logout { background: none; border: 1px solid var(--danger); color: var(--danger); padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: 0.2s; font-weight: bold; }
+        .btn-logout:hover { background: rgba(224, 36, 94, 0.1); }
 
-        /* MARKETS HEADER */
+        /* MAIN CONTAINER */
         .container { max-width: 900px; margin: auto; padding: 20px; }
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .btn-create-trigger { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .btn-primary-trigger { background: var(--primary); color: #fff; border: none; padding: 12px 24px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .btn-primary-trigger:hover { background: var(--primary-hover); }
 
-        /* MARKET CARD */
-        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid var(--primary); position: relative; }
-        .card-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; display: block; }
-        .btn-edit-card { position: absolute; top: 15px; right: 15px; background: #334756; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        /* CARD */
+        .card { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1px solid var(--input-border); position: relative; transition: 0.2s; }
+        .card:hover { background: var(--card-hover); border-color: #4b5a66; }
+        .card-title { font-size: 20px; font-weight: bold; margin-bottom: 5px; display: block; color: #fff; }
+        .btn-edit-card { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); color: var(--text); border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .btn-edit-card:hover { background: rgba(255,255,255,0.2); }
 
         .odds-row { display: flex; gap: 12px; margin-top: 15px; }
-        .odd-box { flex: 1; background: rgba(255,255,255,0.05); padding: 15px; text-align: center; border-radius: 8px; }
-        .odd-box span { font-size: 12px; color: #888; display: block; }
+        .odd-box { flex: 1; background: var(--input-bg); padding: 15px; text-align: center; border-radius: 12px; border: 1px solid var(--input-border); }
+        .odd-box span { font-size: 12px; color: var(--text-muted); display: block; }
         .odd-box b { font-size: 22px; color: var(--primary); }
 
-        /* MODAL DESIGN (Based on image_6e3547.png) */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
-        .modal-box { background: var(--modal-bg); color: #333; padding: 30px; border-radius: 12px; width: 850px; max-width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .modal-header { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px; }
-        .modal-btn { padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        /* DARK & MODIFIED CREATE MODAL */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; overflow-y: auto; padding: 20px; }
+        .modal-box { background: var(--card); color: var(--text); padding: 30px; border-radius: 20px; width: 850px; max-width: 100%; border: 1px solid var(--input-border); box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+        .modal-header { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 25px; }
+        .modal-btn { padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; border: none; display: flex; align-items: center; gap: 8px; font-size: 14px; transition: 0.2s; }
+        .modal-btn:hover { opacity: 0.8; }
         
         .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 8px; font-weight: 500; }
-        .m-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+        .input-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+        .m-input { width: 100%; padding: 14px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 12px; font-size: 15px; color: var(--text); box-sizing: border-box; transition: 0.2s; }
+        .m-input:focus { border-color: var(--primary); outline: none; background: #1a2734; }
         
-        .settings-bar { background: #fff; border: 1px solid #e1e8ed; padding: 15px; border-radius: 10px; display: flex; align-items: center; gap: 25px; margin-bottom: 25px; }
-        .bar-item { display: flex; flex-direction: column; gap: 4px; }
-        .bar-item label { font-size: 11px; color: #999; text-transform: uppercase; margin: 0; }
+        .m-textarea { resize: vertical; font-family: inherit; }
+
+        .config-bar { background: var(--section-bg); border: 1px solid var(--input-border); padding: 20px; border-radius: 16px; display: flex; align-items: center; gap: 30px; margin-bottom: 25px; }
+        .bar-item { display: flex; flex-direction: column; gap: 6px; }
+        .bar-item label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin: 0; font-weight: bold; }
         
-        .outcome-container { background: #fff; border: 1px solid #e1e8ed; border-radius: 10px; padding: 20px; }
-        .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .outcome-box { background: #f8f9fa; border: 1px solid #edf2f7; padding: 15px; border-radius: 8px; }
+        .market-group-container { background: var(--section-bg); border: 1px solid var(--input-border); border-radius: 16px; padding: 20px; }
+        .group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--input-border); }
+        .group-title-input { background: none; border: none; font-size: 18px; font-weight: bold; color: var(--text); width: 60%; padding: 5px; }
+        .group-title-input:focus { outline: none; border-bottom: 1px solid var(--primary); }
+        .btn-secondary { background: rgba(255,255,255,0.05); color: var(--text); border: none; padding: 8px 16px; border-radius: 20px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+        .outcome-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .outcome-card { background: var(--input-bg); border: 1px solid var(--input-border); padding: 18px; border-radius: 12px; transition: 0.2s; }
+        .outcome-card:hover { border-color: var(--primary); }
+        .outcome-label { font-size: 11px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; }
         
+        .add-outcome-card { display: flex; align-items: center; justify-content: center; border: 2px dashed var(--input-border); border-radius: 12px; cursor: pointer; color: var(--text-muted); font-weight: bold; font-size: 14px; transition: 0.2s; min-height: 80px; }
+        .add-outcome-card:hover { border-color: var(--text-muted); color: var(--text); background: rgba(255,255,255,0.02); }
+
+        .check-item { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .check-item input { width: 18px; height: 18px; accent-color: var(--primary); margin: 0; }
+        .check-item span { font-size: 14px; color: var(--text); }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -64,10 +108,10 @@
     <div class="nav-left-group">
         <a href="#" class="logo">STAKEFORGE</a>
         <div class="nav-links">
-            <a id="link-markets" onclick="showSection('markets')" class="active">Markets</a>
-            <a id="link-wallet" onclick="showSection('wallet')">Wallet</a>
-            <a id="link-account" onclick="showSection('account')">Account</a>
-            <a id="link-settings" onclick="showSection('settings')">Settings</a>
+            <a id="link-markets" onclick="showSection('markets')" class="active">Piacok</a>
+            <a id="link-wallet" onclick="showSection('wallet')">Tárca</a>
+            <a id="link-account" onclick="showSection('account')">Fiók</a>
+            <a id="link-settings" onclick="showSection('settings')">Beállítások</a>
         </div>
     </div>
     <div class="nav-right">
@@ -75,15 +119,15 @@
             <span id="nav-real" style="color:var(--primary)">0.00 €</span>
             <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
         </div>
-        <button class="btn-logout" onclick="logout()">Logout</button>
+        <button class="btn-logout" onclick="logout()">Kijelentkezés</button>
     </div>
 </div>
 
 <div class="container">
     <div id="section-markets">
         <div class="section-header">
-            <h2>Live P2P Markets</h2>
-            <button class="btn-create-trigger" onclick="openCreateModal()">+ Create Market</button>
+            <h2>Aktív Piacok</h2>
+            <button class="btn-primary-trigger" onclick="openCreateModal()">+ Új Piac</button>
         </div>
         <div id="market-list">Töltés...</div>
     </div>
@@ -92,80 +136,88 @@
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
         <div class="modal-header">
-            <button class="modal-btn" style="background: #ececf1; color: #555;">📋 Beillesztés</button>
-            <button class="modal-btn" style="background: #2c5282; color: white;" onclick="handleMarketSubmit()">💾 Mentés</button>
-            <button class="modal-btn" style="background: #e53e3e; color: white;" onclick="closeModals()">❌ Mégse</button>
+            <button class="modal-btn" style="background: rgba(255,255,255,0.1); color: var(--text);">📋 Beillesztés</button>
+            <button class="modal-btn" style="background: var(--primary); color: #fff;" onclick="handleMarketSubmit()">💾 Piac Mentése</button>
+            <button class="modal-btn" style="background: var(--danger); color: #fff;" onclick="closeModals()">❌ Mégse</button>
         </div>
 
         <input type="hidden" id="edit-id">
         
         <div style="display: flex; gap: 20px;">
             <div style="flex: 2;" class="input-group">
-                <label>Esemény címe *</label>
-                <input id="m-title" class="m-input" placeholder="pl. Gerwyn Price vs Luke Littler">
+                <label>Esemény Neve *</label>
+                <input id="m-title" class="m-input" placeholder="pl. Manchester City vs Real Madrid">
             </div>
             <div style="flex: 1;" class="input-group">
-                <label>Határidő *</label>
+                <label>Határidő (Deadline) *</label>
                 <input id="m-deadline" type="datetime-local" class="m-input">
             </div>
         </div>
 
         <div class="input-group">
-            <label>Leírás / Szabályok</label>
-            <textarea id="m-note" class="m-input" rows="3" placeholder="Például: Csak rendes játékidő..."></textarea>
+            <label>Leírás / Megjegyzés / Szabályok</label>
+            <textarea id="m-note" class="m-input m-textarea" rows="3" placeholder="Például: Csak rendes játékidő, sérültek listája..."></textarea>
         </div>
 
-        <div class="settings-bar">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="m-full-bal" style="width: 18px; cursor: pointer;">
-                <span style="font-size: 14px; color: #444;">Teljes egyenleg</span>
-            </div>
+        <div class="config-bar">
+            <label class="check-item">
+                <input type="checkbox" id="m-full-bal">
+                <span>Teljes egyenleg</span>
+            </label>
+            
+            <div style="border-left: 1px solid var(--input-border); height: 30px;"></div>
+            
             <div class="bar-item">
-                <label>Költségvetés</label>
-                <input id="m-vol" type="number" style="width: 90px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" value="1000">
+                <label>Költségvetés (€)</label>
+                <input id="m-vol" type="number" class="m-input" style="width: 120px; padding: 10px;" value="1000">
             </div>
+            
             <div class="bar-item">
-                <label>Számla típusa</label>
-                <select id="m-type" onchange="refreshBalances()" style="padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
-                    <option value="REAL">Valódi pénz (€)</option>
-                    <option value="DEMO" selected>DEMO számla (D)</option>
+                <label>Számla Típusa</label>
+                <select id="m-type" class="m-input" onchange="refreshBalances()" style="padding: 10px; width: 160px;">
+                    <option value="REAL">REAL (€)</option>
+                    <option value="DEMO" selected>DEMO (D)</option>
                 </select>
             </div>
+            
             <div style="flex-grow: 1; text-align: right;">
-                <span id="m-max-display" style="font-size: 13px; font-weight: bold; color: #2c5282;">Egyenleg: 0.00</span>
+                <span id="m-max-display" style="font-size: 14px; font-weight: bold; color: var(--primary);">Egyenleg: 0.00</span>
             </div>
         </div>
 
-        <div class="outcome-container">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <span style="font-weight: bold; color: #2c5282;">Mérkőzés győztese</span>
-                <button style="background: #f0f4f8; border: none; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">➕ Új csoport</button>
+        <div class="market-group-container">
+            <div class="group-header">
+                <input id="m-group-title" class="group-title-input" value="Mérkőzés Győztese" placeholder="Piaccsoport neve, pl. Gólszám">
+                <button class="btn-secondary">➕ Új Csoport</button>
             </div>
             
             <div class="outcome-grid">
-                <div class="outcome-box">
-                    <label style="font-size: 11px; color: #999;">Kimenetel (1)</label>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <input id="m-o1-name" class="m-input" style="padding: 8px;" value="Hazai">
-                        <input id="m-o1" type="number" step="0.01" class="m-input" style="width: 80px; padding: 8px; text-align: center;" placeholder="1.00">
+                <div class="outcome-card">
+                    <label class="outcome-label">Hazai (1)</label>
+                    <div style="display: flex; gap: 10px; margin-top: 8px;">
+                        <input id="m-o1-name" class="m-input" style="padding: 10px;" value="Hazai Team">
+                        <input id="m-o1" type="number" step="0.01" class="m-input" style="width: 90px; padding: 10px; text-align: center;" placeholder="1.00">
                     </div>
                 </div>
-                <div class="outcome-box" id="box-x">
-                    <label style="font-size: 11px; color: #999;">Kimenetel (X)</label>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <input id="m-ox-name" class="m-input" style="padding: 8px;" value="Döntetlen">
-                        <input id="m-ox" type="number" step="0.01" class="m-input" style="width: 80px; padding: 8px; text-align: center;" placeholder="0">
+                
+                <div class="outcome-card" id="box-x">
+                    <label class="outcome-label">Döntetlen (X)</label>
+                    <div style="display: flex; gap: 10px; margin-top: 8px;">
+                        <input id="m-ox-name" class="m-input" style="padding: 10px;" value="Döntetlen">
+                        <input id="m-ox" type="number" step="0.01" class="m-input" style="width: 90px; padding: 10px; text-align: center;" placeholder="0">
                     </div>
                 </div>
-                <div class="outcome-box">
-                    <label style="font-size: 11px; color: #999;">Kimenetel (2)</label>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <input id="m-o2-name" class="m-input" style="padding: 8px;" value="Vendég">
-                        <input id="m-o2" type="number" step="0.01" class="m-input" style="width: 80px; padding: 8px; text-align: center;" placeholder="1.00">
+                
+                <div class="outcome-card">
+                    <label class="outcome-label">Vendég (2)</label>
+                    <div style="display: flex; gap: 10px; margin-top: 8px;">
+                        <input id="m-o2-name" class="m-input" style="padding: 10px;" value="Vendég Team">
+                        <input id="m-o2" type="number" step="0.01" class="m-input" style="width: 90px; padding: 10px; text-align: center;" placeholder="1.00">
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: center; border: 2px dashed #e1e8ed; border-radius: 8px; cursor: pointer; color: #aaa;">
-                    ➕ Még több
+                
+                <div class="add-outcome-card">
+                    ➕ Kimenetel Hozzáadása
                 </div>
             </div>
         </div>
@@ -186,7 +238,7 @@
     };
 
     function showSection(id) {
-        // Egyszerűsített váltó logika
+        // Navigációs logika (egyedileg kell kitölteni)
         alert("Szekció váltás: " + id);
     }
 
@@ -218,6 +270,7 @@
 
         const payload = {
             title: document.getElementById("m-title").value,
+            group_title: document.getElementById("m-group-title").value, // Új mező mentése
             note: document.getElementById("m-note").value,
             odd_1: parseFloat(document.getElementById("m-o1").value),
             odd_x: parseFloat(document.getElementById("m-ox").value) || null,
@@ -239,11 +292,12 @@
         list.innerHTML = "";
         data.forEach(m => {
             const isMe = m.creator_name === currentUser.username;
+            const badgeColor = m.type === "DEMO" ? "var(--demo)" : "var(--primary)";
             list.innerHTML += `
                 <div class="card">
-                    ${isMe ? `<button class="btn-edit-card">EDIT</button>` : ''}
+                    ${isMe ? `<button class="btn-edit-card">SZERKESZTÉS</button>` : ''}
                     <span class="card-title">${m.title}</span>
-                    <span style="font-size:12px; color:#888;">Létrehozta: ${m.creator_name} | Típus: ${m.type}</span>
+                    <span style="font-size:12px; color:var(--text-muted);">Csoport: ${m.group_title || 'Nincs megadva'} | Létrehozta: ${m.creator_name}</span>
                     <div class="odds-row">
                         <div class="odd-box"><span>1</span><b>${m.odd_1}</b></div>
                         ${m.odd_x ? `<div class="odd-box"><span>X</span><b>${m.odd_x}</b></div>` : ''}
