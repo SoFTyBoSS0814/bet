@@ -1,14 +1,3 @@
-Jogos észrevétel! A hiba ott volt, hogy a kód nem frissítette le kényszerítve az egyenleget a Market létrehozó ablakban, így az "elfelejtette" ellenőrizni a valós keretet, ha korábban már költöttél belőle.
-
-Kijavítottam a következőkkel:
-
-Valós idejű egyenleg kijelzés: A Market létrehozásakor a választott típus (REAL/DEMO) alatt azonnal megjelenik, mennyi pénzed van még.
-
-Szigorú kényszerítés: A gomb le van tiltva vagy hibaüzenetet dob, ha akár 1 centtel is túlléped a keretedet.
-
-Kezdő egyenleg fixálása: Biztosítottam, hogy az 1000€ és a 3000 Coin valóban ott legyen az első belépéskor.
-
-Íme a javított teljes kód:
 
 HTML
 <!DOCTYPE html>
