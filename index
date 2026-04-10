@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Betting Demo</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <input id="email" placeholder="email" />
+  <input id="password" type="password" placeholder="password" />
+  <button onclick="login()">Login</button>
+
+  <div id="app" style="display:none;">
+    <h2 id="welcome"></h2>
+    <p id="balance"></p>
+
+    <h3>Create Market</h3>
+    <input id="title" placeholder="Market title" />
+    <button onclick="createMarket()">Create</button>
+
+    <h3>Markets</h3>
+    <div id="markets"></div>
+  </div>
+
+  <script>
+    let user = null;
+    let markets = JSON.parse(localStorage.getItem("markets") || "[]");
+
+    function login() {
+      const email = document.getElementById("email").value;
+      user = { email, balance: 1000 };
+
+      localStorage.setItem("user", JSON.stringify(user));
+
+      document.getElementById("app").style.display = "block";
+      document.getElementById("welcome").innerText = "Welcome " + email;
+      document.getElementById("balance").innerText = "Balance: " + user.balance;
+
+      renderMarkets();
+    }
+
+    function createMarket() {
+      const title = document.getElementById("title").value;
+
+      const market = {
+        id: Date.now(),
+        title,
+        creator: user.email
+      };
+
+      markets.push(market);
+      localStorage.setItem("markets", JSON.stringify(markets));
+
+      renderMarkets();
+    }
+
+    function renderMarkets() {
+      const container = document.getElementById("markets");
+      container.innerHTML = "";
+
+      markets.forEach(m => {
+        const div = document.createElement("div");
+        div.innerHTML = `<b>${m.title}</b> (by ${m.creator})`;
+        container.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
