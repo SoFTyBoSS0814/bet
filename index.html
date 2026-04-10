@@ -259,7 +259,7 @@ function closeModals() {
 function register() {
   const username = regUser.value; const email = regEmail.value; const pass = regPass.value;
   if(!username || !email || !pass) return showStatus("regStatus", "Hiányzó adatok!", false);
-  users.push({ username, email, pass, demoBalance: 3000, realBalance: 1000, btcAddress: "bc1q" + Math.random().toString(36).substring(2, 10) });
+  users.push({ username, email, pass, demoBalance: 3000, realBalance: 0, btcAddress: "bc1q" + Math.random().toString(36).substring(2, 10) });
   localStorage.setItem("users", JSON.stringify(users));
   showStatus("regStatus", "Sikeres! Jelentkezz be.", true);
   setTimeout(openLogin, 1000);
