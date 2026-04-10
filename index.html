@@ -1,3 +1,8 @@
+Értem, akkor visszatérünk a korábbi, bevált gombstílushoz, és kijavítjuk az X (döntetlen) mező makacs jelenlétét, hogy 2-esélyes választásnál tényleg eltűnjön. A felső menüsort (Markets, Wallet, Account, Settings) pedig megtartjuk.
+
+Íme a javított, letisztult verzió:
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -9,30 +14,34 @@
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* NAVBAR */
+        /* NAVBAR & MENU */
         .navbar { background: #1a2a33; padding: 10px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; }
         .nav-links { display: flex; gap: 20px; margin-left: 30px; }
-        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; transition: 0.2s; font-weight: 500; }
         .nav-links a:hover { color: var(--primary); }
         .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; text-decoration: none; }
         
         .nav-right { display: flex; align-items: center; gap: 15px; }
         .wallet-info { display: flex; gap: 10px; background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 6px; border: 1px solid #334756; font-size: 12px; }
         
-        .container { max-width: 850px; margin: auto; padding: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 20px; border-left: 5px solid var(--primary); position: relative; }
+        /* KÁRTYA STÍLUS (Visszaállítva) */
+        .container { max-width: 800px; margin: auto; padding: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--primary); position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .odds { display: flex; gap: 10px; margin-top: 15px; }
-        .odd { flex: 1; background: #2a3e4d; padding: 12px; text-align: center; border-radius: 8px; }
-        .odd b { color: var(--primary); font-size: 18px; display: block; }
-
-        /* MODAL */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+        .odd b { color: var(--primary); font-size: 20px; display: block; }
+        
+        /* GOMBOK (Visszaállítva a régi típusra) */
+        .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-edit { position: absolute; top: 15px; right: 20px; background: #334756; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        
+        /* MODAL & FORM */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .modal-box { background: var(--card); padding: 25px; border-radius: 15px; width: 450px; border: 1px solid #2c4f60; }
         .hidden { display: none !important; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
-        
-        .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; }
-        .restriction-msg { color: #ff4444; background: rgba(255,68,68,0.1); padding: 15px; border-radius: 8px; border: 1px solid #ff4444; margin-top: 20px; font-size: 13px; display: none; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
+        label { font-size: 12px; color: #888; font-weight: bold; }
+        .restriction-msg { color: #ff4444; background: rgba(255,68,68,0.1); padding: 15px; border-radius: 8px; border: 1px solid #ff4444; margin: 20px 0; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -52,7 +61,7 @@
             <span id="nav-real" style="color:var(--primary)">0.00 €</span>
             <span id="nav-demo" style="color:var(--demo)">0.00</span>
         </div>
-        <button onclick="openCreateModal()" style="background:var(--primary); border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">+ Create</button>
+        <button class="btn-primary" onclick="openCreateModal()">+ Create</button>
         <button onclick="logout()" style="background:none; border:1px solid #ff4444; color:#ff4444; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">Logout</button>
     </div>
 </div>
@@ -64,37 +73,45 @@
     </div>
 
     <div id="section-wallet" class="hidden">
-        <h2>My Wallet</h2>
-        <div id="hu-restriction" class="restriction-msg">
+        <h2>Wallet</h2>
+        <div id="hu-restriction" class="restriction-msg" style="display:none;">
             ⚠️ <b>Figyelem!</b> Magyarország területéről korlátozva van a KI/BEfizetés a Magyar jogszabályoknak megfelelően.
         </div>
-        <div id="wallet-content">
-            <p>Jelenlegi egyenleged kezelése itt érhető el.</p>
-            <button class="btn-primary" style="width:200px">Befizetés (Disabled)</button>
-        </div>
+        <p>Egyenleg kezelése (Hamarosan)</p>
     </div>
 
-    <div id="section-account" class="hidden"><h2>Account Settings</h2><p id="acc-name"></p></div>
-    <div id="section-settings" class="hidden"><h2>App Settings</h2><p>Interface és értesítések.</p></div>
+    <div id="section-account" class="hidden"><h2>Account</h2><p id="user-info"></p></div>
+    <div id="section-settings" class="hidden"><h2>Settings</h2><p>Beállítások módosítása.</p></div>
 </div>
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
-        <h3>Piac Létrehozása</h3>
+        <h3 id="modal-title">Piac Létrehozása</h3>
+        <input id="edit-id" type="hidden">
+        
         <label>Esemény neve</label>
-        <input id="m-title" placeholder="pl. Darts: Smith vs Price">
+        <input id="m-title" placeholder="pl. Darts: Price vs Smith">
         
         <label>Piac típusa</label>
-        <select id="m-odds-type" onchange="toggleX()"><option value="3">3-esélyes</option><option value="2">2-esélyes</option></select>
+        <select id="m-odds-type" onchange="updateOddsFields()">
+            <option value="3">3-esélyes (1 - X - 2)</option>
+            <option value="2">2-esélyes (1 - 2)</option>
+        </select>
 
+        <label>Megjegyzés</label>
+        <textarea id="m-note" rows="2" placeholder="Leírás..."></textarea>
+        
         <div style="display:flex; gap:10px;">
             <div style="flex:1;">
                 <label>Számla</label>
-                <select id="m-type" onchange="refreshBalances()"><option value="REAL">REAL</option><option value="DEMO" selected>DEMO</option></select>
+                <select id="m-type" onchange="refreshBalances()">
+                    <option value="REAL">REAL</option>
+                    <option value="DEMO" selected>DEMO</option>
+                </select>
             </div>
             <div style="flex:1;">
                 <label>Volatilitás (Max: <span id="m-max">0</span>)</label>
-                <input id="m-vol" type="number">
+                <input id="m-vol" type="number" placeholder="Összeg">
             </div>
         </div>
 
@@ -103,13 +120,13 @@
         
         <label>Oddsok</label>
         <div style="display:flex; gap:5px;">
-            <input id="m-o1" type="number" step="0.01" placeholder="1">
-            <input id="m-ox" type="number" step="0.01" placeholder="X">
-            <input id="m-o2" type="number" step="0.01" placeholder="2">
+            <input id="m-o1" type="number" step="0.01" placeholder="1" style="flex:1">
+            <input id="m-ox" type="number" step="0.01" placeholder="X" style="flex:1">
+            <input id="m-o2" type="number" step="0.01" placeholder="2" style="flex:1">
         </div>
         
-        <button class="btn-primary" onclick="handleMarketSubmit()">Létrehozás és Fedezet Zárolása</button>
-        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; font-size:12px;">Mégse</p>
+        <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="handleMarketSubmit()">Piac Mentése</button>
+        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; font-size:12px; margin-top:15px;">Mégse</p>
     </div>
 </div>
 
@@ -118,75 +135,101 @@
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
     let currentUser = JSON.parse(localStorage.getItem("user"));
-    let userBalances = { REAL: 0, DEMO: 0 };
+    let balances = { REAL: 0, DEMO: 0 };
 
     window.onload = async () => {
         if(!currentUser) return window.location.href="login.html";
-        document.getElementById("acc-name").innerText = "User: " + currentUser.username;
+        document.getElementById("user-info").innerText = "Logged in as: " + currentUser.username;
         checkIP();
         await refreshBalances();
         fetchMarkets();
     };
 
-    // IP ELLENŐRZÉS
+    // IP Ellenőrzés
     async function checkIP() {
         try {
             const res = await fetch('https://ipapi.co/json/');
             const data = await res.json();
-            if(data.country_code === 'HU') {
-                document.getElementById("hu-restriction").style.display = "block";
-                document.getElementById("wallet-content").style.opacity = "0.3";
-                document.getElementById("wallet-content").style.pointerEvents = "none";
-            }
-        } catch(e) { console.log("IP check failed"); }
+            if(data.country_code === 'HU') document.getElementById("hu-restriction").style.display = "block";
+        } catch(e) {}
     }
 
+    // Navigáció
     function showSection(id) {
         ["markets", "wallet", "account", "settings"].forEach(s => document.getElementById("section-"+s).classList.add("hidden"));
         document.getElementById("section-"+id).classList.remove("hidden");
     }
 
+    // Odds mezők elrejtése/megjelenítése (Fix: az X eltüntetése)
+    function updateOddsFields() {
+        const type = document.getElementById("m-odds-type").value;
+        const xField = document.getElementById("m-ox");
+        if(type === "2") {
+            xField.style.display = "none";
+            xField.value = ""; // Kiürítjük, hogy ne küldjön adatot
+        } else {
+            xField.style.display = "block";
+        }
+    }
+
     async function refreshBalances() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(data) {
-            userBalances.REAL = data.real_balance;
-            userBalances.DEMO = data.demo_balance;
-            document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
-            document.getElementById("nav-demo").innerText = "D: " + data.demo_balance;
+            balances.REAL = data.real_balance;
+            balances.DEMO = data.demo_balance;
+            document.getElementById("nav-real").innerText = balances.REAL.toFixed(2) + " €";
+            document.getElementById("nav-demo").innerText = "D: " + balances.DEMO;
             const type = document.getElementById("m-type").value;
-            document.getElementById("m-max").innerText = userBalances[type];
+            document.getElementById("m-max").innerText = balances[type];
         }
+    }
+
+    function openCreateModal() {
+        document.getElementById("modal-title").innerText = "Új Piac Létrehozása";
+        document.getElementById("edit-id").value = "";
+        ["m-title", "m-note", "m-vol", "m-deadline", "m-o1", "m-ox", "m-o2"].forEach(id => {
+            document.getElementById(id).value = "";
+            document.getElementById(id).disabled = false;
+        });
+        document.getElementById("m-odds-type").disabled = false;
+        document.getElementById("m-type").disabled = false;
+        updateOddsFields();
+        document.getElementById("createModal").classList.remove("hidden");
     }
 
     async function handleMarketSubmit() {
         const vol = parseFloat(document.getElementById("m-vol").value);
         const type = document.getElementById("m-type").value;
-        const currentBal = userBalances[type];
+        const currentBal = balances[type];
+        const editId = document.getElementById("edit-id").value;
 
-        if(vol > currentBal) return alert("Nincs elég fedezeted!");
+        if(!editId && vol > currentBal) return alert("Nincs elég fedezeted!");
 
-        // 1. EGYENLEG LEVONÁSA
-        const newBalance = currentBal - vol;
-        const updateField = (type === "REAL") ? { real_balance: newBalance } : { demo_balance: newBalance };
-        
-        const { error: balError } = await _supabase.from('profiles').update(updateField).eq('id', currentUser.id);
-        
-        if(!balError) {
-            // 2. PIAC LÉTREHOZÁSA
-            const is3W = document.getElementById("m-odds-type").value === "3";
+        const payload = {
+            title: document.getElementById("m-title").value,
+            note: document.getElementById("m-note").value,
+            odd_1: parseFloat(document.getElementById("m-o1").value),
+            odd_x: document.getElementById("m-odds-type").value === "3" ? parseFloat(document.getElementById("m-ox").value) : null,
+            odd_2: parseFloat(document.getElementById("m-o2").value),
+            start_time: new Date(document.getElementById("m-deadline").value).toISOString()
+        };
+
+        if(editId) {
+            await _supabase.from('markets').update(payload).eq('id', editId);
+        } else {
+            // Levonás a számláról
+            const updateField = type === "REAL" ? { real_balance: currentBal - vol } : { demo_balance: currentBal - vol };
+            await _supabase.from('profiles').update(updateField).eq('id', currentUser.id);
+            
             await _supabase.from('markets').insert([{
-                title: document.getElementById("m-title").value,
+                ...payload,
                 creator_name: currentUser.username,
                 type: type,
-                max_stake: vol, // Ez a "tőke"
-                stake: 0,
-                odd_1: parseFloat(document.getElementById("m-o1").value),
-                odd_x: is3W ? parseFloat(document.getElementById("m-ox").value) : null,
-                odd_2: parseFloat(document.getElementById("m-o2").value),
-                start_time: new Date(document.getElementById("m-deadline").value).toISOString()
+                max_stake: vol,
+                stake: 0
             }]);
-            location.reload();
         }
+        location.reload();
     }
 
     async function fetchMarkets() {
@@ -195,18 +238,17 @@
         list.innerHTML = "";
         data.forEach(m => {
             const isMe = m.creator_name === currentUser.username;
-            // Számított volatilitás: tőke - (eddigi fogadások * odds)
-            // Itt most az egyszerűség kedvéért a max_stake csökkenését jelenítjük meg
+            const isExpired = new Date(m.start_time) < new Date();
             list.innerHTML += `
                 <div class="card">
+                    ${isMe && !isExpired ? `<button class="btn-edit" onclick="openEditModal('${m.id}')">Edit</button>` : ''}
                     <div style="display:flex; justify-content:space-between">
                         <b>${m.title}</b>
-                        <span style="color:#888; font-size:12px;">Creator: ${m.creator_name}</span>
+                        <span style="font-size:11px; color:var(--primary)">${m.type} ${m.max_stake}</span>
                     </div>
-                    <div style="font-size:11px; color:var(--primary); margin:5px 0;">
-                        Elérhető tőke (Volatilitás): ${m.max_stake - m.stake} / ${m.max_stake} ${m.type}
-                    </div>
-                    <div class="odds" style="${isMe ? 'opacity:0.5' : ''}">
+                    <div style="font-size:11px; color:#666; margin-bottom:10px;">Creator: ${m.creator_name}</div>
+                    ${m.note ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-bottom:10px;">${m.note}</div>` : ''}
+                    <div class="odds" style="${isMe ? 'opacity:0.5; pointer-events:none;' : ''}">
                         <div class="odd">1<b>${m.odd_1}</b></div>
                         ${m.odd_x ? `<div class="odd">X<b>${m.odd_x}</b></div>` : ''}
                         <div class="odd">2<b>${m.odd_2}</b></div>
@@ -215,8 +257,23 @@
         });
     }
 
-    function toggleX() { document.getElementById("m-ox").style.display = (document.getElementById("m-odds-type").value === "2") ? "none" : "block"; }
-    function openCreateModal() { refreshBalances(); document.getElementById("createModal").classList.remove("hidden"); }
+    async function openEditModal(id) {
+        const { data: m } = await _supabase.from('markets').select('*').eq('id', id).single();
+        document.getElementById("modal-title").innerText = "Szerkesztés";
+        document.getElementById("edit-id").value = m.id;
+        document.getElementById("m-title").value = m.title;
+        document.getElementById("m-title").disabled = true;
+        document.getElementById("m-type").disabled = true;
+        document.getElementById("m-vol").disabled = true;
+        document.getElementById("m-note").value = m.note || "";
+        document.getElementById("m-o1").value = m.odd_1;
+        document.getElementById("m-ox").value = m.odd_x || "";
+        document.getElementById("m-o2").value = m.odd_2;
+        document.getElementById("m-odds-type").value = m.odd_x ? "3" : "2";
+        updateOddsFields();
+        document.getElementById("createModal").classList.remove("hidden");
+    }
+
     function closeModals() { document.getElementById("createModal").classList.add("hidden"); }
     function logout() { localStorage.removeItem("user"); location.reload(); }
 </script>
