@@ -1,3 +1,8 @@
+Íme a teljes, frissített index.html kód. Ebben javítottam a "Max: 0" hibát, integráltam a Megjegyzés mezőt, és hozzáadtam a Szerkesztés funkciót, amely a határidőig (deadline) él.
+
+Fontos: Mielőtt bemásolod, győződj meg róla, hogy a Supabase-ben a markets táblában létezik a max_stake (float8) és a note (text) oszlop!
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -18,21 +23,24 @@
         .wallet-label { font-size: 10px; color: #888; text-transform: uppercase; }
         
         .container { max-width: 800px; margin: auto; padding: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--primary); position: relative; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 5px solid var(--primary); position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .odds { display: flex; gap: 10px; margin-top: 15px; }
-        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+        .odd { flex: 1; background: #2a3e4d; padding: 15px; text-align: center; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        .odd:hover { background: #334b5d; border-color: var(--primary); }
         .odd b { color: var(--primary); font-size: 20px; display: block; }
         
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-edit { position: absolute; top: 15px; right: 20px; background: #334756; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-edit { position: absolute; top: 15px; right: 20px; background: #334756; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
         .hidden { display: none !important; }
         
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-box { background: var(--card); padding: 25px; border-radius: 15px; width: 400px; border: 1px solid #2c4f60; }
+        .modal-box { background: var(--card); padding: 25px; border-radius: 15px; width: 450px; border: 1px solid #2c4f60; max-height: 90vh; overflow-y: auto; }
         input, select, textarea { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
         label { font-size: 12px; color: #888; font-weight: bold; }
+        
         .balance-hint { font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline; float: right; }
-        .market-note { font-size: 13px; color: #aaa; margin: 10px 0; font-style: italic; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; }
+        .market-note { font-size: 13px; color: #aaa; margin: 10px 0; font-style: italic; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border-left: 3px solid #555; }
+        .deadline-info { font-size: 11px; color: #666; margin-top: 10px; display: block; }
     </style>
 </head>
 <body>
@@ -45,14 +53,16 @@
             <div class="wallet-item"><span class="wallet-label">Demo</span><span id="nav-demo-balance" style="color: var(--demo); font-weight: bold;">0</span></div>
         </div>
         <button class="btn-primary" onclick="openCreateModal()">+ Create</button>
-        <span id="user-display" style="font-weight: bold; font-size: 14px;"></span>
-        <button onclick="logout()" style="background:none; border: 1px solid #ff4444; color:#ff4444; padding:4px 8px; border-radius:4px; cursor:pointer;">Logout</button>
+        <div style="border-left: 1px solid #334756; padding-left: 15px; display: flex; align-items: center; gap: 10px;">
+            <span id="user-display" style="font-weight: bold; font-size: 14px;"></span>
+            <button onclick="logout()" style="background:none; border: 1px solid #ff4444; color:#ff4444; padding:4px 8px; border-radius:4px; cursor:pointer; font-size: 11px;">Logout</button>
+        </div>
     </div>
 </div>
 
 <div class="container">
     <h2>Live P2P Markets</h2>
-    <div id="market-list">Töltés...</div>
+    <div id="market-list">Piacok betöltése...</div>
 </div>
 
 <div id="createModal" class="modal hidden">
@@ -61,23 +71,26 @@
         <input id="edit-id" type="hidden">
         
         <label>Esemény neve</label>
-        <input id="m-title" placeholder="pl. Taktaszada vs Taktaharkány">
+        <input id="m-title" placeholder="pl. Manchester City vs Real Madrid">
         
-        <label>Megjegyzés / Leírás</label>
-        <textarea id="m-note" rows="2" placeholder="Pl. Csak rendes játékidő..."></textarea>
+        <label>Megjegyzés / Részletek</label>
+        <textarea id="m-note" rows="2" placeholder="Pl. Csak a rendes játékidő számít..."></textarea>
         
         <div style="display:flex; gap:10px;">
             <div style="flex:1;">
-                <label>Típus</label>
-                <select id="m-type"><option value="REAL">REAL</option><option value="DEMO">DEMO</option></select>
+                <label>Számla típusa</label>
+                <select id="m-type" onchange="refreshUserBalances()">
+                    <option value="REAL">REAL Account</option>
+                    <option value="DEMO" selected>DEMO Account</option>
+                </select>
             </div>
             <div style="flex:1;">
                 <label>Volatilitás <span class="balance-hint" onclick="fillMax()">Max: <span id="m-max-val">0</span></span></label>
-                <input id="m-volatility" type="number" placeholder="Összeg">
+                <input id="m-volatility" type="number" placeholder="Vállalt összeg">
             </div>
         </div>
 
-        <label>Deadline</label>
+        <label>Fogadási határidő (Deadline)</label>
         <input id="m-deadline" type="datetime-local">
         
         <label>Oddsok (1 - X - 2)</label>
@@ -87,8 +100,8 @@
             <input id="m-o2" type="number" step="0.01" placeholder="1.00">
         </div>
         
-        <button class="btn-primary" style="width:100%" onclick="handleMarketSubmit()">Mentés</button>
-        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888;">Mégse</p>
+        <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="handleMarketSubmit()">Piac Mentése</button>
+        <p onclick="closeModals()" style="text-align:center; cursor:pointer; color:#888; margin-top:15px; font-size: 13px;">Mégse</p>
     </div>
 </div>
 
@@ -98,14 +111,25 @@
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
     let currentUser = JSON.parse(localStorage.getItem("user"));
 
-    window.onload = () => { if(currentUser) { refreshUserBalances(); fetchMarkets(); document.getElementById("user-display").innerText = currentUser.username; } };
+    window.onload = () => { 
+        if(currentUser) { 
+            document.getElementById("user-display").innerText = currentUser.username;
+            refreshUserBalances(); 
+            fetchMarkets(); 
+        } else {
+            window.location.href = "login.html"; // Ha nincs bejelentkezve
+        }
+    };
 
     async function refreshUserBalances() {
         const { data } = await _supabase.from('profiles').select('real_balance, demo_balance').eq('id', currentUser.id).single();
         if (data) {
             document.getElementById("nav-real-balance").innerText = data.real_balance.toFixed(2) + " €";
             document.getElementById("nav-demo-balance").innerText = "DEMO " + data.demo_balance;
-            document.getElementById("m-max-val").innerText = document.getElementById("m-type").value === "REAL" ? data.real_balance : data.demo_balance;
+            
+            // Modal "Max" feliratának frissítése
+            const type = document.getElementById("m-type").value;
+            document.getElementById("m-max-val").innerText = (type === "REAL") ? data.real_balance : data.demo_balance;
         }
     }
 
@@ -116,24 +140,26 @@
         document.getElementById("m-type").disabled = false;
         document.getElementById("m-volatility").disabled = false;
         ["m-title", "m-note", "m-volatility", "m-deadline", "m-o1", "m-ox", "m-o2"].forEach(id => document.getElementById(id).value = "");
+        refreshUserBalances();
         document.getElementById("createModal").classList.remove("hidden");
     }
 
     async function openEditModal(id) {
         const { data: m } = await _supabase.from('markets').select('*').eq('id', id).single();
-        if (new Date(m.start_time) < new Date()) return alert("Lejárt, nem módosítható!");
+        if (new Date(m.start_time) < new Date()) return alert("A határidő lejárt, már nem módosíthatod!");
         
-        document.getElementById("modal-title").innerText = "Szerkesztés";
+        document.getElementById("modal-title").innerText = "Piac Szerkesztése";
         document.getElementById("edit-id").value = m.id;
         document.getElementById("m-title").value = m.title;
-        document.getElementById("m-title").disabled = true;
-        document.getElementById("m-type").disabled = true;
-        document.getElementById("m-volatility").disabled = true;
+        document.getElementById("m-title").disabled = true; // Cím zárolva
+        document.getElementById("m-type").disabled = true;  // Típus zárolva
+        document.getElementById("m-volatility").disabled = true; // Összeg zárolva
         document.getElementById("m-note").value = m.note || "";
         document.getElementById("m-o1").value = m.odd_1;
         document.getElementById("m-ox").value = m.odd_x;
         document.getElementById("m-o2").value = m.odd_2;
         
+        // Dátum formázása az inputhoz
         const d = new Date(m.start_time);
         d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
         document.getElementById("m-deadline").value = d.toISOString().slice(0, 16);
@@ -142,20 +168,27 @@
     }
 
     async function handleMarketSubmit() {
-        const id = document.getElementById("edit-id").value;
+        const editId = document.getElementById("edit-id").value;
         const payload = {
             note: document.getElementById("m-note").value,
             start_time: new Date(document.getElementById("m-deadline").value).toISOString(),
-            odd_1: parseFloat(document.getElementById("m-o1").value),
-            odd_x: parseFloat(document.getElementById("m-ox").value),
-            odd_2: parseFloat(document.getElementById("m-o2").value)
+            odd_1: parseFloat(document.getElementById("m-o1").value) || 1.0,
+            odd_x: parseFloat(document.getElementById("m-ox").value) || 1.0,
+            odd_2: parseFloat(document.getElementById("m-o2").value) || 1.0
         };
 
-        if (id) {
-            await _supabase.from('markets').update(payload).eq('id', id);
+        if (editId) {
+            // SZERKESZTÉS
+            const { error } = await _supabase.from('markets').update(payload).eq('id', editId);
+            if (error) alert(error.message);
         } else {
+            // ÚJ PIAC
             const vol = parseFloat(document.getElementById("m-volatility").value);
-            await _supabase.from('markets').insert([{
+            const maxAllowed = parseFloat(document.getElementById("m-max-val").innerText);
+            
+            if (!vol || vol > maxAllowed) return alert("Érvénytelen összeg!");
+
+            const { error } = await _supabase.from('markets').insert([{
                 ...payload,
                 title: document.getElementById("m-title").value,
                 creator_name: currentUser.username,
@@ -163,34 +196,48 @@
                 max_stake: vol,
                 stake: 0
             }]);
+            if (error) alert(error.message);
         }
-        location.reload();
+        
+        closeModals();
+        fetchMarkets();
     }
 
     async function fetchMarkets() {
-        const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const { data, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById("market-list");
-        list.innerHTML = "";
+        if (error) return list.innerHTML = "Hiba a betöltéskor.";
+        
+        list.innerHTML = data.length ? "" : "Jelenleg nincsenek aktív piacok.";
+        
         data.forEach(m => {
             const isMe = m.creator_name === currentUser.username;
             const isExpired = new Date(m.start_time) < new Date();
+            const typeColor = m.type === "DEMO" ? "var(--demo)" : "var(--primary)";
+            
             list.innerHTML += `
                 <div class="card">
                     ${isMe && !isExpired ? `<button class="btn-edit" onclick="openEditModal('${m.id}')">Edit</button>` : ''}
-                    <b>${m.title}</b> [${m.type} ${m.max_stake}]
+                    <div style="display:flex; justify-content:space-between; align-items: flex-start;">
+                        <b style="font-size: 18px;">${m.title}</b>
+                        <span style="color:${typeColor}; font-size:12px; font-weight:bold; border: 1px solid ${typeColor}; padding: 3px 7px; border-radius: 4px;">
+                            ${m.type} ${m.max_stake}
+                        </span>
+                    </div>
                     ${m.note ? `<div class="market-note">${m.note}</div>` : ''}
-                    <div class="odds" style="${isMe ? 'opacity:0.5;pointer-events:none' : ''}">
+                    <div class="odds" style="${isMe ? 'opacity:0.5; pointer-events:none;' : ''}">
                         <div class="odd">1<b>${m.odd_1}</b></div>
                         <div class="odd">X<b>${m.odd_x}</b></div>
                         <div class="odd">2<b>${m.odd_2}</b></div>
                     </div>
+                    <span class="deadline-info">Deadline: ${new Date(m.start_time).toLocaleString('hu-HU')}</span>
                 </div>`;
         });
     }
 
     function closeModals() { document.getElementById("createModal").classList.add("hidden"); }
     function fillMax() { document.getElementById("m-volatility").value = document.getElementById("m-max-val").innerText; }
-    function logout() { localStorage.removeItem("user"); location.reload(); }
+    function logout() { localStorage.removeItem("user"); window.location.reload(); }
 </script>
 </body>
 </html>
