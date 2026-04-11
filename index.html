@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -90,15 +89,15 @@
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 id="modal-title" style="margin:0; color:var(--primary);">Manager</h2>
+            <h2 id="modal-title" style="margin:0; color:var(--primary);">Market Manager</h2>
             <div style="display:flex; gap:10px;">
-                <button class="btn-primary" id="final-save-btn" onclick="saveMarket()">💾 Save & Pay</button>
+                <button class="btn-primary" id="final-save-btn" onclick="saveMarket()">💾 Save Changes</button>
                 <button class="btn-danger" onclick="closeModal()">Close</button>
             </div>
         </div>
         <div id="meta-inputs">
-            <label>Event Name</label><input id="m-name" placeholder="Pl: Madrid - City">
-            <label>Deadline (Helyi idő szerint válaszd ki!)</label><input id="m-date" type="datetime-local">
+            <label>Event Name</label><input id="m-name" placeholder="Pl: Team A vs Team B">
+            <label>Deadline (Helyi idő)</label><input id="m-date" type="datetime-local">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
                 <div><label>Type</label><select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select></div>
                 <div><label>Liquidity Budget</label><input id="m-budget" type="number" value="1000"></div>
@@ -156,11 +155,9 @@
             if(m.status === 'settled') return;
             let groups = JSON.parse(m.note || "[]");
             const isOwner = currentUser && m.creator_name === currentUser.username;
-
-            // DÁTUM JAVÍTÁS: Adatbázis idejének konvertálása a néző helyi idejére
+            
             const startTime = new Date(m.created_at).toLocaleString('hu-HU', {
-                year: 'numeric', month: '2-digit', day: '2-digit', 
-                hour: '2-digit', minute: '2-digit'
+                year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
             });
 
             const card = document.createElement('div');
@@ -170,7 +167,7 @@
                     <div style="display:flex; justify-content:space-between;">
                         <div>
                             <h3 style="margin:0;">${m.title} ${isOwner ? `<span class="edit-badge" onclick="openEditModal('${m.id}')">EDIT / SETTLE</span>` : ''}</h3>
-                            <div class="market-meta"><span>Host: <b>${m.creator_name}</b></span><span>Start (Helyi): <b>${startTime}</b></span></div>
+                            <div class="market-meta"><span>Host: <b>${m.creator_name}</b></span><span>Start: <b>${startTime}</b></span></div>
                         </div>
                         <div style="text-align:right;">
                             <b style="color:${m.type==='REAL'?'var(--primary)':'var(--demo)'}">${m.type}</b>
@@ -179,7 +176,7 @@
                     </div>
                     ${groups.map(g => `
                         <div style="margin-top:15px; border-top:1px solid #2c4f60; padding-top:10px;">
-                            <small style="color:#888; font-weight:bold; text-transform:uppercase;">${g.title}</small>
+                            <small style="color:#888; font-weight:bold;">${g.title}</small>
                             <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-top:5px;">
                                 ${g.outcomes.map(o => `
                                     <button class="btn-bet" onclick="handleBet('${m.id}', '${o.n}', ${o.o}, '${m.type}')">
@@ -195,15 +192,50 @@
         });
     }
 
+    async function openEditModal(id) {
+        editingMarketId = id;
+        const { data } = await _supabase.from('markets').select('*').eq('id', id).single();
+        if(!data) return;
+
+        document.getElementById("modal-title").innerText = "Host Control Panel";
+        document.getElementById("meta-inputs").classList.add("hidden");
+        document.getElementById("createModal").classList.remove("hidden");
+        document.getElementById('groups-container').innerHTML = "";
+
+        const groups = JSON.parse(data.note || "[]");
+        groups.forEach(g => {
+            addGroup(g.title, true);
+            g.outcomes.forEach(o => addOutcome(groupIdx, o.n, o.o, true, true));
+        });
+    }
+
+    async function settleMarket(winnerName) {
+        if(!confirm(`Biztosan a(z) "${winnerName}" a nyertes? Ez lezárja a piacot.`)) return;
+        const { error } = await _supabase.from('markets').update({ status: 'settled', winner: winnerName }).eq('id', editingMarketId);
+        if(!error) {
+            alert("Sikeres kiértékelés!");
+            closeModal();
+            fetchProfile();
+            loadMarkets();
+        } else {
+            alert("Hiba: " + error.message);
+        }
+    }
+
     async function saveMarket() {
         const btn = document.getElementById('final-save-btn');
         const groups = [];
+        
         document.querySelectorAll('.market-group').forEach(g => {
             const outcomes = [];
+            const categoryTitle = g.querySelector('.g-title').value || "Market";
             g.querySelectorAll('.outcome-item').forEach(i => {
-                outcomes.push({ n: i.querySelector('.o-n').value, o: parseFloat(i.querySelector('.o-o').value) || 1.0 });
+                outcomes.push({ 
+                    n: i.querySelector('.o-n').value, 
+                    o: parseFloat(i.querySelector('.o-o').value) || 1.0 
+                });
             });
-            groups.push({ title: g.querySelector('.g-title').value || "Market", outcomes });
+            groups.push({ title: categoryTitle, outcomes });
         });
 
         btn.disabled = true;
@@ -215,63 +247,47 @@
             const budgetVal = parseFloat(document.getElementById('m-budget').value);
             const type = document.getElementById('m-type').value;
             const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-            
-            // DÁTUM JAVÍTÁS MENTÉSKOR: Helyi idő konvertálása ISO string-gé (UTC)
             const localDate = document.getElementById('m-date').value;
-            const utcDate = new Date(localDate).toISOString();
 
-            if(budgetVal > userProfile[balField]) return alert("Nincs elég egyenleg!");
+            if(!localDate) { btn.disabled = false; return alert("Adj meg egy dátumot!"); }
+            if(budgetVal > userProfile[balField]) { btn.disabled = false; return alert("Nincs elég egyenleg!"); }
+
+            const utcDate = new Date(localDate).toISOString();
 
             await _supabase.from('profiles').update({ [balField]: userProfile[balField] - budgetVal }).eq('id', currentUser.id);
             await _supabase.from('markets').insert([{
-                title: document.getElementById('m-name').value,
+                title: document.getElementById('m-name').value || "Esemény",
                 type: type,
                 take: budgetVal,
                 note: JSON.stringify(groups),
                 creator_name: currentUser.username,
-                created_at: utcDate
+                created_at: utcDate,
+                status: 'active'
             }]);
             alert("Piac létrehozva!");
         }
         btn.disabled = false; closeModal(); fetchProfile(); loadMarkets();
     }
 
-    // A többi segédfüggvény (addGroup, addOutcome, handleBet, settleMarket, stb.) marad az előző változatból...
-
     function addGroup(t="", l=false) {
         groupIdx++;
         const div = document.createElement('div');
         div.className='market-group';
-        div.innerHTML = `<input class="g-title" placeholder="Category Name" value="${t}" ${l?'readonly':''}>
+        div.innerHTML = `<input class="g-title" placeholder="Kategória neve" value="${t}" ${l?'readonly':''}>
             <div id="grid-${groupIdx}" class="outcomes-grid"></div>
-            <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Add Outcome</button>`;
+            <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Outcome hozzáadása</button>`;
         document.getElementById('groups-container').appendChild(div);
     }
+
     function addOutcome(id, n="", o=1.5, l=false, s=false) {
         const div = document.createElement('div');
         div.className='outcome-item';
-        div.innerHTML = `<input class="o-n" placeholder="Outcome" value="${n}" ${l?'readonly':''}>
+        div.innerHTML = `<input class="o-n" placeholder="Kimenetel" value="${n}" ${l?'readonly':''}>
             <input class="o-o" type="number" step="0.01" value="${o}">
-            ${s ? `<button class="btn-success" onclick="settleMarket('${n}')">MARK AS WINNER</button>` : ''}`;
+            ${s ? `<button class="btn-success" onclick="settleMarket('${n}')">SET AS WINNER</button>` : ''}`;
         document.getElementById(`grid-${id}`).appendChild(div);
     }
-    async function openEditModal(id) {
-        editingMarketId = id;
-        const { data } = await _supabase.from('markets').select('*').eq('id', id).single();
-        document.getElementById("modal-title").innerText = "Host Control Panel";
-        document.getElementById("meta-inputs").classList.add("hidden");
-        document.getElementById("createModal").classList.remove("hidden");
-        document.getElementById('groups-container').innerHTML = "";
-        JSON.parse(data.note).forEach(g => {
-            addGroup(g.title, true);
-            g.outcomes.forEach(o => addOutcome(groupIdx, o.n, o.o, true, true));
-        });
-    }
-    async function settleMarket(winnerName) {
-        if(!confirm(`Biztosan a(z) "${winnerName}" a nyertes?`)) return;
-        await _supabase.from('markets').update({ status: 'settled', winner: winnerName }).eq('id', editingMarketId);
-        closeModal(); loadMarkets();
-    }
+
     function handleBet(id, name, odds, mType) {
         activeBetData = { id, name, odds, mType };
         document.getElementById('bet-outcome-name').innerText = name;
@@ -279,14 +295,17 @@
         document.getElementById('betModal').classList.remove('hidden');
         calculateWin();
     }
+
     async function placeFinalBet() {
         const amount = parseFloat(document.getElementById('bet-amount').value);
         if(!amount || amount <= 0) return alert("Helytelen összeg!");
         const field = activeBetData.mType === 'REAL' ? 'real_balance' : 'demo_balance';
         if(amount > userProfile[field]) return alert("Nincs elég fedezet!");
+
         const { error } = await _supabase.from('profiles').update({ [field]: userProfile[field] - amount }).eq('id', currentUser.id);
         if(!error) { alert("Fogadás elfogadva!"); closeBetModal(); fetchProfile(); }
     }
+
     function calculateWin() { 
         const amt = parseFloat(document.getElementById('bet-amount').value) || 0;
         document.getElementById('potential-win').innerText = (amt * (activeBetData?.odds || 0)).toFixed(2);
