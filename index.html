@@ -1,10 +1,4 @@
-Látom, mi történik: az adatbázisod (Supabase) sémája és a kód nincs összhangban. A legutóbbi hibaüzenet szerint a creator_id oszlopot sem találja.
 
-Ahhoz, hogy ezt végleg megoldjuk anélkül, hogy az adatbázisodban oszlopokat kellene fabrikálnod, minden adatot egyetlen közös mezőbe (market_data) küldünk. Ebben a Supabase táblában valószínűleg csak az event_name és a market_data oszlopok fixek.
-
-Íme a javított, "golyóálló" kód:
-
-HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
