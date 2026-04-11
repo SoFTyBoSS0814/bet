@@ -1,10 +1,4 @@
-Sajnálom, a 404-es hiba azt jelenti, hogy a böngésződ olyan oldalra próbált navigálni (valószínűleg a login.html-re), ami nem létezik az adott elérési úton a GitHub Pages tárhelyeden.
 
-Ezt a problémát és a mentési hibákat is orvosoljuk az alábbi kóddal. A legfontosabb változás, hogy a kijelentkezéskor és hiba esetén nem a hibás login.html-re, hanem az alapértelmezett kezdőoldalra irányítunk vissza, emellett a mentésnél kizárólag azokat az oszlopokat használjuk, amik az adatbázisodban szerepelnek (title, odd_1, take, stb.).
-
-Íme a teljes, minden funkciót tartalmazó javított kód:
-
-HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
