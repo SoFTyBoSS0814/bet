@@ -1,14 +1,4 @@
-Értem a problémát: a cél az, hogy a Host beírja a helyi idejét, a rendszer pedig minden felhasználónak a saját helyi idejében mutassa meg azt.
 
-Ehhez az a legjobb módszer, ha ISO formátumban mentjük el az időt (ami tartalmazza az időzónát), a megjelenítésnél pedig a böngésző .toLocaleString() funkcióját használjuk, ami automatikusan átszámolja az időpontot a néző tartózkodási helyére.
-
-Itt a javított index.html. Két helyen módosítottam:
-
-Mentésnél: A new Date(document.getElementById('m-date').value).toISOString()-t használjuk.
-
-Megjelenítésnél: A .toLocaleString('hu-HU', { ... }) formázást alkalmazzuk.
-
-HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
