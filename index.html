@@ -9,27 +9,29 @@
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 100; height: 70px; }
+        /* NAVBAR - VISSZAÁLLÍTVA AZ EREDETI FORMÁTUMRA */
+        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 1000; height: 70px; }
         .nav-left-group { display: flex; align-items: center; gap: 30px; }
         .nav-links { display: flex; gap: 20px; }
         .nav-links a { color: #aaa; text-decoration: none; font-size: 15px; cursor: pointer; transition: 0.2s; font-weight: 500; }
         .nav-links a:hover, .nav-links a.active { color: var(--primary); }
         .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; text-decoration: none; }
         
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+        .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
+
         .container { max-width: 900px; margin: auto; padding: 40px 20px; }
         .section { display: none; }
         .section.active { display: block; }
 
-        /* UI ELEMENTS */
         .card-panel { background: var(--card); padding: 25px; border-radius: 12px; border: 1px solid #334756; margin-bottom: 20px; }
-        .btn-action { background: var(--primary); color: #000; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 10px; }
-        .btn-danger { background: var(--danger); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-action { background: var(--primary); color: #000; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-danger { background: var(--danger); color: #fff; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         
         .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .info-label { color: #888; font-weight: bold; font-size: 13px; text-transform: uppercase; }
         
         input { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 12px; border-radius: 6px; width: 100%; margin-top: 5px; box-sizing: border-box; }
-        
         .hidden { display: none !important; }
     </style>
 </head>
@@ -46,7 +48,11 @@
         </div>
     </div>
     <div class="nav-right">
-        <button class="btn-danger" style="height:40px; padding:0 15px;" onclick="logout()">Logout</button>
+        <div class="wallet-display">
+            <span id="nav-real" style="color:var(--primary)">0.00 €</span>
+            <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
+        </div>
+        <button class="btn-danger" onclick="logout()">Logout</button>
     </div>
 </div>
 
@@ -61,15 +67,15 @@
         <div class="card-panel">
             <div class="info-row">
                 <span class="info-label">Valódi Egyenleg (REAL)</span>
-                <b id="wallet-real" style="color:var(--primary); font-size:1.2em;">0.00 €</b>
+                <b id="wallet-real-main" style="color:var(--primary); font-size:1.2em;">0.00 €</b>
             </div>
             <div class="info-row">
                 <span class="info-label">Demo Egyenleg (DEMO)</span>
-                <b id="wallet-demo" style="color:var(--demo); font-size:1.2em;">0.00 D</b>
+                <b id="wallet-demo-main" style="color:var(--demo); font-size:1.2em;">0.00 D</b>
             </div>
             <div id="payment-actions" style="margin-top: 20px;">
                 <button class="btn-action">Deposit</button>
-                <button class="btn-action" style="background:#334756; color:#fff;">Withdraw</button>
+                <button class="btn-action" style="background:#334756; color:#fff; margin-left:10px;">Withdraw</button>
             </div>
             <div id="geo-notice" class="hidden" style="margin-top:20px; color:#888; font-style:italic;">
                 A befizetés és kifizetés jelenleg nem érhető el az Ön régiójában.
@@ -83,11 +89,9 @@
             <div class="info-row"><span class="info-label">Felhasználónév</span> <span id="acc-username">---</span></div>
             <div class="info-row"><span class="info-label">Email cím</span> <span id="acc-email">---</span></div>
             <div class="info-row"><span class="info-label">Regisztráció</span> <span id="acc-created">---</span></div>
-            <div class="info-row"><span class="info-label">Utolsó belépés</span> <span id="acc-lastlogin">---</span></div>
-            
             <div style="margin-top:30px; border-top:1px solid #444; padding-top:20px;">
                 <h4 style="color:var(--danger)">Veszélyes zóna</h4>
-                <button class="btn-danger" onclick="selfExclusion()">Fiók önkizárása (Végleges)</button>
+                <button class="btn-danger" onclick="selfExclusion()">Fiók önkizárása</button>
             </div>
         </div>
     </div>
@@ -96,36 +100,55 @@
         <h2>Beállítások</h2>
         <div class="card-panel">
             <label>Email cím módosítása</label>
-            <input type="email" id="set-email" placeholder="Új email cím">
+            <input type="email" id="set-email">
             <button class="btn-action" style="margin-top:10px;">Mentés</button>
-
             <div style="margin-top:25px;">
                 <label>Jelszó változtatása</label>
                 <input type="password" id="set-pass" placeholder="Új jelszó">
-                <input type="password" id="set-pass-confirm" style="margin-top:10px;" placeholder="Új jelszó megerősítése">
                 <button class="btn-action" style="margin-top:10px;">Jelszó frissítése</button>
             </div>
-            
-            <p style="color:#666; font-size:12px; margin-top:20px;">* A felhasználónév (username) biztonsági okokból nem módosítható.</p>
         </div>
     </div>
 </div>
 
 <script>
+    const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
+    const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
+    const _supabase = supabase.createClient(SB_URL, SB_KEY);
+    
     let currentUser = JSON.parse(localStorage.getItem("user"));
 
     window.onload = async () => {
         if(!currentUser) return window.location.href="login.html";
+        await refreshBalances();
         checkIP();
         loadAccountData();
     };
 
-    function showSection(id) {
+    async function refreshBalances() {
+        const { data, error } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        if(data) {
+            // Fenti navbar frissítése
+            document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
+            document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
+            
+            // Wallet szekció frissítése (ha ott vagyunk)
+            if(document.getElementById("wallet-real-main")) {
+                document.getElementById("wallet-real-main").innerText = data.real_balance.toFixed(2) + " €";
+                document.getElementById("wallet-demo-main").innerText = data.demo_balance.toFixed(2) + " D";
+            }
+        }
+    }
+
+    async function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
         
         document.getElementById('section-' + id).classList.add('active');
         document.getElementById('nav-' + id).classList.add('active');
+        
+        // Minden váltáskor frissítjük az egyenleget
+        await refreshBalances();
     }
 
     async function checkIP() {
@@ -143,22 +166,13 @@
         if(currentUser) {
             document.getElementById('acc-username').innerText = currentUser.username;
             document.getElementById('acc-email').innerText = currentUser.email;
-            document.getElementById('acc-created').innerText = currentUser.created_at || "2024.01.10";
-            document.getElementById('acc-lastlogin').innerText = new Date().toLocaleString('hu-HU');
-            
-            // Beállítások alapértelmezett értékei
+            document.getElementById('acc-created').innerText = currentUser.created_at?.split('T')[0] || "2024-01-10";
             document.getElementById('set-email').value = currentUser.email;
         }
     }
 
-    function selfExclusion() {
-        if(confirm("BIZTOS? Ez a művelet véglegesen kitiltja a fiókját a rendszerből!")) {
-            alert("Fiók felfüggesztve.");
-            logout();
-        }
-    }
-
     function logout() { localStorage.removeItem("user"); window.location.href="login.html"; }
+    function selfExclusion() { if(confirm("Véglegesen kizárja magát?")) logout(); }
 </script>
 </body>
 </html>
