@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -203,6 +202,36 @@
         });
     }
 
+    async function saveMarket() {
+        if(!currentUser) return alert("Login required!");
+        
+        const budgetVal = parseFloat(document.getElementById('m-budget').value) || 0;
+        const groups = [];
+        document.querySelectorAll('.market-group').forEach(g => {
+            const outcomes = [];
+            g.querySelectorAll('.outcome-item').forEach(i => {
+                outcomes.push({ n: i.querySelector('.o-n').value, o: parseFloat(i.querySelector('.o-o').value) });
+            });
+            groups.push({ title: g.querySelector('.g-title').value, outcomes });
+        });
+
+        const { error } = await _supabase.from('markets').insert([{
+            title: document.getElementById('m-name').value,
+            type: document.getElementById('m-type').value,
+            take: budgetVal,
+            note: JSON.stringify(groups),
+            creator_name: currentUser.username,
+            created_at: document.getElementById('m-date').value || new Date().toISOString()
+        }]);
+
+        if(!error) {
+            closeModal();
+            loadMarkets();
+        } else {
+            alert("Error: " + error.message);
+        }
+    }
+
     function handleBet(id, name, odds, mType) {
         if(!currentUser) return window.location.href="login.html";
         activeBetData = { id, name, odds, mType };
@@ -233,6 +262,7 @@
         document.getElementById('section-'+id).classList.add('active');
         document.getElementById('link-'+id).classList.add('active');
         if(id === 'markets') loadMarkets();
+        if(id === 'wallet') fetchProfile();
     }
 
     function addGroup() {
@@ -251,27 +281,12 @@
         document.getElementById(`grid-${id}`).appendChild(div);
     }
 
-    async function saveMarket() {
-        if(!currentUser) return;
-        const groups = [];
-        document.querySelectorAll('.market-group').forEach(g => {
-            const outcomes = [];
-            g.querySelectorAll('.outcome-item').forEach(i => {
-                outcomes.push({ n: i.querySelector('.o-n').value, o: i.querySelector('.o-o').value });
-            });
-            groups.push({ title: g.querySelector('.g-title').value, outcomes });
-        });
-        await _supabase.from('markets').insert([{
-            title: document.getElementById('m-name').value,
-            type: document.getElementById('m-type').value,
-            take: document.getElementById('m-budget').value,
-            note: JSON.stringify(groups),
-            creator_name: currentUser.username
-        }]);
-        closeModal(); loadMarkets();
+    function calculateWin() { 
+        const amt = parseFloat(document.getElementById('bet-amount').value) || 0;
+        const odds = activeBetData ? activeBetData.odds : 0;
+        document.getElementById('potential-win').innerText = (amt * odds).toFixed(2); 
     }
 
-    function calculateWin() { document.getElementById('potential-win').innerText = (parseFloat(document.getElementById('bet-amount').value) * (activeBetData?.odds || 0)).toFixed(2); }
     function openCreateModal() { if(!currentUser) return window.location.href="login.html"; document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML = ""; addGroup(); }
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
     function closeBetModal() { document.getElementById('betModal').classList.add('hidden'); }
