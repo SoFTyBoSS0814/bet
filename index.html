@@ -46,6 +46,7 @@
         .btn-success { background: var(--success); color: #fff; border: none; padding: 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 8px; }
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-bet:disabled { cursor: default; border-color: #222; color: #444; }
+        .btn-outline { background: none; border: 1px dashed #444; color: #888; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 10px; }
         
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 850px; max-width: 95vw; max-height: 90vh; overflow-y: auto; border: 1px solid #2c4f60; }
@@ -129,11 +130,24 @@
             </div>
         </div>
         <div id="meta-inputs">
-            <label>Event Name</label><input id="m-name" placeholder="Team A vs Team B">
-            <label>Deadline</label><input id="m-date" type="datetime-local">
+            <label>Event Name</label>
+            <input id="m-name" placeholder="Team A vs Team B">
+            
+            <label>Deadline</label>
+            <input id="m-date" type="datetime-local">
+            
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-                <div><label>Type</label><select id="m-type" onchange="updateAvailableBalance()"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select></div>
-                <div><label>Liquidity Budget <span id="available-info" style="color:var(--primary); font-size:10px; margin-left:5px; text-transform:none;"></span></label><input id="m-budget" type="number" value="1000"></div>
+                <div>
+                    <label>Type</label>
+                    <select id="m-type" onchange="updateAvailableBalance()">
+                        <option value="DEMO">DEMO</option>
+                        <option value="REAL">REAL</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Liquidity Budget <span id="available-info" style="color:var(--primary); font-size:10px; margin-left:5px; text-transform:none;"></span></label>
+                    <input id="m-budget" type="number" value="1000">
+                </div>
             </div>
         </div>
         <div id="groups-container"></div>
@@ -287,7 +301,7 @@
             const bal = type === 'REAL' ? userProfile.real_balance : userProfile.demo_balance;
             if(budget > bal) { alert("No funds!"); btn.disabled = false; return; }
             await _supabase.from('profiles').update({ [type === 'REAL' ? 'real_balance' : 'demo_balance']: bal - budget }).eq('id', currentUser.id);
-            await _supabase.from('markets').insert([{ title: document.getElementById('m-name').value, type: type, take: budget, note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active', created_at: new Date().toISOString() }]);
+            await _supabase.from('markets').insert([{ title: document.getElementById('m-name').value, type: type, take: budget, note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active', created_at: document.getElementById('m-date').value ? new Date(document.getElementById('m-date').value).toISOString() : new Date().toISOString() }]);
         }
         closeModal(); fetchProfile(); loadMarkets(); btn.disabled = false;
     }
@@ -306,8 +320,8 @@
 
     function addGroup(t="", l=false) { groupIdx++; const div = document.createElement('div'); div.className='market-group'; div.innerHTML = `<input class="g-title" placeholder="Category" value="${t}" ${l?'readonly':''}> <div id="grid-${groupIdx}" class="outcomes-grid"></div> <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Outcome</button>`; document.getElementById('groups-container').appendChild(div); }
     function addOutcome(id, n="", o=1.5, l=false, s=false) { const div = document.createElement('div'); div.className='outcome-item'; div.innerHTML = `<input class="o-n" placeholder="Name" value="${n}" ${l?'readonly':''}> <input class="o-o" type="number" step="0.01" value="${o}"> ${s ? `<button class="btn-success" onclick="settleMarket('${n}')">SET WINNER</button>` : ''}`; document.getElementById(`grid-${id}`).appendChild(div); }
-    async function openEditModal(id) { editingMarketId = id; const { data } = await _supabase.from('markets').select('*').eq('id', id).single(); document.getElementById("meta-inputs").classList.add("hidden"); document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML = ""; JSON.parse(data.note).forEach(g => { addGroup(g.title, true); g.outcomes.forEach(o => addOutcome(groupIdx, o.n, o.o, true, true)); }); }
-    function openCreateModal() { editingMarketId=null; document.getElementById("meta-inputs").classList.remove("hidden"); document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML=""; addGroup(); updateAvailableBalance(); }
+    async function openEditModal(id) { editingMarketId = id; const { data } = await _supabase.from('markets').select('*').eq('id', id).single(); document.getElementById("modal-title").innerText = "Host Panel"; document.getElementById("meta-inputs").classList.add("hidden"); document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML = ""; JSON.parse(data.note).forEach(g => { addGroup(g.title, true); g.outcomes.forEach(o => addOutcome(groupIdx, o.n, o.o, true, true)); }); }
+    function openCreateModal() { editingMarketId=null; document.getElementById("modal-title").innerText = "Create New Market"; document.getElementById("meta-inputs").classList.remove("hidden"); document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML=""; addGroup(); updateAvailableBalance(); }
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
     function closeBetModal() { document.getElementById('betModal').classList.add('hidden'); }
     function handleBet(id, name, odds, mType) { activeBetData={id,name,odds,mType}; document.getElementById('bet-outcome-name').innerText=name; document.getElementById('bet-odds-display').innerText=odds.toFixed(2); document.getElementById('betModal').classList.remove('hidden'); calculateWin(); }
