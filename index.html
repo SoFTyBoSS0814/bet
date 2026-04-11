@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Final Dashboard</title>
+    <title>StakeForge | Final Fixed Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
@@ -25,17 +25,21 @@
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
+        /* Általános gomb stílus */
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-bet:hover:not(:disabled) { border-color: var(--primary); background: rgba(0, 212, 255, 0.05); }
         
-        /* SZIGORÚ DISABLED STÍLUS */
-        .btn-bet:disabled { 
+        /* Szigorú fogadási tiltás stílus */
+        .market-bet-btn:disabled { 
             opacity: 0.2 !important; 
             cursor: not-allowed !important; 
             filter: grayscale(1) !important; 
-            border-color: #222 !important;
             pointer-events: none !important;
         }
+
+        /* Settle Winner/Loss színek */
+        .selected-win { background: var(--success) !important; color: #000 !important; font-weight: bold; border: none; }
+        .selected-loss { background: var(--danger) !important; color: #fff !important; font-weight: bold; border: none; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
@@ -74,13 +78,13 @@
     </div>
 
     <div id="section-history" class="section">
-        <h2>History</h2>
-        <div id="history-list">Loading...</div>
+        <h2>Market History</h2>
+        <div id="history-list"></div>
     </div>
 
     <div id="section-wallet" class="section">
         <div class="market-card" style="text-align:center; max-width:600px; margin:auto;">
-            <h2>Your Funds</h2>
+            <h2>Wallet</h2>
             <div style="display:flex; gap:15px; margin:20px 0;">
                 <div style="padding:20px; border:1px solid var(--border); border-radius:12px; flex:1;">
                     <small>REAL</small><h2 id="w-real-val">0.00 €</h2>
@@ -95,7 +99,7 @@
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:450px; margin:auto;">
             <h3>Profile</h3>
-            <p>Username: <b id="acc-username">...</b></p>
+            <p>User: <b id="acc-username">...</b></p>
             <p>Email: <b id="acc-email">...</b></p>
             <button class="btn-danger" onclick="logout()">LOGOUT</button>
         </div>
@@ -106,7 +110,6 @@
     <div class="modal-box" style="width:320px; text-align:center">
         <h3 id="bet-on"></h3>
         <h1 id="bet-odds" style="color:var(--primary)"></h1>
-        <p style="font-size: 11px; color:#aaa">Market Liq: <span id="bet-max-liq">0</span></p>
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
         <p id="bet-win-text" style="font-weight:bold; color:var(--success)">Win: 0.00</p>
         <button id="btn-confirm-bet" class="btn-primary" style="width:100%" onclick="placeBet()">CONFIRM</button>
@@ -120,7 +123,7 @@
         <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
         <input id="m-name" placeholder="Event Name">
         <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" placeholder="Liquidity (Amount you put in)">
+        <input id="m-budget" type="number" placeholder="Liquidity">
         <div id="groups-container"></div>
         <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style: dashed;">+ Add Category</button>
         <button class="btn-primary" style="width:100%; margin-top:20px" onclick="saveMarket()">PUBLISH</button>
@@ -151,7 +154,7 @@
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
-        setInterval(checkAllDeadlines, 1000); // 1mp-es kényszerített zárás
+        setInterval(checkAllDeadlines, 1000);
     };
 
     async function fetchProfile() {
@@ -159,12 +162,6 @@
         userProfile = data;
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
-        if(document.getElementById("w-real-val")) {
-            document.getElementById("w-real-val").innerText = data.real_balance.toFixed(2) + " €";
-            document.getElementById("w-demo-val").innerText = data.demo_balance.toFixed(2) + " D";
-            document.getElementById("acc-username").innerText = currentUser.username;
-            document.getElementById("acc-email").innerText = currentUser.email;
-        }
     }
 
     async function loadMarkets() {
@@ -213,23 +210,19 @@
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // KOMPAKT HISTORY
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.style.borderLeft = "4px solid var(--border)";
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between">
-                        <h4 style="margin:0">${m.title}</h4>
-                        <span style="font-size:10px; color:var(--primary)">SETTLED</span>
-                    </div>
-                    <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:5px; font-size:11px">
-                        ${groups.flatMap(g => g.outcomes.filter(o => o.status === 'win').map(o => `<div>✅ ${o.n}</div>`)).join('')}
-                    </div>`;
+                card.innerHTML = `<div style="display:flex; justify-content:space-between"><h4 style="margin:0">${m.title}</h4><span style="font-size:10px; color:var(--primary)">SETTLED</span></div>
+                <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:5px; font-size:11px">
+                    ${groups.flatMap(g => g.outcomes.filter(o => o.status === 'win').map(o => `<div>✅ ${o.n}</div>`)).join('')}
+                </div>`;
                 hList.appendChild(card);
             }
         });
     }
 
+    // CSAK A FOGADÁSI GOMBOKAT TILTJA LE
     function checkAllDeadlines() {
         const now = new Date().getTime();
         document.querySelectorAll('.market-bet-btn').forEach(btn => {
@@ -244,17 +237,14 @@
         activeBet = { mId, n, o, t, liq, dl };
         document.getElementById('bet-on').innerText = n;
         document.getElementById('bet-odds').innerText = "x" + o;
-        document.getElementById('bet-max-liq').innerText = liq.toFixed(2);
         document.getElementById('betModal').classList.remove('hidden');
         calcWin();
     }
 
     function calcWin() {
         const amt = parseFloat(document.getElementById('bet-amount').value) || 0;
-        const win = amt * activeBet.o;
-        const btn = document.getElementById('btn-confirm-bet');
+        const win = amt * (activeBet?.o || 0);
         document.getElementById('bet-win-text').innerText = "Win: " + win.toFixed(2);
-        btn.disabled = (win > activeBet.liq || amt <= 0);
     }
 
     async function placeBet() {
@@ -289,9 +279,10 @@
             gDiv.innerHTML = `<div style="color:var(--primary); margin:10px 0; font-size:12px"><b>${g.title}</b></div>`;
             g.outcomes.forEach((o, oi) => {
                 const row = document.createElement('div'); row.className = 'settle-row';
+                // FONTOS: Ezek NEM market-bet-btn osztályúak, így nem tiltódnak le!
                 row.innerHTML = `<span style="font-size:12px">${o.n}</span><div>
-                    <button class="btn-bet ${o.status==='win'?'selected-win':''}" style="width:50px; padding:4px" onclick="updateLocalStatus(${gi},${oi},'win')">WIN</button>
-                    <button class="btn-bet ${o.status==='loss'?'selected-loss':''}" style="width:50px; padding:4px" onclick="updateLocalStatus(${gi},${oi},'loss')">LOSS</button>
+                    <button class="btn-bet ${o.status==='win'?'selected-win':''}" style="width:55px; padding:6px" onclick="updateLocalStatus(${gi},${oi},'win')">WIN</button>
+                    <button class="btn-bet ${o.status==='loss'?'selected-loss':''}" style="width:55px; padding:6px" onclick="updateLocalStatus(${gi},${oi},'loss')">LOSS</button>
                 </div>`;
                 gDiv.appendChild(row);
             });
@@ -322,7 +313,6 @@
                 await _supabase.from('bets').update({ status: 'lost' }).eq('id', bet.id);
             }
         }
-        // Host visszakapja a maradék liq-et + bukott téteket
         const { data: h } = await _supabase.from('profiles').select(f).eq('username', mData.creator_name).single();
         await _supabase.from('profiles').update({ [f]: h[f] + mData.take + totalLost }).eq('username', mData.creator_name);
         await _supabase.from('markets').update({ status: 'closed', note: JSON.stringify(groups) }).eq('id', mId);
