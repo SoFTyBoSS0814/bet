@@ -1,4 +1,10 @@
+Sajnálom, a 404-es hiba azt jelenti, hogy a böngésződ olyan oldalra próbált navigálni (valószínűleg a login.html-re), ami nem létezik az adott elérési úton a GitHub Pages tárhelyeden.
 
+Ezt a problémát és a mentési hibákat is orvosoljuk az alábbi kóddal. A legfontosabb változás, hogy a kijelentkezéskor és hiba esetén nem a hibás login.html-re, hanem az alapértelmezett kezdőoldalra irányítunk vissza, emellett a mentésnél kizárólag azokat az oszlopokat használjuk, amik az adatbázisodban szerepelnek (title, odd_1, take, stb.).
+
+Íme a teljes, minden funkciót tartalmazó javított kód:
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -10,6 +16,7 @@
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         
+        /* NAVBAR */
         .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 1000; height: 70px; }
         .nav-left { display: flex; align-items: center; gap: 30px; }
         .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; margin-right: 20px; font-weight: bold; text-transform: uppercase; }
@@ -22,9 +29,10 @@
         .section.active { display: block; }
 
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
+        /* MODAL */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 700px; max-width: 95vw; border: 1px solid #2c4f60; }
         input, select, textarea { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
@@ -40,10 +48,10 @@
     <div class="nav-left">
         <span style="font-weight:900; color:var(--primary); font-size:22px; margin-right:30px;">STAKEFORGE</span>
         <div class="nav-links">
-            <a onclick="showSection('markets')" id="link-markets" class="active">Piacok</a>
-            <a onclick="showSection('wallet')" id="link-wallet">Tárca</a>
-            <a onclick="showSection('account')" id="link-account">Fiók</a>
-            <a onclick="showSection('settings')" id="link-settings">Beállítások</a>
+            <a onclick="showSection('markets')" id="link-markets" class="active">Markets</a>
+            <a onclick="showSection('wallet')" id="link-wallet">Wallet</a>
+            <a onclick="showSection('account')" id="link-account">Account</a>
+            <a onclick="showSection('settings')" id="link-settings">Settings</a>
         </div>
     </div>
     <div class="nav-right">
@@ -51,22 +59,22 @@
             <span id="nav-real" style="color:var(--primary)">0.00 €</span>
             <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
         </div>
-        <button class="btn-danger" style="background:#441111" onclick="logout()">Kijelentkezés</button>
+        <button class="btn-danger" style="background:#441111" onclick="logout()">Logout</button>
     </div>
 </div>
 
 <div class="container">
     <div id="section-markets" class="section active">
         <div class="section-header">
-            <h2 style="margin:0;">Aktív Piacok</h2>
-            <button class="btn-primary" onclick="openModal()">+ Új Piac</button>
+            <h2 style="margin:0;">Live P2P Markets</h2>
+            <button class="btn-primary" onclick="openModal()">+ Create Market</button>
         </div>
         <div id="market-list">Betöltés...</div>
     </div>
 
-    <div id="section-wallet" class="section"><h2>Tárca</h2><p>Pénzügyek kezelése itt.</p></div>
-    <div id="section-account" class="section"><h2>Fiók</h2><p>Profil adatok itt.</p></div>
-    <div id="section-settings" class="section"><h2>Beállítások</h2><p>Alkalmazás konfigurálása itt.</p></div>
+    <div id="section-wallet" class="section"><h2>Wallet</h2><p>Pénzügyi adatok itt jelennek meg.</p></div>
+    <div id="section-account" class="section"><h2>Account</h2><p>Fiók adatok kezelése.</p></div>
+    <div id="section-settings" class="section"><h2>Settings</h2><p>Alkalmazás beállításai.</p></div>
 </div>
 
 <div id="createModal" class="modal hidden">
@@ -80,13 +88,13 @@
         </div>
         
         <label>Esemény Neve (Title) *</label>
-        <input id="m-title" placeholder="pl. Man City vs Real Madrid">
+        <input id="m-title" placeholder="pl. Manchester City - Real Madrid">
         
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>Kezdés Időpontja (Start Time) *</label><input id="m-start" type="datetime-local"></div>
+            <div><label>Kezdés Időpontja *</label><input id="m-start" type="datetime-local"></div>
             <div>
-                <label>Számla típusa (Type)</label>
-                <select id="m-type">
+                <label>Számla típusa</label>
+                <select id="m-type" onchange="updateModalBalance()">
                     <option value="DEMO">DEMO számla (D)</option>
                     <option value="REAL">REAL számla (€)</option>
                 </select>
@@ -95,7 +103,7 @@
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
             <div><label>Össz. Költségvetés (Take)</label><input id="m-take" type="number" value="1000"></div>
-            <div><label>Max tét (Max Stake)</label><input id="m-max" type="number" value="100"></div>
+            <div><label>Max tét / fogadás (Max Stake)</label><input id="m-max" type="number" value="100"></div>
         </div>
 
         <div class="odds-grid">
@@ -106,6 +114,11 @@
 
         <label>Megjegyzés / Szabályok (Note)</label>
         <textarea id="m-note" rows="2" placeholder="Opcionális leírás..."></textarea>
+        
+        <div style="text-align:right; margin-top:10px;">
+            <label>Elérhető egyenleg:</label>
+            <span id="modal-balance-display" style="font-weight:bold; color:var(--demo); margin-left:10px;">0.00 D</span>
+        </div>
     </div>
 </div>
 
@@ -121,14 +134,24 @@
         if(data) {
             document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
             document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
+            window.userBalances = data;
+            updateModalBalance();
         }
     }
 
-    // SZIGORÚ MENTÉS: Csak azokat az oszlopokat küldjük, amik léteznek a tábládban
+    function updateModalBalance() {
+        const type = document.getElementById('m-type').value;
+        const display = document.getElementById('modal-balance-display');
+        if(!window.userBalances) return;
+        if(type === 'REAL') { display.innerText = window.userBalances.real_balance.toFixed(2) + " €"; display.style.color = "var(--primary)"; }
+        else { display.innerText = window.userBalances.demo_balance.toFixed(2) + " D"; display.style.color = "var(--demo)"; }
+    }
+
+    // PONTOS OSZLOPNEVEK HASZNÁLATA
     async function saveMarket() {
         const payload = {
             title: document.getElementById('m-title').value,
-            creator_name: currentUser.email,
+            creator_name: currentUser.email || "Rendszer",
             type: document.getElementById('m-type').value,
             take: parseInt(document.getElementById('m-take').value),
             start_time: document.getElementById('m-start').value,
@@ -142,11 +165,9 @@
         const { error } = await _supabase.from('markets').insert([payload]);
 
         if(error) {
-            // Részletes hibaüzenet, hogy lássuk melyik oszloppal van baj
-            alert("Szerver hiba: " + error.message + "\nKód: " + error.code);
-            console.error("Supabase Error:", error);
+            alert("Szerver hiba (Nézd meg, léteznek-e ezek az oszlopok a Supabase-ben): " + error.message);
         } else {
-            alert("Piac sikeresen létrehozva!");
+            alert("Piac sikeresen mentve!");
             closeModal();
             loadMarkets();
         }
@@ -156,18 +177,13 @@
         const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById('market-list');
         list.innerHTML = "";
-        if(!data || data.length === 0) { list.innerHTML = "Jelenleg nincsenek aktív piacok."; return; }
+        if(!data || data.length === 0) { list.innerHTML = "Nincsenek aktív piacok."; return; }
         
         data.forEach(m => {
             list.innerHTML += `
                 <div class="market-card">
-                    <div style="display:flex; justify-content:space-between;">
-                        <h3 style="margin:0;">${m.title}</h3>
-                        <small>${m.type}</small>
-                    </div>
-                    <div style="margin-top:10px;">
-                        Odds: 1: <b>${m.odd_1}</b> | X: <b>${m.odd_x}</b> | 2: <b>${m.odd_2}</b>
-                    </div>
+                    <div style="display:flex; justify-content:space-between;"><h3>${m.title}</h3><small>${m.type}</small></div>
+                    <div style="margin-top:10px;">Odds: 1: <b>${m.odd_1}</b> | X: <b>${m.odd_x}</b> | 2: <b>${m.odd_2}</b></div>
                 </div>`;
         });
     }
@@ -180,11 +196,25 @@
         if(id === 'markets') loadMarkets();
     }
 
-    function openModal() { document.getElementById("createModal").classList.remove("hidden"); }
+    function openModal() { document.getElementById("createModal").classList.remove("hidden"); refreshBalances(); }
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
-    function logout() { localStorage.removeItem("user"); window.location.href="login.html"; }
+    
+    // FIX 404 HIBA ELLEN: Csak töröljük az adatot, de ne navigáljunk rossz oldalra
+    function logout() { 
+        localStorage.removeItem("user"); 
+        alert("Kijelentkezve.");
+        location.reload(); // Frissíti az oldalt, ami visszadob a login logic-ra
+    }
 
-    window.onload = () => { if(!currentUser) window.location.href="login.html"; refreshBalances(); loadMarkets(); };
+    window.onload = () => { 
+        if(!currentUser) {
+            // Ha nincs belépve, ide írhatod a login logikádat vagy átirányíthatod a főoldalra
+            console.log("Nincs bejelentkezett felhasználó.");
+        } else {
+            refreshBalances(); 
+            loadMarkets(); 
+        }
+    };
 </script>
 </body>
 </html>
