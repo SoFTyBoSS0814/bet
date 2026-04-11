@@ -354,7 +354,7 @@
         const res = await fetch('https://ipapi.co/json/');
         const d = await res.json();
         document.getElementById('wallet-dynamic-area').innerHTML = d.country_code === 'HU' ? 
-            `<p style="color:var(--danger)">⚠️ Financial actions restricted in your region.</p>` : 
+            `<p style="color:var(--danger)">⚠️ Magyarország területén belül nem lehetséges a valódi pénz befizetés.</p>` : 
             `<button class="btn-primary" style="width:100%">Deposit Funds</button>`;
     }
     function closeModal() { document.getElementById('createModal').classList.add('hidden'); }
