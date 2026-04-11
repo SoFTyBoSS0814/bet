@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -21,7 +22,7 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        /* CARDS */
+        /* CARDS & GROUPS */
         .market-card { background: var(--card); border-radius: 12px; padding: 25px; margin-bottom: 20px; border: 1px solid #2c4f60; position: relative; }
         .market-meta { font-size: 12px; color: #8899a6; margin-bottom: 15px; }
         .market-group { background: rgba(0,0,0,0.2); border: 1px solid #2c4f60; border-radius: 10px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); }
@@ -29,12 +30,10 @@
         
         /* BUTTONS */
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; width: 100%; box-sizing: border-box; }
-        .btn-bet:hover:not(:disabled) { border-color: var(--primary); background: rgba(0,212,255,0.1); }
         .btn-bet:disabled { opacity: 0.3; cursor: not-allowed; }
-        .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
-        .btn-danger { background: var(--danger); color: #fff; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-topup { background: var(--success); color: #fff; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: 10px; vertical-align: middle; }
+        .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-edit { background: var(--primary); color: #000; border: none; padding: 5px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; margin-left: 10px; font-weight: bold; }
+        .btn-danger { background: var(--danger); color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
         /* MODALS */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
@@ -96,58 +95,48 @@
             <div style="margin: 20px 0;">
                 <p>Username: <b id="acc-username" style="color:var(--primary)">Betöltés...</b></p>
                 <p>Email: <b id="acc-email">Betöltés...</b></p>
-                <p>Status: <span style="color:var(--success)">Verified P2P Provider</span></p>
+                <p>Status: <span style="color:var(--success)">Verified Provider</span></p>
             </div>
-            <button class="btn-danger" style="width:100%; padding:15px;" onclick="logout()">LOGOUT</button>
+            <button class="btn-danger" style="width:100%" onclick="logout()">LOGOUT</button>
         </div>
     </div>
 </div>
 
-<div id="topupModal" class="modal hidden">
-    <div class="modal-box" style="width:350px;">
-        <h3 style="color:var(--success); margin:0;">Liquid Top Up</h3>
-        <p id="topup-info" style="font-size:12px; color:#aaa; margin:10px 0;"></p>
-        <label>Összeg:</label>
-        <input type="number" id="topup-amount" value="100">
-        <button class="btn-primary" style="width:100%; background:var(--success); color:#fff;" onclick="submitTopUp()">FELTÖLTÉS</button>
-        <button class="btn-bet" style="width:100%; margin-top:10px; border:none;" onclick="closeTopupModal()">Mégse</button>
+<div id="editModal" class="modal hidden">
+    <div class="modal-box">
+        <h3 id="edit-market-title" style="color:var(--primary); margin:0;"></h3>
+        <hr style="border: 0.5px solid #334756; margin: 15px 0;">
+        <h4>Liquidity Top Up</h4>
+        <input type="number" id="edit-topup-amount" value="100">
+        <button class="btn-primary" style="width:100%; background:var(--success); color:#fff;" onclick="submitTopUp()">ADD LIQUIDITY</button>
+        <hr style="border: 0.5px solid #334756; margin: 25px 0;">
+        <h4 style="color:var(--danger)">Settle Market</h4>
+        <div id="settle-options" style="display:grid; gap:10px;"></div>
+        <button class="btn-bet" style="width:100%; margin-top:20px; border:none;" onclick="closeModal('editModal')">Cancel</button>
+    </div>
+</div>
+
+<div id="createModal" class="modal hidden">
+    <div class="modal-box">
+        <h2>Create Market</h2>
+        <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
+        <input id="m-name" placeholder="Event Name">
+        <input id="m-budget" type="number" placeholder="Budget">
+        <div id="groups-container"></div>
+        <button class="btn-bet" style="border:1px dashed #334756; margin-bottom:15px;" onclick="addGroup()">+ ADD CATEGORY</button>
+        <button class="btn-primary" style="width:100%" onclick="saveMarket()">PUBLISH</button>
+        <button class="btn-bet" style="border:none; margin-top:5px;" onclick="closeModal('createModal')">Cancel</button>
     </div>
 </div>
 
 <div id="betModal" class="modal hidden">
     <div class="modal-box" style="width: 350px;">
         <h3 id="bet-outcome-name" style="color:var(--primary); margin:0;"></h3>
-        <div id="bet-odds-val" style="font-size: 32px; font-weight: bold; margin: 15px 0;"></div>
-        <p style="font-size: 12px; color: #aaa;">Liquid: <b id="liquid-val"></b></p>
-        <label>Tét:</label>
+        <div id="bet-odds-val" style="font-size: 32px; font-weight: bold; margin: 10px 0;"></div>
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
-        <div style="background:rgba(0,0,0,0.2); padding:15px; border-radius:8px;">
-            <small>Várható nyeremény:</small>
-            <div id="bet-pot-win" style="color:var(--success); font-size:20px; font-weight:bold;">0.00</div>
-        </div>
-        <button id="place-bet-btn" class="btn-primary" style="width:100%; margin-top:20px;" onclick="placeBet()">FOGADÁS</button>
-        <button class="btn-bet" style="width:100%; margin-top:10px; border:none;" onclick="closeBetModal()">Mégse</button>
-    </div>
-</div>
-
-<div id="createModal" class="modal hidden">
-    <div class="modal-box">
-        <h2>Create New Market</h2>
-        <label>Currency</label>
-        <select id="m-type" onchange="updateModalBalance()"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
-        <label>Event Name</label>
-        <input id="m-name" placeholder="pl. Real Madrid vs Barcelona">
-        <label>Initial Liquidity (Budget)</label>
-        <input id="m-budget" type="number" value="100" oninput="checkLiquidity()">
-        <div id="liq-warning" style="color:var(--danger); font-size:11px; display:none;">⚠️ Nincs elég fedezeted!</div>
-        
-        <div id="groups-container"></div>
-        <button class="btn-outline" style="border: 1px dashed #334756; color:#aaa; width:100%; padding:10px; cursor:pointer; background:none; border-radius:8px;" onclick="addGroup()">+ ADD CATEGORY</button>
-
-        <div style="display:flex; gap:15px; margin-top:30px;">
-            <button id="pub-btn" class="btn-primary" style="flex:2" onclick="saveMarket()">PUBLISH</button>
-            <button class="btn-danger" style="flex:1" onclick="closeModal()">CANCEL</button>
-        </div>
+        <div id="bet-pot-win" style="color:var(--success); font-weight:bold; margin-bottom:15px;">Win: 0.00</div>
+        <button id="place-bet-btn" class="btn-primary" style="width:100%" onclick="placeBet()">PLACE BET</button>
+        <button class="btn-bet" style="border:none; margin-top:5px;" onclick="closeModal('betModal')">Cancel</button>
     </div>
 </div>
 
@@ -158,22 +147,20 @@
 
     let currentUser = JSON.parse(localStorage.getItem("user"));
     let userProfile = null;
-    let groupIdx = 0;
-    let activeMarketForTopup = null;
+    let activeMarketEdit = null;
     let activeBetData = null;
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
-        checkLocation();
+        fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=> document.getElementById('wallet-status').innerHTML = `📍 Location: <b>${d.country_name}</b>`);
     };
 
     async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(data) {
             userProfile = data;
-            // Update UI
             document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
             document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
             document.getElementById("w-real-val").innerText = data.real_balance.toFixed(2) + " €";
@@ -189,8 +176,6 @@
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
 
-        if(!markets) return;
-
         markets.forEach(m => {
             const isHost = m.creator_name === currentUser.username;
             const card = document.createElement('div');
@@ -199,11 +184,11 @@
             
             if(m.status === 'active') {
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div style="display:flex; justify-content:space-between;">
                         <div>
                             <h3 style="margin:0">${m.title}</h3>
                             <div class="market-meta">Host: ${m.creator_name} | Liquid: <b style="color:var(--success)">${m.take.toFixed(2)}</b> 
-                            ${isHost ? `<button class="btn-topup" onclick="openTopupModal('${m.id}', '${m.type}', ${m.take})">TOP UP</button>` : ''}
+                            ${isHost ? `<button class="btn-edit" onclick="openEditModal('${m.id}', '${m.title}', '${m.type}', ${m.take})">EDIT</button>` : ''}
                             </div>
                         </div>
                         <b style="color:${m.type==='REAL'?'var(--primary)':'var(--demo)'}">${m.type}</b>
@@ -212,143 +197,107 @@
                         <div class="market-group">
                             <small>${g.title}</small>
                             <div class="outcomes-grid">
-                                ${g.outcomes.map(o => `
-                                    <button class="btn-bet" ${m.take <= 0 ? 'disabled' : ''} onclick="openBetModal('${m.id}', '${o.n}', ${o.o}, '${m.type}', ${m.take})">
-                                        ${o.n}<br><b>${o.o.toFixed(2)}</b>
-                                    </button>`).join('')}
+                                ${g.outcomes.map(o => `<button class="btn-bet" ${m.take <= 0 ? 'disabled' : ''} onclick="openBetModal('${m.id}', '${o.n}', ${o.o}, '${m.type}', ${m.take})">${o.n}<br><b>${o.o.toFixed(2)}</b></button>`).join('')}
                             </div>
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                card.innerHTML = `<h3>${m.title}</h3><p style="color:var(--success)">Closed - Result: ${m.winner || 'TBD'}</p>`;
+                card.innerHTML = `<h3>${m.title}</h3><p style="color:var(--success)">Winner: ${m.winner}</p>`;
                 hList.appendChild(card);
             }
         });
     }
 
-    // --- TOP UP LOGIC ---
-    function openTopupModal(mId, type, current) {
-        activeMarketForTopup = { mId, type };
-        document.getElementById('topup-info').innerText = `Currency: ${type} | Current Liquid: ${current.toFixed(2)}`;
-        document.getElementById('topupModal').classList.remove('hidden');
+    // EDIT & SETTLE LOGIC
+    async function openEditModal(mId, title, type, take) {
+        activeMarketEdit = { mId, type, title };
+        document.getElementById('edit-market-title').innerText = title;
+        const { data: m } = await _supabase.from('markets').select('note').eq('id', mId).single();
+        const opts = document.getElementById('settle-options');
+        opts.innerHTML = "";
+        JSON.parse(m.note).forEach(g => g.outcomes.forEach(o => {
+            const b = document.createElement('button'); b.className = "btn-bet"; b.innerText = "WIN: " + o.n;
+            b.onclick = () => settleMarket(o.n); opts.appendChild(b);
+        }));
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    async function settleMarket(winner) {
+        if(!confirm("Biztos lezárod?")) return;
+        const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', activeMarketEdit.mId).eq('status', 'pending');
+        for(let b of (bets || [])) {
+            const field = b.type === 'REAL' ? 'real_balance' : 'demo_balance';
+            if(b.outcome_name === winner) {
+                const { data: p } = await _supabase.from('profiles').select(field).eq('id', b.user_id).single();
+                await _supabase.from('profiles').update({ [field]: p[field] + (b.amount * b.odds) }).eq('id', b.user_id);
+            }
+        }
+        await _supabase.from('markets').update({ status: 'closed', winner: winner }).eq('id', activeMarketEdit.mId);
+        location.reload();
     }
 
     async function submitTopUp() {
-        const amount = parseFloat(document.getElementById('topup-amount').value);
-        const balField = activeMarketForTopup.type === 'REAL' ? 'real_balance' : 'demo_balance';
-
-        if(amount > userProfile[balField]) return alert("Nincs elég egyenleged a feltöltéshez!");
-
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amount }).eq('id', currentUser.id);
-        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeMarketForTopup.mId).single();
-        await _supabase.from('markets').update({ take: mData.take + amount }).eq('id', activeMarketForTopup.mId);
-
-        alert("Likviditás sikeresen feltöltve!");
+        const amt = parseFloat(document.getElementById('edit-topup-amount').value);
+        const field = activeMarketEdit.type === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(amt > userProfile[field]) return alert("Nincs elég pénzed!");
+        await _supabase.from('profiles').update({ [field]: userProfile[field] - amt }).eq('id', currentUser.id);
+        const { data: m } = await _supabase.from('markets').select('take').eq('id', activeMarketEdit.mId).single();
+        await _supabase.from('markets').update({ take: m.take + amt }).eq('id', activeMarketEdit.mId);
         location.reload();
     }
 
-    // --- BET LOGIC ---
-    function openBetModal(mId, oName, odds, type, take) {
-        activeBetData = { mId, oName, odds, type, take };
-        document.getElementById('bet-outcome-name').innerText = oName;
-        document.getElementById('bet-odds-val').innerText = "x " + odds.toFixed(2);
-        document.getElementById('liquid-val').innerText = take.toFixed(2) + " " + type;
-        document.getElementById('betModal').classList.remove('hidden');
-        calcWin();
-    }
-
-    function calcWin() {
-        const amt = parseFloat(document.getElementById('bet-amount').value) || 0;
-        const profit = (amt * activeBetData.odds) - amt;
-        const display = document.getElementById('bet-pot-win');
-        display.innerText = (amt * activeBetData.odds).toFixed(2);
-        
-        const btn = document.getElementById('place-bet-btn');
-        if(profit > activeBetData.take) {
-            btn.disabled = true;
-            btn.innerText = "Nincs elég likviditás!";
-        } else {
-            btn.disabled = false;
-            btn.innerText = "FOGADÁS MEGTÉTELE";
-        }
-    }
-
-    async function placeBet() {
-        const amt = parseFloat(document.getElementById('bet-amount').value);
-        const profit = (amt * activeBetData.odds) - amt;
-        const balField = activeBetData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-
-        if(amt > userProfile[balField]) return alert("Nincs elég egyenleged!");
-
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amt }).eq('id', currentUser.id);
-        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBetData.mId).single();
-        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBetData.mId);
-        
-        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBetData.mId, outcome_name: activeBetData.oName, amount: amt, odds: activeBetData.odds, type: activeBetData.type }]);
-        
-        location.reload();
-    }
-
-    // --- OTHER UI LOGIC ---
-    function checkLocation() {
-        fetch('https://ipapi.co/json/').then(res => res.json()).then(d => {
-            const area = document.getElementById('wallet-status');
-            area.innerHTML = `📍 Helyszín: <b>${d.country_name}</b><br>` + 
-            (d.country_code === 'HU' ? `<span style="color:var(--danger)">Deposits restricted (HU).</span>` : `<button class="btn-primary" style="margin-top:10px">DEPOSIT</button>`);
-        });
-    }
-
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-'+id).classList.add('active');
-        document.getElementById('link-'+id).classList.add('active');
-    }
-
-    function openCreateModal() {
-        document.getElementById('groups-container').innerHTML = "";
-        document.getElementById('createModal').classList.remove('hidden');
-        addGroup();
-    }
-
+    // CREATE LOGIC
     function addGroup() {
-        groupIdx++;
+        const id = Date.now();
         const div = document.createElement('div'); div.className = 'market-group';
-        div.innerHTML = `<input class="g-title" placeholder="Kategória (pl. Győztes)"><div id="grid-${groupIdx}" class="outcomes-grid"></div><button class="btn-bet" style="margin-top:5px; font-size:11px;" onclick="addOutcome(${groupIdx})">+ Outcome</button>`;
+        div.innerHTML = `<input class="g-t" placeholder="Category"><div id="grid-${id}"></div><button class="btn-bet" style="font-size:10px" onclick="addO('${id}')">+ Outcome</button>`;
         document.getElementById('groups-container').appendChild(div);
-        addOutcome(groupIdx);
+        addO(id);
     }
-
-    function addOutcome(id) {
-        const grid = document.getElementById(`grid-${id}`);
-        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginBottom="5px";
-        d.innerHTML = `<input class="o-n" placeholder="Név"><input class="o-o" type="number" step="0.1" value="2.0" style="width:65px"><button class="btn-danger" onclick="this.parentElement.remove()">✕</button>`;
-        grid.appendChild(d);
+    function addO(id) {
+        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
+        d.innerHTML = `<input class="o-n" placeholder="Name"><input class="o-o" type="number" step="0.1" value="2.0" style="width:70px">`;
+        document.getElementById('grid-'+id).appendChild(d);
     }
-
     async function saveMarket() {
         const title = document.getElementById('m-name').value;
         const budget = parseFloat(document.getElementById('m-budget').value);
         const type = document.getElementById('m-type').value;
-        const groups = [];
-        document.querySelectorAll('.market-group').forEach(g => {
-            const outcomes = [];
-            g.querySelectorAll('.outcomes-grid > div').forEach(oDiv => {
-                const n = oDiv.querySelector('.o-n').value;
-                const o = oDiv.querySelector('.o-o').value;
-                if(n) outcomes.push({ n, o: parseFloat(o) });
-            });
-            groups.push({ title: g.querySelector('.g-title').value || "Market", outcomes });
-        });
-        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - budget }).eq('id', currentUser.id);
+        const groups = Array.from(document.querySelectorAll('.market-group')).map(g => ({
+            title: g.querySelector('.g-t').value,
+            outcomes: Array.from(g.querySelectorAll('[id^="grid-"] > div')).map(o => ({
+                n: o.querySelector('.o-n').value, o: parseFloat(o.querySelector('.o-o').value)
+            }))
+        }));
+        const field = type === 'REAL' ? 'real_balance' : 'demo_balance';
+        await _supabase.from('profiles').update({ [field]: userProfile[field] - budget }).eq('id', currentUser.id);
         await _supabase.from('markets').insert([{ title, type, take: budget, note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
 
-    function closeTopupModal() { document.getElementById('topupModal').classList.add('hidden'); }
-    function closeBetModal() { document.getElementById('betModal').classList.add('hidden'); }
-    function closeModal() { document.getElementById('createModal').classList.add('hidden'); }
+    // BET LOGIC
+    function openBetModal(mId, oName, odds, type, take) {
+        activeBetData = { mId, oName, odds, type, take };
+        document.getElementById('bet-outcome-name').innerText = oName;
+        document.getElementById('bet-odds-val').innerText = "x " + odds.toFixed(2);
+        document.getElementById('betModal').classList.remove('hidden');
+        calcWin();
+    }
+    function calcWin() { document.getElementById('bet-pot-win').innerText = "Win: " + (parseFloat(document.getElementById('bet-amount').value) * activeBetData.odds).toFixed(2); }
+    async function placeBet() {
+        const a = parseFloat(document.getElementById('bet-amount').value);
+        const field = activeBetData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(a > userProfile[field]) return alert("Nincs elég fedezet!");
+        await _supabase.from('profiles').update({ [field]: userProfile[field] - a }).eq('id', currentUser.id);
+        const { data: m } = await _supabase.from('markets').select('take').eq('id', activeBetData.mId).single();
+        await _supabase.from('markets').update({ take: m.take - ((a * activeBetData.odds) - a) }).eq('id', activeBetData.mId);
+        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBetData.mId, outcome_name: activeBetData.oName, amount: a, odds: activeBetData.odds, type: activeBetData.type, status: 'pending' }]);
+        location.reload();
+    }
+
+    function showSection(id) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.getElementById('section-'+id).classList.add('active'); document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active')); document.getElementById('link-'+id).classList.add('active'); }
+    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(document.getElementById('groups-container').innerHTML==="") addGroup(); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 </script>
 </body>
