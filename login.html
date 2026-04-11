@@ -2,44 +2,74 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>StakeForge | Belépés</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Login & Register</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --card: #1d2d3a; --text: #fff; }
+        :root { --primary: #00d4ff; --bg: #0f171e; --card: #1d2d3a; --text: #fff; --input: #0b1218; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .auth-box { background: var(--card); padding: 40px; border-radius: 15px; width: 350px; border: 1px solid #2c4f60; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
-        h2 { color: var(--primary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
-        p { color: #888; font-size: 14px; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
-        .btn-auth { background: var(--primary); color: #000; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        .toggle-link { margin-top: 20px; font-size: 13px; color: #888; }
-        .toggle-link span { color: var(--primary); cursor: pointer; font-weight: bold; }
-        .hidden { display: none; }
+        
+        .auth-box { background: var(--card); padding: 40px; border-radius: 20px; width: 380px; border: 1px solid #2c4f60; box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
+        h2 { color: var(--primary); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px; font-weight: 900; }
+        p { color: #8899a6; font-size: 14px; margin-bottom: 30px; }
+        
+        .form-group { text-align: left; margin-bottom: 15px; }
+        label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; margin-left: 5px; }
+        
+        input { width: 100%; padding: 14px; margin-top: 5px; background: var(--input); border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; background: #111b24; }
+        
+        .btn-auth { background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 15px; text-transform: uppercase; font-size: 14px; transition: 0.2s; }
+        .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3); }
+        
+        .toggle-link { margin-top: 25px; font-size: 13px; color: #8899a6; }
+        .toggle-link span { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
+        .hidden { display: none !important; }
+        
+        .error-msg { color: #ff4444; font-size: 12px; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="auth-box">
     <h2>STAKEFORGE</h2>
-    <p id="auth-desc">Jelentkezz be a folytatáshoz</p>
+    <p id="auth-desc">Welcome back, trader!</p>
 
     <div id="login-form">
-        <input type="email" id="login-email" placeholder="E-mail cím">
-        <input type="password" id="login-password" placeholder="Jelszó">
-        <button class="btn-auth" onclick="handleLogin()">Bejelentkezés</button>
-        <div class="toggle-link">Nincs még fiókod? <span onclick="toggleAuth()">Regisztráció</span></div>
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="login-email" placeholder="example@mail.com">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••">
+        </div>
+        <button class="btn-auth" onclick="handleLogin()">Sign In</button>
+        <div class="toggle-link">Don't have an account? <span onclick="toggleAuth()">Create one</span></div>
     </div>
 
     <div id="register-form" class="hidden">
-        <input type="text" id="reg-user" placeholder="Felhasználónév">
-        <input type="email" id="reg-email" placeholder="E-mail cím">
-        <input type="password" id="reg-password" placeholder="Jelszó">
-        <button class="btn-auth" onclick="handleRegister()">Fiók létrehozása</button>
-        <div class="toggle-link">Van már fiókod? <span onclick="toggleAuth()">Jelentkezz be</span></div>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="reg-user" placeholder="TraderJoe">
+        </div>
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="reg-email" placeholder="joe@example.com">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="reg-password" placeholder="Minimum 6 characters">
+        </div>
+        <button class="btn-auth" onclick="handleRegister()">Register Account</button>
+        <div class="toggle-link">Already a member? <span onclick="toggleAuth()">Log in here</span></div>
     </div>
+    
+    <div id="msg" class="error-msg"></div>
 </div>
 
 <script>
+    // Supabase Konfiguráció
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
@@ -48,7 +78,14 @@
         document.getElementById('login-form').classList.toggle('hidden');
         document.getElementById('register-form').classList.toggle('hidden');
         const isLogin = !document.getElementById('login-form').classList.contains('hidden');
-        document.getElementById('auth-desc').innerText = isLogin ? "Jelentkezz be a folytatáshoz" : "Hozz létre egy új fiókot";
+        document.getElementById('auth-desc').innerText = isLogin ? "Welcome back, trader!" : "Join the forge today";
+    }
+
+    function showMsg(text, isError = true) {
+        const m = document.getElementById('msg');
+        m.innerText = text;
+        m.style.display = 'block';
+        m.style.color = isError ? '#ff4444' : '#00c853';
     }
 
     async function handleLogin() {
@@ -58,11 +95,15 @@
         const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-            alert("Hiba: " + error.message);
+            showMsg(error.message);
         } else {
-            // Profil adatainak lekérése a 'profiles' táblából (opcionális)
+            // Felhasználói adatok elmentése és átirányítás
             const { data: profile } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
-            localStorage.setItem("user", JSON.stringify({ ...data.user, username: profile?.username || "Felhasználó" }));
+            localStorage.setItem("user", JSON.stringify({ 
+                id: data.user.id, 
+                email: data.user.email,
+                username: profile?.username || "User" 
+            }));
             window.location.href = "index.html";
         }
     }
@@ -72,24 +113,32 @@
         const email = document.getElementById('reg-email').value;
         const password = document.getElementById('reg-password').value;
 
-        // 1. Regisztráció a Supabase Auth-ban
+        if(!username || !email || !password) return showMsg("Please fill all fields!");
+
+        // 1. Supabase Auth Regisztráció
         const { data, error } = await _supabase.auth.signUp({ email, password });
 
         if (error) {
-            alert("Hiba: " + error.message);
+            showMsg(error.message);
             return;
         }
 
         if (data.user) {
-            // 2. Kezdő egyenleg beállítása a profiles táblában
+            // 2. Profil létrehozása (Javítva: email mezővel!)
             const { error: profileError } = await _supabase.from('profiles').insert([
-                { id: data.user.id, username: username, demo_balance: 10000, real_balance: 0 }
+                { 
+                    id: data.user.id, 
+                    username: username, 
+                    email: email, 
+                    demo_balance: 10000, 
+                    real_balance: 0 
+                }
             ]);
 
             if (profileError) {
-                alert("Auth ok, de profil hiba: " + profileError.message);
+                showMsg("Auth ok, but profile error: " + profileError.message);
             } else {
-                alert("Sikeres regisztráció! Most már bejelentkezhetsz.");
+                alert("Success! Now you can log in.");
                 toggleAuth();
             }
         }
