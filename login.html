@@ -2,54 +2,98 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>StakeForge | Login</title>
+    <title>StakeForge | Belépés</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-box { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid #2c4f60; width: 350px; text-align: center; }
+        :root { --primary: #00d4ff; --bg: #0f171e; --card: #1d2d3a; --text: #fff; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .auth-box { background: var(--card); padding: 40px; border-radius: 15px; width: 350px; border: 1px solid #2c4f60; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
+        h2 { color: var(--primary); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        p { color: #888; font-size: 14px; margin-bottom: 25px; }
         input { width: 100%; padding: 12px; margin: 10px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-auth { background: var(--primary); color: #000; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+        .toggle-link { margin-top: 20px; font-size: 13px; color: #888; }
+        .toggle-link span { color: var(--primary); cursor: pointer; font-weight: bold; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-    <div class="login-box">
-        <h2 style="color:var(--primary)">STAKEFORGE</h2>
-        <p>Jelentkezz be a folytatáshoz</p>
-        <input type="email" id="email" placeholder="Email cím" value="nokilifemta@gmail.com">
-        <input type="password" id="password" placeholder="Jelszó">
-        <button onclick="login()">Bejelentkezés</button>
+
+<div class="auth-box">
+    <h2>STAKEFORGE</h2>
+    <p id="auth-desc">Jelentkezz be a folytatáshoz</p>
+
+    <div id="login-form">
+        <input type="email" id="login-email" placeholder="E-mail cím">
+        <input type="password" id="login-password" placeholder="Jelszó">
+        <button class="btn-auth" onclick="handleLogin()">Bejelentkezés</button>
+        <div class="toggle-link">Nincs még fiókod? <span onclick="toggleAuth()">Regisztráció</span></div>
     </div>
 
-    <script>
-        const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
-        const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
-        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+    <div id="register-form" class="hidden">
+        <input type="text" id="reg-user" placeholder="Felhasználónév">
+        <input type="email" id="reg-email" placeholder="E-mail cím">
+        <input type="password" id="reg-password" placeholder="Jelszó">
+        <button class="btn-auth" onclick="handleRegister()">Fiók létrehozása</button>
+        <div class="toggle-link">Van már fiókod? <span onclick="toggleAuth()">Jelentkezz be</span></div>
+    </div>
+</div>
 
-        async function login() {
-            const emailInput = document.getElementById('email').value;
-            const passwordInput = document.getElementById('password').value;
+<script>
+    const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
+    const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
+    const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-            // Keresés a tábládban az adatok alapján
-            const { data, error } = await _supabase
-                .from('profiles') // Ha a táblád neve nem profiles, írd át!
-                .select('*')
-                .eq('email', emailInput)
-                .eq('password', passwordInput)
-                .single();
+    function toggleAuth() {
+        document.getElementById('login-form').classList.toggle('hidden');
+        document.getElementById('register-form').classList.toggle('hidden');
+        const isLogin = !document.getElementById('login-form').classList.contains('hidden');
+        document.getElementById('auth-desc').innerText = isLogin ? "Jelentkezz be a folytatáshoz" : "Hozz létre egy új fiókot";
+    }
 
-            if (error || !data) {
-                alert("Hibás email cím vagy jelszó!");
-                console.error(error);
+    async function handleLogin() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            alert("Hiba: " + error.message);
+        } else {
+            // Profil adatainak lekérése a 'profiles' táblából (opcionális)
+            const { data: profile } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
+            localStorage.setItem("user", JSON.stringify({ ...data.user, username: profile?.username || "Felhasználó" }));
+            window.location.href = "index.html";
+        }
+    }
+
+    async function handleRegister() {
+        const username = document.getElementById('reg-user').value;
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+
+        // 1. Regisztráció a Supabase Auth-ban
+        const { data, error } = await _supabase.auth.signUp({ email, password });
+
+        if (error) {
+            alert("Hiba: " + error.message);
+            return;
+        }
+
+        if (data.user) {
+            // 2. Kezdő egyenleg beállítása a profiles táblában
+            const { error: profileError } = await _supabase.from('profiles').insert([
+                { id: data.user.id, username: username, demo_balance: 10000, real_balance: 0 }
+            ]);
+
+            if (profileError) {
+                alert("Auth ok, de profil hiba: " + profileError.message);
             } else {
-                // Elmentjük a felhasználót a memóriába
-                localStorage.setItem("user", JSON.stringify(data));
-                alert("Sikeres belépés, üdv " + data.username + "!");
-                
-                // Átirányítás a főoldalra (ellenőrizd a fájlnevet!)
-                window.location.href = "index.html"; 
+                alert("Sikeres regisztráció! Most már bejelentkezhetsz.");
+                toggleAuth();
             }
         }
-    </script>
+    }
+</script>
 </body>
 </html>
