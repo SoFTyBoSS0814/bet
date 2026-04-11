@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -21,18 +20,18 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        .market-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .market-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
-        /* GOMBOK STÍLUSA */
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-bet:hover:not(:disabled) { border-color: var(--primary); background: rgba(0, 212, 255, 0.05); }
         .btn-bet.selected-win { background: var(--success) !important; color: #000; font-weight: bold; }
         .btn-bet.selected-loss { background: var(--danger) !important; color: #fff; font-weight: bold; }
-        .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(1); }
+        .btn-bet:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); border-color: #222; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
+        .btn-primary:disabled { background: #444; cursor: not-allowed; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 
         .settle-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(255,255,255,0.03); margin-bottom: 4px; border-radius: 6px; }
@@ -75,26 +74,37 @@
 
     <div id="section-wallet" class="section">
         <div class="market-card" style="text-align:center; max-width:600px; margin:auto;">
-            <h2>Wallet</h2>
+            <h2>Wallet Overview</h2>
             <div style="display:flex; gap:15px; margin:20px 0;">
                 <div style="padding:20px; border:1px solid var(--border); border-radius:12px; flex:1;">
-                    <small>REAL</small><h2 id="w-real-val">0.00 €</h2>
+                    <small>REAL BALANCE</small><h2 id="w-real-val">0.00 €</h2>
                 </div>
                 <div style="padding:20px; border:1px solid var(--border); border-radius:12px; flex:1;">
-                    <small>DEMO</small><h2 id="w-demo-val">0.00 D</h2>
+                    <small>DEMO BALANCE</small><h2 id="w-demo-val">0.00 D</h2>
                 </div>
             </div>
-            <div id="wallet-status" style="font-size:12px; color:#aaa">Checking connection...</div>
         </div>
     </div>
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:450px; margin:auto;">
-            <h3>Profile</h3>
-            <p>User: <b id="acc-username">...</b></p>
+            <h3>Profile Settings</h3>
+            <p>Username: <b id="acc-username">...</b></p>
             <p>Email: <b id="acc-email">...</b></p>
             <button class="btn-danger" onclick="logout()">LOGOUT</button>
         </div>
+    </div>
+</div>
+
+<div id="betModal" class="modal hidden">
+    <div class="modal-box" style="width:320px; text-align:center">
+        <h3 id="bet-on"></h3>
+        <h1 id="bet-odds" style="color:var(--primary)"></h1>
+        <p style="font-size: 11px; color:#aaa">Market Liq: <span id="bet-max-liq">0</span></p>
+        <input type="number" id="bet-amount" value="10" oninput="calcWin()">
+        <p id="bet-win-text" style="font-weight:bold; color:var(--success)">Win: 0.00</p>
+        <button id="btn-confirm-bet" class="btn-primary" style="width:100%" onclick="placeBet()">CONFIRM BET</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
     </div>
 </div>
 
@@ -103,25 +113,13 @@
         <h3>New Market</h3>
         <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
         <input id="m-name" placeholder="Event Name">
-        <label>Deadline (Betting Closes)</label>
+        <label>Deadline (UTC)</label>
         <input id="m-deadline" type="datetime-local">
         <input id="m-budget" type="number" placeholder="Liquidity (Host's max loss)">
         <div id="groups-container"></div>
         <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style: dashed;">+ Add Category</button>
         <button class="btn-primary" style="width:100%; margin-top:20px" onclick="saveMarket()">PUBLISH</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
-    </div>
-</div>
-
-<div id="betModal" class="modal hidden">
-    <div class="modal-box" style="width:320px; text-align:center">
-        <h3 id="bet-on"></h3>
-        <h1 id="bet-odds" style="color:var(--primary)"></h1>
-        <p style="font-size: 11px; color:#aaa">Available Liq: <span id="bet-max-liq">0</span></p>
-        <input type="number" id="bet-amount" value="10" oninput="calcWin()">
-        <p id="bet-win-text" style="font-weight:bold; color:var(--success)">Win: 0.00</p>
-        <button id="btn-confirm-bet" class="btn-primary" style="width:100%" onclick="placeBet()">CONFIRM BET</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
     </div>
 </div>
 
@@ -133,7 +131,7 @@
             <button class="btn-primary" style="width:100%; margin-top:20px; background:var(--success)" onclick="showConfirmStep()">SETTLE NOW</button>
         </div>
         <div id="settle-confirm-view" class="hidden" style="text-align: center;">
-            <h4 style="color: var(--danger)">CONFIRM SETTLEMENT</h4>
+            <h4 style="color: var(--danger)">CONFIRM RESULTS</h4>
             <div style="display: flex; gap: 10px; margin-top:20px">
                 <button class="btn-primary" style="flex: 1; background: var(--success);" onclick="finalSubmitSettle()">CONFIRM</button>
                 <button class="btn-bet" style="flex: 1; border: none;" onclick="hideConfirmStep()">BACK</button>
@@ -157,10 +155,8 @@
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
-        fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=> {
-            if(document.getElementById('wallet-status')) 
-                document.getElementById('wallet-status').innerText = `📍 ${d.city}, ${d.country_code}`;
-        });
+        // Frissítés percenként a deadline-ok miatt
+        setInterval(loadMarkets, 30000);
     };
 
     async function fetchProfile() {
@@ -187,6 +183,7 @@
             const groups = JSON.parse(m.note || "[]");
             const isHost = m.creator_name === currentUser.username;
             const deadline = new Date(m.deadline);
+            // SZIGORÚ ELLENŐRZÉS: Mostantól pontosan nézzük lezárt-e
             const isExpired = now >= deadline;
 
             if(m.status === 'active') {
@@ -231,8 +228,8 @@
         });
     }
 
-    // MODAL LOGIKÁK (Bet, Settle, Create)
     function openBet(mId, n, o, t, dl, liq) {
+        // Megnyitáskor is ellenőrizzük!
         if(new Date() >= new Date(dl)) return alert("Market closed!");
         activeBet = { mId, n, o, t, liq, dl };
         document.getElementById('bet-on').innerText = n;
@@ -247,33 +244,47 @@
         const potentialWin = amount * activeBet.o;
         const winDisplay = document.getElementById('bet-win-text');
         const btn = document.getElementById('btn-confirm-bet');
+        
+        // Modalban is nézzük közben lezárt-e
+        const isExpired = new Date() >= new Date(activeBet.dl);
+
         winDisplay.innerText = "Win: " + potentialWin.toFixed(2);
-        if (potentialWin > activeBet.liq) {
-            winDisplay.style.color = 'var(--danger)'; winDisplay.innerText += " (OVER LIQ)"; btn.disabled = true;
+        if (potentialWin > activeBet.liq || isExpired) {
+            winDisplay.style.color = 'var(--danger)'; 
+            winDisplay.innerText += isExpired ? " (CLOSED)" : " (OVER LIQ)";
+            btn.disabled = true;
         } else {
             winDisplay.style.color = 'var(--success)'; btn.disabled = false;
         }
     }
 
     async function placeBet() {
-        if(new Date() >= new Date(activeBet.dl)) return alert("Closed!");
+        // BEKÜLDÉSKOR A LEGFONTOSABB ELLENŐRZÉS
+        if(new Date() >= new Date(activeBet.dl)) {
+            alert("This market just closed!");
+            location.reload();
+            return;
+        }
+
         const amount = parseFloat(document.getElementById('bet-amount').value);
         const win = amount * activeBet.o;
         const field = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(amount > userProfile[field]) return alert("Low balance!");
+        
+        if(amount > userProfile[field]) return alert("Insufficient balance!");
+
         const { error: liqError } = await _supabase.rpc('decrease_market_liq', { m_id: activeBet.mId, amount: win });
-        if(liqError) return alert("Liquidity mismatch.");
+        if(liqError) return alert("Liquidity mismatch. Payout too high.");
+
         await _supabase.from('profiles').update({ [field]: userProfile[field] - amount }).eq('id', currentUser.id);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amount, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
 
-    // CREATE NEW MARKET DINAMIKUS MEZŐK
     function addGroup() {
         const id = Date.now();
         const div = document.createElement('div'); div.className = 'market-group';
         div.innerHTML = `
-            <input class="g-t" placeholder="Category Name (e.g. Winner)">
+            <input class="g-t" placeholder="Category Name">
             <div id="grid-${id}"></div>
             <button class="btn-bet" style="margin-top:10px; width:auto; padding:5px 15px;" onclick="addO('${id}')">+ Add Option</button>
         `;
@@ -293,20 +304,22 @@
         const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
         if(!t || !dl || !b) return alert("Fill all fields!");
+        
         const groups = Array.from(document.querySelectorAll('.market-group')).map(g => ({
             title: g.querySelector('.g-t').value,
             outcomes: Array.from(g.querySelectorAll('[id^="grid-"] > div')).map(o => ({
                 n: o.querySelector('.o-n').value, o: parseFloat(o.querySelector('.o-o').value), status: 'pending'
             }))
         }));
+
         const f = type === 'REAL' ? 'real_balance' : 'demo_balance';
         if(b > userProfile[f]) return alert("Insufficient funds!");
+        
         await _supabase.from('profiles').update({ [f]: userProfile[f] - b }).eq('id', currentUser.id);
         await _supabase.from('markets').insert([{ title: t, type, take: b, deadline: dl, note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
 
-    // SETTLE ÉS EGYÉB FUNKCIÓK
     function openSettle(mId, title) {
         currentSettleData.mId = mId;
         document.getElementById('edit-title').innerText = title;
@@ -375,6 +388,7 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
+        if(id === 'wallet' || id === 'account') fetchProfile();
     }
 
     function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
