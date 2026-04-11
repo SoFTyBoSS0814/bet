@@ -9,11 +9,14 @@
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* NAVBAR */
+        /* NAVBAR FIX */
         .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 1000; height: 70px; }
         .nav-left { display: flex; align-items: center; gap: 30px; }
-        .nav-links a { color: #aaa; text-decoration: none; font-size: 15px; cursor: pointer; margin-right: 20px; }
-        .nav-links a.active { color: var(--primary); font-weight: bold; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: #aaa; text-decoration: none; font-size: 15px; cursor: pointer; transition: 0.2s; font-weight: 500; }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
+        .logo { font-weight: 900; font-size: 24px; color: var(--primary); text-transform: uppercase; text-decoration: none; }
+        
         .nav-right { display: flex; align-items: center; gap: 15px; }
         .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
 
@@ -21,23 +24,26 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        /* MARKET HEADER */
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        /* MARKET HEADER GOMB */
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+
+        /* MARKET CARD */
+        .market-card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2c4f60; border-left: 4px solid var(--primary); }
+        .group-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-top: 10px; }
 
         /* MODAL */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
-        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 950px; max-width: 95vw; max-height: 92vh; overflow-y: auto; border: 1px solid #2c4f60; }
-        
+        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 900px; max-width: 95vw; max-height: 92vh; overflow-y: auto; border: 1px solid #2c4f60; }
         input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 12px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
-        label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; }
+        label { font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; }
 
-        .event-group { background: rgba(255,255,255,0.03); border: 1px solid #2c4f60; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
-        .outcomes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-        .outcome-item { background: #14212b; padding: 12px; border-radius: 8px; border: 1px solid #253948; }
+        .event-group { background: rgba(255,255,255,0.03); border: 1px solid #2c4f60; border-radius: 10px; padding: 15px; margin-bottom: 20px; }
+        .outcomes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+        .outcome-item { background: #14212b; padding: 10px; border-radius: 6px; border: 1px solid #253948; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-outline { background: none; border: 1px dashed #444; color: #888; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        .btn-outline { background: none; border: 1px dashed #444; color: #888; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 10px; font-weight: bold; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -45,10 +51,12 @@
 
 <div class="navbar">
     <div class="nav-left">
-        <span style="font-weight:900; color:var(--primary); font-size:22px; margin-right:30px;">STAKEFORGE</span>
+        <a href="#" class="logo">STAKEFORGE</a>
         <div class="nav-links">
             <a onclick="showSection('markets')" id="nav-markets" class="active">Markets</a>
-            <a onclick="showSection('wallet')">Wallet</a>
+            <a onclick="showSection('wallet')" id="nav-wallet">Wallet</a>
+            <a onclick="showSection('account')" id="nav-account">Account</a>
+            <a onclick="showSection('settings')" id="nav-settings">Settings</a>
         </div>
     </div>
     <div class="nav-right">
@@ -66,13 +74,14 @@
             <h2 style="margin:0;">Live P2P Markets</h2>
             <button class="btn-primary" onclick="openCreateModal()">+ Create Market</button>
         </div>
-        <div id="market-list">Töltés...</div>
+        <div id="market-list">Betöltés...</div>
     </div>
+    <div id="section-wallet" class="section"><h2>Wallet</h2></div>
 </div>
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
-        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
              <button class="btn-primary" onclick="saveMarket()">💾 Mentés</button>
              <button class="btn-danger" onclick="closeModal()">Mégse</button>
         </div>
@@ -83,25 +92,25 @@
         </div>
         
         <label>Szabályok / Megjegyzés</label>
-        <textarea id="m-desc" rows="2" placeholder="Például: Csak rendes játékidő..."></textarea>
+        <textarea id="m-desc" rows="2"></textarea>
 
-        <div style="display:flex; align-items:center; gap:20px; background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; border:1px solid #334756; margin-bottom:25px;">
+        <div style="display:flex; align-items:center; gap:20px; background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; border:1px solid #334756; margin-bottom:20px;">
             <div style="flex:1;"><label>Költségvetés</label><input id="m-budget" type="number" value="1000"></div>
             <div style="flex:1;">
                 <label>Számla típusa</label>
                 <select id="m-type" onchange="updateModalBalance()">
-                    <option value="DEMO">DEMO számla (D)</option>
-                    <option value="REAL">REAL számla (€)</option>
+                    <option value="DEMO">DEMO (D)</option>
+                    <option value="REAL">REAL (€)</option>
                 </select>
             </div>
-            <div style="text-align:right; min-width: 180px;">
+            <div style="text-align:right; min-width: 140px;">
                 <label>Elérhető egyenleg:</label>
-                <div id="modal-balance-display" style="font-weight:bold; color:var(--demo); font-size: 18px;">0.00 D</div>
+                <div id="modal-balance-display" style="font-weight:bold; color:var(--primary); font-size: 16px;">0.00 D</div>
             </div>
         </div>
 
-        <div id="groups-container"></div>
-        <button class="btn-outline" onclick="addGroup()">+ Új Eseménytípus Hozzáadása (MAX 8)</button>
+        <div id="event-types-container"></div>
+        <button class="btn-outline" onclick="addEventType()">+ Új Eseménytípus (MAX 8)</button>
     </div>
 </div>
 
@@ -110,7 +119,7 @@
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
     let currentUser = JSON.parse(localStorage.getItem("user"));
-    let groupIdx = 0;
+    let groupCount = 0;
 
     async function refreshBalances() {
         if(!currentUser) return;
@@ -131,48 +140,44 @@
         else { display.innerText = window.userBalances.demo_balance.toFixed(2) + " D"; display.style.color = "var(--demo)"; }
     }
 
-    function addGroup() {
-        if(document.querySelectorAll('.event-group').length >= 8) return;
-        groupIdx++;
-        const container = document.getElementById('groups-container');
+    function addEventType() {
+        if(groupCount >= 8) return;
+        groupCount++;
+        const container = document.getElementById('event-types-container');
         const div = document.createElement('div');
         div.className = 'event-group';
-        div.id = `group-${groupIdx}`;
+        const gid = groupCount;
         div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <input class="g-title" style="width:80%; font-weight:bold; font-size:16px;" placeholder="pl. Gólszám">
-                <button class="btn-danger" style="padding:5px 10px;" onclick="this.parentElement.parentElement.remove()">Törlés</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <input class="g-name" style="width:70%; font-weight:bold;" placeholder="pl. Gólszám">
+                <button class="btn-danger" style="padding:5px 10px;" onclick="this.parentElement.parentElement.remove(); groupCount--;">Törlés</button>
             </div>
-            <div class="outcomes-grid" id="grid-${groupIdx}"></div>
-            <button class="btn-outline" style="border-style:solid; font-size:12px; padding:8px;" onclick="addOutcome(${groupIdx})">+ Új kimenetel (MAX 6)</button>
+            <div class="outcomes-grid" id="grid-${gid}">
+                <div class="outcome-item"><label>Név</label><input class="o-n"><label>Odds</label><input class="o-o" type="number" step="0.01" value="1.00"></div>
+                <div class="outcome-item"><label>Név</label><input class="o-n"><label>Odds</label><input class="o-o" type="number" step="0.01" value="1.00"></div>
+            </div>
+            <button class="btn-outline" style="font-size:11px; padding:5px;" onclick="addOutcomeToGroup(${gid})">+ Új kimenetel (MAX 6)</button>
         `;
         container.appendChild(div);
-        addOutcome(groupIdx); // Alapból adjon hozzá egyet
     }
 
-    function addOutcome(id) {
-        const grid = document.getElementById(`grid-${id}`);
-        if(grid.querySelectorAll('.outcome-item').length >= 6) return;
-        const oDiv = document.createElement('div');
-        oDiv.className = 'outcome-item';
-        oDiv.innerHTML = `
-            <label>Név</label><input class="o-name" placeholder="pl. 1.5 felett">
-            <label>Odds</label><input class="o-odds" type="number" step="0.01" value="1.50">
-        `;
-        grid.appendChild(oDiv);
+    function addOutcomeToGroup(gid) {
+        const grid = document.getElementById(`grid-${gid}`);
+        if(grid.querySelectorAll('.outcome-item').length >= 6) return alert("Max 6 mező!");
+        const div = document.createElement('div');
+        div.className = 'outcome-item';
+        div.innerHTML = `<label>Név</label><input class="o-n"><label>Odds</label><input class="o-o" type="number" step="0.01" value="1.00">`;
+        grid.appendChild(div);
     }
 
     async function saveMarket() {
         const groups = [];
-        document.querySelectorAll('.event-group').forEach(group => {
+        document.querySelectorAll('.event-group').forEach(g => {
             const outcomes = [];
-            group.querySelectorAll('.outcome-item').forEach(item => {
-                outcomes.push({
-                    name: item.querySelector('.o-name').value,
-                    odds: parseFloat(item.querySelector('.o-odds').value)
-                });
+            g.querySelectorAll('.outcome-item').forEach(o => {
+                outcomes.push({ name: o.querySelector('.o-n').value, odds: parseFloat(o.querySelector('.o-o').value) });
             });
-            groups.push({ title: group.querySelector('.g-title').value, outcomes });
+            groups.push({ title: g.querySelector('.g-name').value, outcomes });
         });
 
         const { error } = await _supabase.from('markets').insert([{
@@ -185,8 +190,7 @@
             market_data: { groups }
         }]);
 
-        if(error) { alert("Hiba a mentésnél: " + error.message); }
-        else { alert("Piac sikeresen mentve!"); closeModal(); loadMarkets(); }
+        if(!error) { alert("Sikeres mentés!"); closeModal(); loadMarkets(); }
     }
 
     async function loadMarkets() {
@@ -194,24 +198,22 @@
         const list = document.getElementById('market-list');
         list.innerHTML = "";
         data?.forEach(m => {
-            list.innerHTML += `
-                <div style="background:var(--card); padding:20px; border-radius:12px; margin-bottom:15px; border-left:4px solid var(--primary);">
-                    <div style="display:flex; justify-content:space-between;">
-                        <h3>${m.event_name}</h3>
-                        <span style="color:var(--demo)">${m.type}</span>
-                    </div>
-                    <p style="font-size:12px; color:#888;">Határidő: ${m.deadline.replace('T', ' ')}</p>
-                </div>`;
+            list.innerHTML += `<div class="market-card">
+                <div class="market-header"><h3>${m.event_name}</h3><b>${m.type}</b></div>
+                ${m.market_data.groups.map(g => `<div class="group-box"><b>${g.title}:</b> ${g.outcomes.map(o => `${o.name} (${o.odds})`).join(', ')}</div>`).join('')}
+            </div>`;
         });
     }
 
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
         document.getElementById('section-' + id).classList.add('active');
+        document.getElementById('nav-' + id).classList.add('active');
         if(id === 'markets') loadMarkets();
     }
 
-    function openCreateModal() { document.getElementById("createModal").classList.remove("hidden"); if(document.querySelectorAll('.event-group').length === 0) addGroup(); refreshBalances(); }
+    function openCreateModal() { document.getElementById("createModal").classList.remove("hidden"); refreshBalances(); }
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
     function logout() { localStorage.removeItem("user"); window.location.href="login.html"; }
 
