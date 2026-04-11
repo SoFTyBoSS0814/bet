@@ -3,107 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Home</title>
+    <title>StakeForge | All-in-One</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --success: #00ff88; --danger: #ff4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --success: #00ff88; --danger: #ff4444; --demo: #ffcc00; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         
-        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; height: 70px; }
-        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; margin-right: 20px; font-weight: bold; }
+        /* NAVBAR */
+        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; height: 70px; position: sticky; top: 0; z-index: 1000; }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding-bottom: 5px; }
+        .nav-links a.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         
-        .container { max-width: 1100px; margin: auto; padding: 30px; text-align: center; }
-        .auth-box { background: var(--card); padding: 30px; border-radius: 15px; width: 350px; margin: 50px auto; border: 1px solid #2c4f60; }
-        
-        input { width: 100%; padding: 12px; margin: 10px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; margin-top: 10px; }
+        .wallet-info { display: flex; gap: 15px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; }
+
+        .container { max-width: 1100px; margin: auto; padding: 30px; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* GOMBOK */
+        .btn { padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
         .btn-primary { background: var(--primary); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+
+        /* AUTH MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10001; }
+        .auth-box { background: var(--card); padding: 30px; border-radius: 15px; width: 350px; border: 1px solid #2c4f60; position: relative; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
         
-        .msg { margin-top: 15px; padding: 10px; border-radius: 6px; display: none; font-size: 14px; font-weight: bold; }
-        .msg-success { display: block; background: rgba(0, 255, 136, 0.1); color: var(--success); border: 1px solid var(--success); }
-        .msg-danger { display: block; background: rgba(255, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
-        
-        .market-card { background: var(--card); padding: 15px; border-radius: 10px; text-align: left; margin-bottom: 10px; border-left: 4px solid var(--primary); }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334756; }
-        .tab { padding: 10px; cursor: pointer; color: #888; }
-        .tab.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        /* PIAC KÁRTYÁK */
+        .market-card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); border: 1px solid #2c4f60; }
         .hidden { display: none !important; }
+        .msg { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="navbar">
-    <span style="font-weight:900; color:var(--primary); font-size:22px;">STAKEFORGE</span>
-    <div id="nav-user-info">
-        <button class="btn-primary" style="padding: 8px 15px; width: auto;" onclick="showAuth()">Login / Register</button>
+    <div class="nav-left">
+        <span style="font-weight:900; color:var(--primary); font-size:22px; cursor:pointer;" onclick="location.reload()">STAKEFORGE</span>
+        <div id="logged-in-menu" class="nav-links hidden">
+            <a onclick="showSection('markets')" id="link-markets" class="active">Markets</a>
+            <a onclick="showSection('wallet')" id="link-wallet">Wallet</a>
+            <a onclick="showSection('account')" id="link-account">Account</a>
+            <a onclick="showSection('settings')" id="link-settings">Settings</a>
+        </div>
+    </div>
+    <div class="nav-right" id="nav-auth">
+        <button class="btn btn-primary" onclick="openAuth()">Login / Register</button>
     </div>
 </div>
 
 <div class="container">
-    <h1>Üdvözlünk a StakeForge-on!</h1>
-    <p>Nézd meg az aktuális piacokat, vagy jelentkezz be a fogadáshoz.</p>
-    
-    <div id="public-markets" style="margin-top: 40px;">
-        <h3>Aktuális Piacok</h3>
+    <div id="section-markets" class="section active">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <h2>Live P2P Markets</h2>
+            <button id="create-btn" class="btn btn-primary hidden" onclick="openCreateModal()">+ Create Market</button>
+        </div>
         <div id="market-list">Betöltés...</div>
+    </div>
+
+    <div id="section-wallet" class="section">
+        <h2>Wallet & Finances</h2>
+        <div class="market-card">
+            <p>Itt kezelheted a befizetéseidet és kifizetéseidet.</p>
+        </div>
+    </div>
+
+    <div id="section-account" class="section">
+        <h2>My Account</h2>
+        <div class="market-card" id="user-details">Betöltés...</div>
+    </div>
+
+    <div id="section-settings" class="section">
+        <h2>Settings</h2>
+        <div class="market-card"><p>Értesítések és biztonsági beállítások.</p></div>
     </div>
 </div>
 
-<div id="auth-modal" class="auth-box hidden" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; box-shadow: 0 0 50px rgba(0,0,0,0.8);">
-    <div class="tabs">
-        <div id="tab-login" class="tab active" onclick="switchTab('login')">Bejelentkezés</div>
-        <div id="tab-reg" class="tab" onclick="switchTab('reg')">Regisztráció</div>
-        <div style="flex-grow:1; text-align:right; cursor:pointer;" onclick="closeAuth()">✕</div>
+<div id="auth-modal" class="modal-overlay hidden">
+    <div class="auth-box">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h3 id="auth-title" style="margin:0;">Login</h3>
+            <span style="cursor:pointer" onclick="closeAuth()">✕</span>
+        </div>
+        <div id="login-fields">
+            <input type="email" id="login-email" placeholder="Email" value="nokilifemta@gmail.com">
+            <input type="password" id="login-pass" placeholder="Password">
+            <button class="btn btn-primary" style="width:100%" onclick="handleLogin()">Sign In</button>
+            <p style="font-size:12px; text-align:center; margin-top:15px;">Nincs fiókod? <a href="#" onclick="toggleAuth(true)" style="color:var(--primary)">Regisztrálj</a></p>
+        </div>
+        <div id="reg-fields" class="hidden">
+            <input type="text" id="reg-user" placeholder="Username">
+            <input type="email" id="reg-email" placeholder="Email">
+            <input type="password" id="reg-pass" placeholder="Password">
+            <button class="btn btn-primary" style="width:100%" onclick="handleRegister()">Register</button>
+            <p style="font-size:12px; text-align:center; margin-top:15px;">Van már fiókod? <a href="#" onclick="toggleAuth(false)" style="color:var(--primary)">Lépj be</a></p>
+        </div>
+        <div id="auth-msg" class="msg hidden"></div>
     </div>
+</div>
 
-    <div id="form-login">
-        <input type="email" id="login-email" placeholder="Email cím" value="nokilifemta@gmail.com">
-        <input type="password" id="login-pass" placeholder="Jelszó">
-        <button class="btn btn-primary" onclick="handleLogin()">Bejelentkezés</button>
+<div id="create-modal" class="modal-overlay hidden">
+    <div class="auth-box" style="width:600px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h3 style="margin:0;">Create New Market</h3>
+            <span style="cursor:pointer" onclick="closeCreateModal()">✕</span>
+        </div>
+        <label style="font-size:11px; color:#888;">EVENT NAME *</label>
+        <input id="m-title" placeholder="e.g. Man City vs Real Madrid">
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label style="font-size:11px; color:#888;">START TIME</label><input id="m-start" type="datetime-local"></div>
+            <div><label style="font-size:11px; color:#888;">TYPE</label><select id="m-type"><option value="DEMO">DEMO (D)</option><option value="REAL">REAL (€)</option></select></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label style="font-size:11px; color:#888;">BUDGET (TAKE)</label><input id="m-take" type="number" value="1000"></div>
+            <div><label style="font-size:11px; color:#888;">MAX STAKE</label><input id="m-max" type="number" value="100"></div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+            <div><label style="font-size:11px; color:#888;">ODDS 1</label><input id="m-o1" type="number" step="0.01" value="2.00"></div>
+            <div><label style="font-size:11px; color:#888;">ODDS X</label><input id="m-ox" type="number" step="0.01" value="3.00"></div>
+            <div><label style="font-size:11px; color:#888;">ODDS 2</label><input id="m-o2" type="number" step="0.01" value="2.50"></div>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="saveMarket()">Save Market</button>
     </div>
-
-    <div id="form-reg" class="hidden">
-        <input type="text" id="reg-user" placeholder="Felhasználónév">
-        <input type="email" id="reg-email" placeholder="Email cím">
-        <input type="password" id="reg-pass" placeholder="Jelszó">
-        <button class="btn btn-primary" onclick="handleRegister()">Fiók létrehozása</button>
-    </div>
-
-    <div id="auth-msg" class="msg"></div>
 </div>
 
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
+    let currentUser = JSON.parse(localStorage.getItem("user"));
 
-    async function loadPublicMarkets() {
-        const { data } = await _supabase.from('markets').select('*').limit(5);
-        const list = document.getElementById('market-list');
-        list.innerHTML = "";
-        data?.forEach(m => {
-            list.innerHTML += `<div class="market-card"><b>${m.title}</b><br><small>${m.type} | 1: ${m.odd_1} X: ${m.odd_x} 2: ${m.odd_2}</small></div>`;
-        });
+    // INICIALIZÁLÁS
+    window.onload = () => {
+        updateUI();
+        loadMarkets();
+    };
+
+    function updateUI() {
+        const navAuth = document.getElementById('nav-auth');
+        const loggedMenu = document.getElementById('logged-in-menu');
+        const createBtn = document.getElementById('create-btn');
+
+        if(currentUser) {
+            loggedMenu.classList.remove('hidden');
+            createBtn.classList.remove('hidden');
+            navAuth.innerHTML = `
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <div class="wallet-info">
+                        <span style="color:var(--primary)">${currentUser.real_balance.toFixed(2)} €</span>
+                        <span style="color:var(--demo)">${currentUser.demo_balance.toFixed(2)} D</span>
+                    </div>
+                    <button class="btn btn-danger" style="padding:5px 10px;" onclick="logout()">Logout</button>
+                </div>`;
+            document.getElementById('user-details').innerHTML = `<b>Username:</b> ${currentUser.username}<br><b>Email:</b> ${currentUser.email}`;
+        } else {
+            loggedMenu.classList.add('hidden');
+            createBtn.classList.add('hidden');
+            navAuth.innerHTML = `<button class="btn btn-primary" onclick="openAuth()">Login / Register</button>`;
+        }
     }
 
-    function showMessage(text, type) {
-        const msgDiv = document.getElementById('auth-msg');
-        msgDiv.innerText = text;
-        msgDiv.className = 'msg msg-' + type;
-        if(type === 'success') setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
-    }
-
+    // AUTH FUNKCIÓK
     async function handleLogin() {
         const email = document.getElementById('login-email').value;
         const pass = document.getElementById('login-pass').value;
+        const msg = document.getElementById('auth-msg');
 
         const { data, error } = await _supabase.from('profiles').select('*').eq('email', email).eq('password', pass).single();
 
         if (error || !data) {
-            showMessage("Hibás adatok!", "danger");
+            msg.innerText = "Error: Invalid credentials!";
+            msg.className = "msg msg-danger";
+            msg.classList.remove('hidden');
         } else {
             localStorage.setItem("user", JSON.stringify(data));
-            showMessage("Sikeres belépés, üdv " + data.username + "!", "success");
+            currentUser = data;
+            msg.innerText = "Success! Logging in...";
+            msg.className = "msg msg-success";
+            msg.classList.remove('hidden');
+            setTimeout(() => { closeAuth(); updateUI(); }, 1000);
         }
     }
 
@@ -111,36 +197,82 @@
         const user = document.getElementById('reg-user').value;
         const email = document.getElementById('reg-email').value;
         const pass = document.getElementById('reg-pass').value;
-
+        
         const { error } = await _supabase.from('profiles').insert([{ 
-            username: user, 
-            email: email, 
-            password: pass, 
-            demo_balance: 5000, 
-            real_balance: 0 
+            username: user, email: email, password: pass, demo_balance: 5000, real_balance: 0 
         }]);
 
-        if (error) showMessage("Hiba: " + error.message, "danger");
-        else showMessage("Sikeres regisztráció! Most jelentkezz be.", "success");
-    }
-
-    function switchTab(type) {
-        document.getElementById('form-login').classList.toggle('hidden', type === 'reg');
-        document.getElementById('form-reg').classList.toggle('hidden', type === 'login');
-        document.getElementById('tab-login').classList.toggle('active', type === 'login');
-        document.getElementById('tab-reg').classList.toggle('active', type === 'reg');
-    }
-
-    function showAuth() { document.getElementById('auth-modal').classList.remove('hidden'); }
-    function closeAuth() { document.getElementById('auth-modal').classList.add('hidden'); }
-
-    window.onload = () => {
-        loadPublicMarkets();
-        const user = JSON.parse(localStorage.getItem("user"));
-        if(user) {
-            document.getElementById('nav-user-info').innerHTML = `<span style="color:var(--primary); font-weight:bold; margin-right:15px;">${user.username}</span><button onclick="window.location.href='dashboard.html'" class="btn-primary" style="width:auto; padding:5px 10px;">Dashboard</button>`;
+        if (error) {
+            alert("Error: " + error.message);
+        } else {
+            alert("Registration successful! Please login.");
+            toggleAuth(false);
         }
-    };
+    }
+
+    // PIAC FUNKCIÓK
+    async function saveMarket() {
+        const payload = {
+            title: document.getElementById('m-title').value,
+            creator_name: currentUser.username,
+            type: document.getElementById('m-type').value,
+            take: parseInt(document.getElementById('m-take').value),
+            start_time: document.getElementById('m-start').value,
+            odd_1: parseFloat(document.getElementById('m-o1').value),
+            odd_x: parseFloat(document.getElementById('m-ox').value),
+            odd_2: parseFloat(document.getElementById('m-o2').value),
+            max_stake: parseInt(document.getElementById('m-max').value)
+        };
+
+        const { error } = await _supabase.from('markets').insert([payload]);
+
+        if(error) alert("Save Error: " + error.message);
+        else {
+            alert("Market created!");
+            closeCreateModal();
+            loadMarkets();
+        }
+    }
+
+    async function loadMarkets() {
+        const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const list = document.getElementById('market-list');
+        list.innerHTML = "";
+        data?.forEach(m => {
+            list.innerHTML += `
+                <div class="market-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <b>${m.title}</b>
+                        <span style="color:var(--primary); font-size:12px;">${m.type}</span>
+                    </div>
+                    <div style="margin-top:10px; display:flex; gap:20px; font-size:14px;">
+                        <span>1: <b>${m.odd_1}</b></span>
+                        <span>X: <b>${m.odd_x}</b></span>
+                        <span>2: <b>${m.odd_2}</b></span>
+                    </div>
+                </div>`;
+        });
+    }
+
+    // NAVIGÁCIÓ
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+        document.getElementById('link-' + id).classList.add('active');
+    }
+
+    // MODAL KEZELÉS
+    function openAuth() { document.getElementById('auth-modal').classList.remove('hidden'); }
+    function closeAuth() { document.getElementById('auth-modal').classList.add('hidden'); }
+    function toggleAuth(isReg) {
+        document.getElementById('login-fields').classList.toggle('hidden', isReg);
+        document.getElementById('reg-fields').classList.toggle('hidden', !isReg);
+        document.getElementById('auth-title').innerText = isReg ? "Register" : "Login";
+    }
+    function openCreateModal() { document.getElementById('create-modal').classList.remove('hidden'); }
+    function closeCreateModal() { document.getElementById('create-modal').classList.add('hidden'); }
+    function logout() { localStorage.removeItem("user"); location.reload(); }
 </script>
 </body>
 </html>
