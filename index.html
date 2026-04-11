@@ -203,29 +203,66 @@
         }
     }
 
-    async function loadMarkets() {
-        // start_time és title lekérése
-        const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+async function loadMarkets() {
+        const { data, error } = await _supabase
+            .from('markets')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) return console.error("Hiba:", error);
+
         const list = document.getElementById('market-list');
         list.innerHTML = "";
-        data?.forEach(m => {
-            // Megpróbáljuk beolvasni a csoportokat a note-ból, ha ott van
-            let displayGroups = [];
-            try { displayGroups = JSON.parse(m.note); } catch(e) { displayGroups = []; }
 
-            list.innerHTML += `<div class="market-card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0;">${m.title || "Névtelen esemény"}</h3>
-                    <b style="color:${m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)'}">${m.type}</b>
+        data?.forEach(m => {
+            let groups = [];
+            try {
+                // A 'note' oszlop tartalmazza a manuális kimeneteleket
+                groups = JSON.parse(m.note || "[]");
+            } catch (e) {
+                groups = m.market_data?.groups || [];
+            }
+
+            const marketCard = document.createElement('div');
+            marketCard.className = 'market-card';
+            marketCard.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <h3 style="margin:0; font-size:18px;">${m.title || m.event_name}</h3>
+                    <b style="color:${m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)'}; font-size:12px;">${m.type}</b>
                 </div>
-                <small style="color:#888;">${m.start_time ? new Date(m.start_time).toLocaleString() : ""}</small>
-                ${displayGroups.map(g => `
-                    <div class="group-box">
-                        <b>${g.title}:</b> ${g.outcomes.map(o => `${o.n} (${o.o})`).join(', ')}
+                <div style="font-size:11px; color:#888; margin-bottom:15px;">
+                    ${m.start_time ? new Date(m.start_time).toLocaleString('hu-HU') : ''}
+                </div>
+                <div id="groups-container-${m.id}"></div>
+            `;
+
+            const groupsContainer = marketCard.querySelector(`#groups-container-${m.id}`);
+            
+            groups.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'group-box';
+                groupDiv.innerHTML = `
+                    <div style="font-size:12px; font-weight:bold; margin-bottom:10px; color:#aaa; text-transform:uppercase;">${group.title}</div>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:10px;">
+                        ${(group.outcomes || []).map(o => `
+                            <button class="btn-bet" onclick="handleBet('${m.id}', '${o.n || o.name}', ${o.o || o.odds})"
+                                    style="background:#0b1218; border:1px solid #334756; color:#fff; padding:12px; border-radius:10px; cursor:pointer; text-align:center; transition:0.2s;">
+                                <div style="font-size:10px; color:#8899a6; margin-bottom:4px;">${o.n || o.name}</div>
+                                <div style="font-size:16px; font-weight:bold; color:var(--primary);">${o.o || o.odds}</div>
+                            </button>
+                        `).join('')}
                     </div>
-                `).join('')}
-            </div>`;
+                `;
+                groupsContainer.appendChild(groupDiv);
+            });
+
+            list.appendChild(marketCard);
         });
+    }
+
+    // Ezt a függvényt is add hozzá alá, hogy működjön a gombra kattintás
+    function handleBet(marketId, outcomeName, odds) {
+        alert("Kiválasztott kimenetel: " + outcomeName + " (" + odds + ")");
     }
 
     function showSection(id) {
