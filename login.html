@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>StakeForge | Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background: var(--card); padding: 40px; border-radius: 12px; border: 1px solid #2c4f60; width: 350px; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2 style="color:var(--primary)">STAKEFORGE</h2>
+        <p>Jelentkezz be a folytatáshoz</p>
+        <input type="email" id="email" placeholder="Email cím">
+        <input type="password" id="password" placeholder="Jelszó">
+        <button onclick="login()">Bejelentkezés</button>
+    </div>
+
+    <script>
+        const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
+        const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
+        const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                alert("Hiba: " + error.message);
+            } else {
+                localStorage.setItem("user", JSON.stringify(data.user));
+                // Itt irányítunk át a főoldalra (nevezd át, ha nem dashboard.html a neve)
+                window.location.href = "dashboard.html"; 
+            }
+        }
+    </script>
+</body>
+</html>
