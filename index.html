@@ -35,16 +35,7 @@
         .btn-bet:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-primary { 
-            background: var(--primary); 
-            color: #000; 
-            border: none; 
-            padding: 14px 28px; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            background: var(--primary); color: #000; border: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
         }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3); }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
@@ -214,10 +205,32 @@
                     ${g.outcomes.map(o => `<button class="btn-bet" ${expired?'disabled':''} onclick="openBet('${m.id}', '${o.n}', ${o.o}, '${m.type}', '${m.deadline}')">${o.n}<br><b>${o.o}</b></button>`).join('')}</div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
+                // MODIFIED HISTORY DESIGN
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                card.innerHTML = `<h3>${m.title}</h3><span style="color:var(--success); font-weight:bold;">RESOLVED ✔</span><br>
-                ${groups.map(g => `<small><b>${g.title}:</b> ${g.outcomes.filter(o => o.status === 'win').map(o => o.n).join(', ') || 'No winners'}</small><br>`).join('')}`;
+                card.style.opacity = '0.85';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <h3 style="margin:0">${m.title}</h3>
+                            <small style="color:#aaa;">Host: <b>${m.creator_name}</b> | Deadline: ${m.deadline.replace('T', ' ')}</small>
+                        </div>
+                        <span style="color:var(--primary); font-weight:bold; font-size:12px; border:1px solid var(--primary); padding:4px 8px; border-radius:4px;">SETTLED ✔</span>
+                    </div>
+                    <div style="margin-top:15px;">
+                        ${groups.map(g => `
+                            <div style="margin-bottom:10px;">
+                                <div style="font-size:12px; font-weight:bold; color:var(--primary);">${g.title}</div>
+                                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;">
+                                    ${g.outcomes.map(o => `
+                                        <div style="font-size:11px; padding:4px 8px; border-radius:4px; background:rgba(0,0,0,0.2); border:1px solid ${o.status==='win'?'var(--success)':'var(--danger)'}">
+                                            ${o.n} - <b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WIN':'LOSS'}</b>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
                 hList.appendChild(card);
             }
         });
@@ -285,7 +298,6 @@
             }
         }
 
-        // Return Host Budget - Payouts
         const { data: hProf } = await _supabase.from('profiles').select(field).eq('username', mData.creator_name).single();
         if (hProf) await _supabase.from('profiles').update({ [field]: hProf[field] + (initialBudget - totalPayout) }).eq('username', mData.creator_name);
 
