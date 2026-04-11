@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -47,7 +46,7 @@
         .warning-box { background: rgba(255, 204, 0, 0.1); border: 1px solid var(--demo); color: var(--demo); padding: 20px; border-radius: 10px; margin-top: 30px; font-weight: bold; }
         
         .hidden { display: none !important; }
-        .max-badge { background: #334756; color: var(--primary); padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 10px; }
+        .max-badge { background: #334756; color: var(--primary); padding: 2px 6px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 10px; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -62,7 +61,7 @@
             <span id="link-settings" onclick="showSection('settings')">Settings</span>
         </div>
     </div>
-    <div class="nav-right" id="auth-area">
+    <div class="nav-right">
         <div class="wallet-display">
             <span id="nav-real" style="color:var(--primary)">0.00 €</span>
             <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
@@ -96,9 +95,6 @@
             <div class="warning-box">⚠️ Magyarország területén a BE/KI-fizetés tiltva van.</div>
         </div>
     </div>
-
-    <div id="section-account" class="section"><h2>Account</h2></div>
-    <div id="section-settings" class="section"><h2>Settings</h2></div>
 </div>
 
 <div id="createModal" class="modal hidden">
@@ -106,12 +102,13 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h2 style="margin:0; color:var(--primary);">New Event</h2>
             <div style="display:flex; gap:10px;">
-                <button class="btn-primary" onclick="saveMarket()">💾 Save & Pay</button>
+                <button class="btn-primary" id="final-save-btn" onclick="saveMarket()">💾 Save & Pay</button>
                 <button class="btn-danger" onclick="closeModal()">Cancel</button>
             </div>
         </div>
-        <label>Event Name</label><input id="m-name" placeholder="Pl: Real Madrid - Man. City">
+        <label>Event Name</label><input id="m-name" placeholder="Pl: Madrid - City">
         <label>Deadline</label><input id="m-date" type="datetime-local">
+        
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:20px;">
             <div>
                 <label>Type</label>
@@ -121,47 +118,39 @@
                 </select>
             </div>
             <div>
-                <label>Budget (Liquidity) <span id="max-btn" class="max-badge" onclick="setMaxBudget()">MAX</span></label>
+                <label>Budget (Liquidity) <span class="max-badge" onclick="setMaxBudget()">MAX</span></label>
                 <input id="m-budget" type="number" value="1000">
-                <small id="available-info" style="display:block; margin-top:-10px; font-size:10px; font-weight:bold;"></small>
+                <small id="available-info" style="display:block; margin-top:-10px; font-weight:bold;"></small>
             </div>
         </div>
+        
         <div id="groups-container"></div>
         <button class="btn-outline" onclick="addGroup()">+ Add Market Group</button>
     </div>
 </div>
 
-<div id="betModal" class="modal hidden">
-    <div class="modal-box" style="width: 320px;">
-        <h3 id="bet-outcome-name" style="margin:0; color:var(--primary);">Outcome</h3>
-        <p id="bet-odds-display" style="font-size:24px; font-weight:bold; margin:10px 0;"></p>
-        <label>Stake Amount</label><input id="bet-amount" type="number" value="100" oninput="calculateWin()">
-        <div style="background:rgba(0,0,0,0.3); padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #334756;">
-            <small>Potential Win:</small><div id="potential-win" style="font-size:18px; font-weight:bold; color:var(--demo);">0.00</div>
-        </div>
-        <button class="btn-primary" style="width:100%" onclick="placeFinalBet()">Place Bet</button>
-        <button onclick="closeBetModal()" style="background:none; border:none; color:#888; width:100%; cursor:pointer; margin-top:10px;">Cancel</button>
-    </div>
-</div>
-
 <script>
+    // --- KONFIGURÁCIÓ ---
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
     let currentUser = JSON.parse(localStorage.getItem("user"));
     let userProfile = null;
     let groupIdx = 0;
-    let activeBetData = null;
 
+    // --- PROFIL ÉS EGYENLEG ---
     async function fetchProfile() {
         if(!currentUser) return;
-        const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        const { data, error } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(data) {
             userProfile = data;
             document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
             document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
-            document.getElementById("wallet-real").innerText = data.real_balance.toFixed(2) + " €";
-            document.getElementById("wallet-demo").innerText = data.demo_balance.toFixed(2) + " D";
+            if(document.getElementById("wallet-real")) {
+                document.getElementById("wallet-real").innerText = data.real_balance.toFixed(2) + " €";
+                document.getElementById("wallet-demo").innerText = data.demo_balance.toFixed(2) + " D";
+            }
             updateAvailableDisplay();
         }
     }
@@ -183,13 +172,81 @@
     function setMaxBudget() {
         if(!userProfile) return;
         const type = document.getElementById('m-type').value;
-        document.getElementById('m-budget').value = type === 'REAL' ? userProfile.real_balance : userProfile.demo_balance;
+        document.getElementById('m-budget').value = (type === 'REAL' ? userProfile.real_balance : userProfile.demo_balance);
     }
 
+    // --- PIAC MENTÉSE ---
+    async function saveMarket() {
+        const btn = document.getElementById('final-save-btn');
+        if(!currentUser || !userProfile) return alert("Hiba: Nincs bejelentkezett felhasználó!");
+
+        const name = document.getElementById('m-name').value;
+        const budgetVal = parseFloat(document.getElementById('m-budget').value);
+        const type = document.getElementById('m-type').value;
+        const deadline = document.getElementById('m-date').value;
+
+        if(!name) return alert("Adj nevet az eseménynek!");
+        if(isNaN(budgetVal) || budgetVal <= 0) return alert("Érvénytelen büdzsé!");
+
+        const balanceField = (type === 'REAL' ? 'real_balance' : 'demo_balance');
+        if (budgetVal > userProfile[balanceField]) {
+            return alert("Nincs elég egyenleged!");
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Saving...";
+
+        // 1. Csoportok összeszedése
+        const groups = [];
+        document.querySelectorAll('.market-group').forEach(g => {
+            const outcomes = [];
+            g.querySelectorAll('.outcome-item').forEach(i => {
+                outcomes.push({ 
+                    n: i.querySelector('.o-n').value || "Névtelen", 
+                    o: parseFloat(i.querySelector('.o-o').value) || 1.0 
+                });
+            });
+            groups.push({ title: g.querySelector('.g-title').value || "Csoport", outcomes });
+        });
+
+        try {
+            // 2. Levonás a profilból
+            const { error: upErr } = await _supabase.from('profiles')
+                .update({ [balanceField]: userProfile[balanceField] - budgetVal })
+                .eq('id', currentUser.id);
+
+            if(upErr) throw upErr;
+
+            // 3. Piac beszúrása
+            const { error: insErr } = await _supabase.from('markets').insert([{
+                title: name,
+                type: type,
+                take: budgetVal,
+                note: JSON.stringify(groups),
+                creator_name: currentUser.username,
+                created_at: deadline || new Date().toISOString()
+            }]);
+
+            if(insErr) throw insErr;
+
+            alert("Sikeres mentés és fizetés!");
+            closeModal();
+            await fetchProfile();
+            loadMarkets();
+
+        } catch (err) {
+            alert("Hiba történt: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "💾 Save & Pay";
+        }
+    }
+
+    // --- UI FUNKCIÓK ---
     async function loadMarkets() {
-        const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const { data, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById('market-list');
-        list.innerHTML = data?.length ? "" : "Nincsenek aktív piacok.";
+        list.innerHTML = "";
         
         data?.forEach(m => {
             let groups = JSON.parse(m.note || "[]");
@@ -201,106 +258,23 @@
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
                             <h3 style="margin:0;">${m.title}</h3>
-                            <div class="market-meta">
-                                <span>Host: <b>${m.creator_name || 'System'}</b></span>
-                                <span>Deadline: <b>${dateStr}</b></span>
-                            </div>
+                            <div class="market-meta"><span>Host: <b>${m.creator_name}</b></span><span>Kezdés: <b>${dateStr}</b></span></div>
                         </div>
                         <div style="text-align:right;">
-                            <b style="color:${m.type === 'REAL' ? 'var(--primary)' : 'var(--demo)'}; background:rgba(0,0,0,0.2); padding:4px 10px; border-radius:4px; font-size:12px; display:inline-block; margin-bottom:5px;">
-                                ${m.type}
-                            </b>
-                            <div style="color:#fff; font-size:13px; font-weight:bold;">
-                                Budget: <span style="color:var(--primary);">${Number(m.take || 0).toLocaleString()} ${m.type === 'REAL' ? '€' : 'D'}</span>
-                            </div>
+                            <b style="color:${m.type==='REAL'?'var(--primary)':'var(--demo)'}">${m.type}</b>
+                            <div style="font-size:13px; font-weight:bold; margin-top:5px;">Budget: <span style="color:var(--primary)">${m.take} ${m.type==='REAL'?'€':'D'}</span></div>
                         </div>
                     </div>
-                    ${groups.map(g => `
-                        <div style="margin-top:15px; border-top:1px solid #2c4f60; padding-top:10px;">
-                            <small style="color:#888; font-weight:bold;">${g.title}</small>
-                            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px; margin-top:10px;">
-                                ${g.outcomes.map(o => `
-                                    <button class="btn-bet" onclick="handleBet('${m.id}', '${o.n}', ${o.o}, '${m.type}')">
-                                        <div style="font-size:11px; color:#aaa; margin-bottom:2px;">${o.n}</div>
-                                        <div style="font-weight:bold; color:var(--primary); font-size:16px;">${o.o}</div>
-                                    </button>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
                 </div>`;
             list.appendChild(card);
         });
-    }
-
-    async function saveMarket() {
-        if(!currentUser || !userProfile) return alert("Hiba a profil betöltésekor!");
-        const budgetVal = parseFloat(document.getElementById('m-budget').value) || 0;
-        const type = document.getElementById('m-type').value;
-        const balanceField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-
-        if (budgetVal <= 0) return alert("A büdzsé nem lehet nulla!");
-        if (budgetVal > userProfile[balanceField]) return alert("Nincs elég egyenleged!");
-
-        const groups = [];
-        document.querySelectorAll('.market-group').forEach(g => {
-            const outcomes = [];
-            g.querySelectorAll('.outcome-item').forEach(i => {
-                outcomes.push({ n: i.querySelector('.o-n').value, o: parseFloat(i.querySelector('.o-o').value) });
-            });
-            groups.push({ title: g.querySelector('.g-title').value, outcomes });
-        });
-
-        const { error: upErr } = await _supabase.from('profiles').update({ [balanceField]: userProfile[balanceField] - budgetVal }).eq('id', currentUser.id);
-        if(upErr) return alert("Levonási hiba!");
-
-        const { error: insErr } = await _supabase.from('markets').insert([{
-            title: document.getElementById('m-name').value,
-            type: type,
-            take: budgetVal,
-            note: JSON.stringify(groups),
-            creator_name: currentUser.username,
-            created_at: document.getElementById('m-date').value || new Date().toISOString()
-        }]);
-
-        if(!insErr) {
-            alert("Sikeres mentés!");
-            closeModal();
-            fetchProfile();
-            loadMarkets();
-        }
-    }
-
-    function handleBet(id, name, odds, mType) {
-        if(!currentUser) return window.location.href="login.html";
-        activeBetData = { id, name, odds, mType };
-        document.getElementById('bet-outcome-name').innerText = name;
-        document.getElementById('bet-odds-display').innerText = odds.toFixed(2);
-        document.getElementById('betModal').classList.remove('hidden');
-        calculateWin();
-    }
-
-    async function placeFinalBet() {
-        const amount = parseFloat(document.getElementById('bet-amount').value);
-        const balanceField = activeBetData.mType === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(amount > userProfile[balanceField]) return alert(`Nincs elég fedezet!`);
-        const { error } = await _supabase.from('profiles').update({ [balanceField]: userProfile[balanceField] - amount }).eq('id', currentUser.id);
-        if(!error) { alert("Fogadás kész!"); closeBetModal(); fetchProfile(); }
-    }
-
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-links span').forEach(l => l.classList.remove('active'));
-        document.getElementById('section-'+id).classList.add('active');
-        document.getElementById('link-'+id).classList.add('active');
-        if(id === 'markets') loadMarkets();
     }
 
     function addGroup() {
         groupIdx++;
         const div = document.createElement('div');
         div.className = 'market-group';
-        div.innerHTML = `<input class="g-title" placeholder="Csoport neve"><div id="grid-${groupIdx}" class="outcomes-grid"></div><button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Új kimenetel</button>`;
+        div.innerHTML = `<input class="g-title" placeholder="Piac csoport (pl. Szögletek)"><div id="grid-${groupIdx}" class="outcomes-grid"></div><button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Új kimenetel</button>`;
         document.getElementById('groups-container').appendChild(div);
         addOutcome(groupIdx);
     }
@@ -312,22 +286,20 @@
         document.getElementById(`grid-${id}`).appendChild(div);
     }
 
-    function calculateWin() { 
-        const amt = parseFloat(document.getElementById('bet-amount').value) || 0;
-        document.getElementById('potential-win').innerText = (amt * (activeBetData ? activeBetData.odds : 0)).toFixed(2); 
-    }
-
     function openCreateModal() { 
-        if(!currentUser) return window.location.href="login.html"; 
         document.getElementById("createModal").classList.remove("hidden"); 
         document.getElementById('groups-container').innerHTML = ""; 
         addGroup(); 
         updateAvailableDisplay();
     }
-
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
-    function closeBetModal() { document.getElementById('betModal').classList.add('hidden'); }
-    function logout() { localStorage.removeItem("user"); window.location.reload(); }
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-links span').forEach(l => l.classList.remove('active'));
+        document.getElementById('section-'+id).classList.add('active');
+        document.getElementById('link-'+id).classList.add('active');
+    }
+    function logout() { localStorage.removeItem("user"); window.location.href="login.html"; }
 
     window.onload = () => { fetchProfile(); loadMarkets(); };
 </script>
