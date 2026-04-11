@@ -1,10 +1,4 @@
-Sajnálom a folyamatos kellemetlenséget! A beküldött hibaüzenetek alapján egyértelmű, hogy a Supabase adatbázisod nagyon szigorúan veszi az oszlopneveket, és ha a kód akár csak egyetlen olyan mezőt is megpróbál elküldeni, ami nincs a táblában (vagy rossz a neve), azonnal elutasítja a mentést.
 
-A legutóbbi listád alapján (id, title, creator_name, type, take, start_time, odd_1, odd_x, odd_2, created_at, max_stake, note) pontosítottam a mentési funkciót.
-
-Itt a teljes, javított kód, amely tartalmazza az összes szekciót és a garantáltan az adatbázisodhoz illeszkedő mentést:
-
-HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
