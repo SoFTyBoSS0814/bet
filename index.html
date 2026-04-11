@@ -1,16 +1,3 @@
-Sajnálom a kavarodást, teljesen jogos! A hiba ott volt, hogy bár a gombot kiraktuk, a mögötte lévő kód még a régi adatmezőket kereste, ezért a "Mentés" gomb egyszerűen nem csinált semmit.
-
-Kijavítottam mindent:
-
-Gomb elhelyezése: A + Create Market gomb visszakerült a Markets fülön belülre, a jobb oldalra.
-
-Dinamikus mezők: Most már csoportonként hozzáadhatsz akár 6 kimenetelt is (pl. 0.5 felett, 1.5 felett, stb.).
-
-Mentés funkció: A kód most már helyesen olvassa ki a "Gólszám" és egyéb csoportok összes almezőjét, és elmenti őket a Supabase-be.
-
-Íme a javított, működő kód:
-
-HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
