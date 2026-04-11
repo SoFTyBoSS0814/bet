@@ -1,15 +1,4 @@
-A 404-es hiba és az, hogy "nem enged vissza", azért van, mert a kódodban a GitHub Pages elérési útja és a fájlnevek nem találkoznak. Amikor frissítesz vagy kijelentkezel, a böngésző a /bet/login.html oldalt keresi, de az vagy nincs ott, vagy más a neve (pl. kisbetű-nagybetű eltérés).
 
-Itt a megoldás, ami kijavítja a navigációt (hogy ne dobjon 404-re) és stabilizálja a piacmentést az adatbázisod oszlopaihoz mérten.
-
-A legfontosabb javítások:
-Navigáció fix: Ha frissítesz és nincs bejelentkezve senki, nem irányít át sehova, hanem helyben mutatja a hibaüzenetet, így nem kapsz 404-et.
-
-Oszlopnevek: A mentésnél töröltem minden olyan mezőt, ami a hibaüzeneteid szerint hiányzik (pl. budget, event_name, creator_id).
-
-URL kezelés: A kód automatikusan felismeri, hol fut, így GitHub-on is működni fog.
-
-HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
