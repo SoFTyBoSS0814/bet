@@ -16,9 +16,9 @@
         input { width: 100%; padding: 14px; margin-top: 5px; background: var(--input); border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
         .btn-auth { background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 15px; text-transform: uppercase; }
         .toggle-link { margin-top: 25px; font-size: 13px; color: #8899a6; }
-        .toggle-link span { color: var(--primary); cursor: pointer; font-weight: bold; }
+        .toggle-link span { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
         .hidden { display: none !important; }
-        .error-msg { color: #ff4444; font-size: 12px; margin-top: 15px; display: none; background: rgba(255,68,68,0.1); padding: 10px; border-radius: 5px; }
+        #msg { color: #ff4444; font-size: 12px; margin-top: 15px; display: none; padding: 10px; background: rgba(255,68,68,0.1); border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -30,7 +30,7 @@
     <div id="login-form">
         <div class="form-group">
             <label>Email cím</label>
-            <input type="email" id="login-email" placeholder="email@valami.hu">
+            <input type="email" id="login-email" placeholder="pelda@email.hu">
         </div>
         <div class="form-group">
             <label>Jelszó</label>
@@ -43,11 +43,11 @@
     <div id="register-form" class="hidden">
         <div class="form-group">
             <label>Felhasználónév</label>
-            <input type="text" id="reg-user" placeholder="SzerencsesJános">
+            <input type="text" id="reg-user" placeholder="SzerencsesJanos">
         </div>
         <div class="form-group">
             <label>Email cím</label>
-            <input type="email" id="reg-email" placeholder="email@valami.hu">
+            <input type="email" id="reg-email" placeholder="pelda@email.hu">
         </div>
         <div class="form-group">
             <label>Jelszó</label>
@@ -57,7 +57,7 @@
         <div class="toggle-link">Van már fiókod? <span onclick="toggleAuth()">Jelentkezz be</span></div>
     </div>
     
-    <div id="msg" class="error-msg"></div>
+    <div id="msg"></div>
 </div>
 
 <script>
@@ -70,6 +70,7 @@
         document.getElementById('register-form').classList.toggle('hidden');
         const isLogin = !document.getElementById('login-form').classList.contains('hidden');
         document.getElementById('auth-desc').innerText = isLogin ? "Lépj be az arénába!" : "Hozd létre a profilod!";
+        document.getElementById('msg').style.display = 'none';
     }
 
     function showMsg(text, isError = true) {
@@ -77,17 +78,20 @@
         m.innerText = text;
         m.style.display = 'block';
         m.style.color = isError ? '#ff4444' : '#00ff88';
+        m.style.background = isError ? 'rgba(255,68,68,0.1)' : 'rgba(0,255,136,0.1)';
     }
 
     async function handleLogin() {
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
+        if(!email || !password) return showMsg("Töltsd ki a mezőket!");
 
         const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-            showMsg("Hiba: " + error.message);
+            showMsg(error.message);
         } else {
+            // Profil adat betöltése a tábládból
             const { data: prof } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
             localStorage.setItem("user", JSON.stringify({ 
                 id: data.user.id, 
@@ -104,7 +108,7 @@
 
         if(!username || !email || !password) return showMsg("Minden mezőt tölts ki!");
 
-        // 1. Supabase Auth regisztráció
+        // 1. Auth regisztráció
         const { data, error } = await _supabase.auth.signUp({ email, password });
 
         if (error) {
@@ -113,22 +117,22 @@
         }
 
         if (data.user) {
-            // 2. Profil mentése - Itt küldjük el a password-öt a profiles táblának!
+            // 2. Profil létrehozása (MINDEN mezőt beküldünk, hogy ne legyen null hiba)
             const { error: profileError } = await _supabase.from('profiles').insert([
                 { 
                     id: data.user.id, 
                     username: username, 
                     email: email, 
-                    password: password, // Ez volt a ludas!
+                    password: password, 
                     demo_balance: 10000, 
                     real_balance: 0 
                 }
             ]);
 
             if (profileError) {
-                showMsg("Profil hiba: " + profileError.message);
+                showMsg("Adatbázis hiba: " + profileError.message);
             } else {
-                // Automatikus belépés mentése
+                // 3. Automatikus beléptetés, mivel a Confirm Email ki van kapcsolva
                 localStorage.setItem("user", JSON.stringify({ 
                     id: data.user.id, 
                     username: username 
