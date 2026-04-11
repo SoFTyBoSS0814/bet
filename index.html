@@ -32,11 +32,13 @@
         .btn-faucet:disabled { background: #444; color: #888; cursor: not-allowed; }
         .faucet-timer { font-size: 12px; color: var(--demo); margin-top: 10px; font-weight: bold; }
 
-        .market-card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2c4f60; }
+        .market-card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2c4f60; position: relative; }
         .market-meta { display: flex; gap: 15px; font-size: 11px; color: #8899a6; margin-top: 5px; text-transform: uppercase; }
         .market-group { background: rgba(255,255,255,0.03); border: 1px solid #2c4f60; border-radius: 10px; padding: 20px; margin-bottom: 20px; border-left: 4px solid var(--primary); }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-        .outcome-item { background: #14212b; padding: 12px; border-radius: 8px; border: 1px solid #253948; margin-bottom: 10px; }
+        
+        .history-badge { background: var(--success); color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; position: absolute; top: 20px; right: 20px; }
+        .winner-display { margin-top: 15px; padding: 10px; background: rgba(40, 167, 69, 0.1); border: 1px solid var(--success); border-radius: 8px; color: var(--success); font-weight: bold; text-align: center; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
@@ -61,6 +63,7 @@
         <div class="logo" onclick="window.location.reload()">STAKEFORGE</div>
         <div class="nav-links">
             <span id="link-markets" class="active" onclick="showSection('markets')">Markets</span>
+            <span id="link-history" onclick="showSection('history')">History</span>
             <span id="link-wallet" onclick="showSection('wallet')">Wallet</span>
             <span id="link-account" onclick="showSection('account')">Account</span>
         </div>
@@ -81,6 +84,11 @@
             <button class="btn-primary" onclick="openCreateModal()">+ Create Market</button>
         </div>
         <div id="market-list">Betöltés...</div>
+    </div>
+
+    <div id="section-history" class="section">
+        <h2 style="margin-bottom:25px; color: #888;">Closed Events</h2>
+        <div id="history-list">Nincsenek lezárt események.</div>
     </div>
 
     <div id="section-wallet" class="section">
@@ -183,7 +191,7 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('section-'+id).classList.add('active'); 
         document.getElementById('link-'+id).classList.add('active');
-        if(id==='markets') loadMarkets();
+        if(id==='markets' || id==='history') loadMarkets();
         if(id==='wallet') checkLocationAndRenderWallet();
         if(id==='account') {
             document.getElementById('acc-username').innerText = currentUser.username;
@@ -193,64 +201,68 @@
         }
     }
 
-    function updateAvailableBalance() {
-        if (!userProfile) return;
-        const type = document.getElementById('m-type').value;
-        const infoSpan = document.getElementById('available-info');
-        if (type === 'REAL') {
-            infoSpan.innerText = `(Available: ${userProfile.real_balance.toFixed(2)} €)`;
-            infoSpan.style.color = "var(--primary)";
-        } else {
-            infoSpan.innerText = `(Available: ${userProfile.demo_balance.toFixed(2)} D)`;
-            infoSpan.style.color = "var(--demo)";
-        }
-    }
-
-    async function claimFaucet() {
-        if (!userProfile) return;
-        const now = new Date().getTime();
-        const lastClaim = userProfile.last_faucet ? new Date(userProfile.last_faucet).getTime() : 0;
-        const cooldown = 24 * 60 * 60 * 1000;
-        if (now - lastClaim < cooldown) return;
-        const reward = Math.floor(Math.random() * (50000 - 500 + 1)) + 500;
-        await _supabase.from('profiles').update({ demo_balance: (userProfile.demo_balance || 0) + reward, last_faucet: new Date().toISOString() }).eq('id', currentUser.id);
-        alert(`Sikeresen kaptál ${reward.toLocaleString()} Demo pontot! 🎁`);
-        fetchProfile();
-    }
-
-    function updateFaucetUI() {
-        const btn = document.getElementById('faucet-btn');
-        const timer = document.getElementById('faucet-timer');
-        if (!userProfile || !btn) return;
-        const now = new Date().getTime();
-        const lastClaim = userProfile.last_faucet ? new Date(userProfile.last_faucet).getTime() : 0;
-        const cooldown = 24 * 60 * 60 * 1000;
-        const diff = now - lastClaim;
-        if (diff < cooldown) {
-            btn.disabled = true;
-            const remaining = cooldown - diff;
-            const hours = Math.floor(remaining / (1000 * 60 * 60));
-            const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-            timer.innerText = `Next claim in: ${hours}h ${mins}m`;
-        } else {
-            btn.disabled = false;
-            timer.innerText = "Ready to claim!";
-        }
-    }
-
     async function loadMarkets() {
         const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById('market-list');
-        list.innerHTML = data?.length ? "" : "Nincsenek aktív piacok.";
-        data?.forEach(m => {
-            if(m.status === 'settled') return;
+        const historyList = document.getElementById('history-list');
+        
+        list.innerHTML = "";
+        historyList.innerHTML = "";
+
+        if(!data || data.length === 0) {
+            list.innerHTML = "Nincsenek aktív piacok.";
+            historyList.innerHTML = "Nincsenek lezárt események.";
+            return;
+        }
+
+        data.forEach(m => {
             let groups = JSON.parse(m.note || "[]");
             const isOwner = currentUser && m.creator_name === currentUser.username;
             const card = document.createElement('div');
             card.className = 'market-card';
-            card.innerHTML = `<div style="padding:20px;"><div style="display:flex; justify-content:space-between;"><div><h3 style="margin:0;">${m.title} ${isOwner ? `<span class="edit-badge" onclick="openEditModal('${m.id}')">EDIT / SETTLE</span>` : ''}</h3><div class="market-meta"><span>Host: <b>${m.creator_name}</b></span></div></div><div style="text-align:right;"><b style="color:${m.type==='REAL'?'var(--primary)':'var(--demo)'}">${m.type}</b><br><small>Budget: ${m.take}</small></div></div>${groups.map(g => `<div style="margin-top:15px; border-top:1px solid #2c4f60; padding-top:10px;"><small style="color:#888;">${g.title}</small><div class="outcomes-grid" style="margin-top:5px;">${g.outcomes.map(o => `<button class="btn-bet" onclick="handleBet('${m.id}', '${o.n}', ${o.o}, '${m.type}')"><div style="font-size:11px;">${o.n}</div><div style="font-weight:bold; color:var(--primary); font-size:16px;">${o.o.toFixed(2)}</div></button>`).join('')}</div></div>`).join('')}</div>`;
-            list.appendChild(card);
+
+            if(m.status === 'settled') {
+                card.innerHTML = `
+                    <div class="history-badge">✓ CLOSED</div>
+                    <div style="padding:20px;">
+                        <h3 style="margin:0;">${m.title}</h3>
+                        <div class="market-meta"><span>Host: <b>${m.creator_name}</b> | Type: <b>${m.type}</b></span></div>
+                        <div class="winner-display">WINNER: ${m.winner || '---'}</div>
+                    </div>`;
+                historyList.appendChild(card);
+            } else {
+                card.innerHTML = `
+                    <div style="padding:20px;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <div>
+                                <h3 style="margin:0;">${m.title} ${isOwner ? `<span class="edit-badge" onclick="openEditModal('${m.id}')">EDIT / SETTLE</span>` : ''}</h3>
+                                <div class="market-meta"><span>Host: <b>${m.creator_name}</b></span></div>
+                            </div>
+                            <div style="text-align:right;">
+                                <b style="color:${m.type==='REAL'?'var(--primary)':'var(--demo)'}">${m.type}</b><br>
+                                <small>Budget: ${m.take}</small>
+                            </div>
+                        </div>
+                        ${groups.map(g => `
+                            <div style="margin-top:15px; border-top:1px solid #2c4f60; padding-top:10px;">
+                                <small style="color:#888;">${g.title}</small>
+                                <div class="outcomes-grid" style="margin-top:5px;">
+                                    ${g.outcomes.map(o => `
+                                        <button class="btn-bet" onclick="handleBet('${m.id}', '${o.n}', ${o.o}, '${m.type}')">
+                                            <div style="font-size:11px;">${o.n}</div>
+                                            <div style="font-weight:bold; color:var(--primary); font-size:16px;">${o.o.toFixed(2)}</div>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>`;
+                list.appendChild(card);
+            }
         });
+        
+        if(list.innerHTML === "") list.innerHTML = "Nincsenek aktív piacok.";
+        if(historyList.innerHTML === "") historyList.innerHTML = "Nincsenek lezárt események.";
     }
 
     async function saveMarket() {
@@ -328,20 +340,28 @@
         }
         alert("Kifizetés kész!"); closeModal(); fetchProfile(); loadMarkets();
     }
-    async function checkLocationAndRenderWallet() {
-        const dynamicArea = document.getElementById('wallet-dynamic-area');
-        try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            if (data.country_code === 'HU') dynamicArea.innerHTML = `<div class="warning-box"><span>⚠️</span> Magyarország területéről nem engedélyezett a BE/KI-fizetés.</div>`;
-            else dynamicArea.innerHTML = `<div class="wallet-actions"><button class="btn-action btn-deposit" onclick="alert('Redirect...')">DEPOSIT</button><button class="btn-action btn-withdraw" onclick="alert('Redirect...')">WITHDRAW</button></div>`;
-        } catch(e) { dynamicArea.innerHTML = `<div class="warning-box"><span>⚠️</span> Biztonsági korlátozás aktív.</div>`; }
+
+    function updateAvailableBalance() {
+        if (!userProfile) return;
+        const type = document.getElementById('m-type').value;
+        const infoSpan = document.getElementById('available-info');
+        if (type === 'REAL') {
+            infoSpan.innerText = `(Available: ${userProfile.real_balance.toFixed(2)} €)`;
+            infoSpan.style.color = "var(--primary)";
+        } else {
+            infoSpan.innerText = `(Available: ${userProfile.demo_balance.toFixed(2)} D)`;
+            infoSpan.style.color = "var(--demo)";
+        }
     }
-    function openCreateModal() { editingMarketId=null; document.getElementById("meta-inputs").classList.remove("hidden"); document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML=""; addGroup(); updateAvailableBalance(); }
-    function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
-    function closeBetModal() { document.getElementById('betModal').classList.add('hidden'); }
-    function logout() { localStorage.removeItem("user"); window.location.href="login.html"; }
-    window.onload = () => { fetchProfile(); loadMarkets(); };
-</script>
-</body>
-</html>
+
+    async function claimFaucet() {
+        if (!userProfile) return;
+        const now = new Date().getTime();
+        const lastClaim = userProfile.last_faucet ? new Date(userProfile.last_faucet).getTime() : 0;
+        const cooldown = 24 * 60 * 60 * 1000;
+        if (now - lastClaim < cooldown) return;
+        const reward = Math.floor(Math.random() * (50000 - 500 + 1)) + 500;
+        await _supabase.from('profiles').update({ demo_balance: (userProfile.demo_balance || 0) + reward, last_faucet: new Date().toISOString() }).eq('id', currentUser.id);
+        alert(`Sikeresen kaptál ${reward.toLocaleString()} Demo pontot! 🎁`);
+        fetchProfile();
+    }
