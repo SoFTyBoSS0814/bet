@@ -9,7 +9,6 @@
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* NAVBAR FIX */
         .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 1000; height: 70px; }
         .nav-left { display: flex; align-items: center; gap: 30px; }
         .nav-links { display: flex; gap: 20px; }
@@ -24,14 +23,11 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        /* MARKET HEADER GOMB */
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
 
-        /* MARKET CARD */
         .market-card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2c4f60; border-left: 4px solid var(--primary); }
         .group-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; margin-top: 10px; }
 
-        /* MODAL */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 900px; max-width: 95vw; max-height: 92vh; overflow-y: auto; border: 1px solid #2c4f60; }
         input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 12px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
@@ -88,14 +84,14 @@
         
         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
             <div><label>Esemény Neve *</label><input id="m-name" placeholder="pl. Man City vs Real Madrid"></div>
-            <div><label>Határidő *</label><input id="m-date" type="datetime-local"></div>
+            <div><label>Határidő *</label><input id="m-date" type="datetime-local" min="2024-01-01T00:00" max="2099-12-31T23:59"></div>
         </div>
         
         <label>Szabályok / Megjegyzés</label>
         <textarea id="m-desc" rows="2"></textarea>
 
         <div style="display:flex; align-items:center; gap:20px; background:rgba(0,0,0,0.3); padding:15px; border-radius:10px; border:1px solid #334756; margin-bottom:20px;">
-            <div style="flex:1;"><label>Költségvetés</label><input id="m-budget" type="number" value="1000"></div>
+            <div style="flex:1;"><label>Költségvetés (Take)</label><input id="m-budget" type="number" value="1000"></div>
             <div style="flex:1;">
                 <label>Számla típusa</label>
                 <select id="m-type" onchange="updateModalBalance()">
@@ -170,37 +166,64 @@
         grid.appendChild(div);
     }
 
+    // FIX MENTÉS: Tábla oszlopnevek szinkronizálva
     async function saveMarket() {
+        const name = document.getElementById('m-name').value;
+        const date = document.getElementById('m-date').value;
+        if(!name || !date) return alert("Név és dátum kötelező!");
+
         const groups = [];
         document.querySelectorAll('.event-group').forEach(g => {
             const outcomes = [];
             g.querySelectorAll('.outcome-item').forEach(o => {
-                outcomes.push({ name: o.querySelector('.o-n').value, odds: parseFloat(o.querySelector('.o-o').value) });
+                outcomes.push({ n: o.querySelector('.o-n').value, o: parseFloat(o.querySelector('.o-o').value) });
             });
             groups.push({ title: g.querySelector('.g-name').value, outcomes });
         });
 
+        // Hibaüzenetek alapján javított oszlopok: title, start_time, take, stake, odd_1, note
         const { error } = await _supabase.from('markets').insert([{
-            event_name: document.getElementById('m-name').value,
-            deadline: document.getElementById('m-date').value,
-            description: document.getElementById('m-desc').value,
-            budget: parseInt(document.getElementById('m-budget').value),
+            title: name,
+            start_time: date,
+            take: parseFloat(document.getElementById('m-budget').value),
             type: document.getElementById('m-type').value,
-            creator_id: currentUser.id,
-            market_data: { groups }
+            stake: 0,
+            note: JSON.stringify(groups),
+            odd_1: groups[0]?.outcomes[0]?.o || 0,
+            creator_name: currentUser.username || "Admin",
+            max_stake: 100
         }]);
 
-        if(!error) { alert("Sikeres mentés!"); closeModal(); loadMarkets(); }
+        if(!error) { 
+            alert("Sikeres mentés!"); 
+            closeModal(); 
+            loadMarkets(); 
+        } else {
+            alert("Hiba: " + error.message);
+        }
     }
 
     async function loadMarkets() {
+        // start_time és title lekérése
         const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById('market-list');
         list.innerHTML = "";
         data?.forEach(m => {
+            // Megpróbáljuk beolvasni a csoportokat a note-ból, ha ott van
+            let displayGroups = [];
+            try { displayGroups = JSON.parse(m.note); } catch(e) { displayGroups = []; }
+
             list.innerHTML += `<div class="market-card">
-                <div class="market-header"><h3>${m.event_name}</h3><b>${m.type}</b></div>
-                ${m.market_data.groups.map(g => `<div class="group-box"><b>${g.title}:</b> ${g.outcomes.map(o => `${o.name} (${o.odds})`).join(', ')}</div>`).join('')}
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0;">${m.title || "Névtelen esemény"}</h3>
+                    <b style="color:${m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)'}">${m.type}</b>
+                </div>
+                <small style="color:#888;">${m.start_time ? new Date(m.start_time).toLocaleString() : ""}</small>
+                ${displayGroups.map(g => `
+                    <div class="group-box">
+                        <b>${g.title}:</b> ${g.outcomes.map(o => `${o.n} (${o.o})`).join(', ')}
+                    </div>
+                `).join('')}
             </div>`;
         });
     }
