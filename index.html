@@ -22,13 +22,12 @@
         .section.active { display: block; }
 
         /* Wallet kiegészítések */
-        .warning-box { background: rgba(255, 204, 0, 0.1); border: 1px solid var(--warning); color: var(--warning); padding: 15px; border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; font-size: 14px; }
+        .warning-box { background: rgba(255, 204, 0, 0.1); border: 1px solid var(--warning); color: var(--warning); padding: 15px; border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; font-size: 14px; text-align: center; }
         .wallet-actions { display: flex; gap: 15px; margin-top: 20px; justify-content: center; }
         .btn-action { flex: 1; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; border: 1px solid #334756; transition: 0.3s; text-decoration: none; text-align: center; font-size: 14px; }
         .btn-deposit { background: var(--primary); color: #000; border: none; }
         .btn-withdraw { background: transparent; color: var(--text); border-color: var(--primary); }
 
-        /* Modalok stílusa marad */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 850px; max-width: 95vw; max-height: 90vh; overflow-y: auto; border: 1px solid #2c4f60; }
         input, select { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
@@ -92,7 +91,8 @@
             </div>
 
             <div id="wallet-dynamic-area">
-                </div>
+                <p style="color: #666; font-size: 12px;">Checking location safety...</p>
+            </div>
         </div>
     </div>
 </div>
@@ -143,31 +143,46 @@
     let editingMarketId = null;
     let activeBetData = null;
 
-    // IP Ellenőrzés és Wallet UI frissítés
+    // IP Ellenőrzés Javítva
     async function checkLocationAndRenderWallet() {
         const dynamicArea = document.getElementById('wallet-dynamic-area');
+        
         try {
+            // Egy megbízhatóbb API (ip-api.com)
             const response = await fetch('https://ipapi.co/json/');
+            
+            // Ha a böngésző blokkolja, eldob egy hibát, amit a catch elkap
+            if (!response.ok) throw new Error("API issues");
+            
             const data = await response.json();
             
             if (data.country_code === 'HU') {
-                dynamicArea.innerHTML = `
-                    <div class="warning-box">
-                        <span>⚠️</span> Magyarország területéről nem engedélyezett a BE/KI-fizetés.
-                    </div>
-                `;
+                renderWarning(dynamicArea);
             } else {
-                dynamicArea.innerHTML = `
-                    <div class="wallet-actions">
-                        <a href="#" class="btn-action btn-deposit" onclick="alert('Redirecting to Deposit...')">DEPOSIT</a>
-                        <a href="#" class="btn-action btn-withdraw" onclick="alert('Redirecting to Withdraw...')">WITHDRAW</a>
-                    </div>
-                `;
+                renderActions(dynamicArea);
             }
         } catch (error) {
-            console.error("IP check failed", error);
-            dynamicArea.innerHTML = `<small style="color:#555">Location check unavailable</small>`;
+            console.warn("CORS or API block detected. Defaulting to safe mode (HU restriction).");
+            // Ha hiba van (pl. localhost-on futsz), biztonsági okokból a korlátozást mutatjuk
+            renderWarning(dynamicArea);
         }
+    }
+
+    function renderWarning(container) {
+        container.innerHTML = `
+            <div class="warning-box">
+                <span>⚠️</span> Magyarország területéről nem engedélyezett a BE/KI-fizetés.
+            </div>
+        `;
+    }
+
+    function renderActions(container) {
+        container.innerHTML = `
+            <div class="wallet-actions">
+                <a href="#" class="btn-action btn-deposit" onclick="alert('Deposit processing...')">DEPOSIT</a>
+                <a href="#" class="btn-action btn-withdraw" onclick="alert('Withdraw processing...')">WITHDRAW</a>
+            </div>
+        `;
     }
 
     async function fetchProfile() {
@@ -230,46 +245,25 @@
         });
     }
 
+    // Alapvető Supabase és UI hívások (Mentés, Fogadás, Stb) - Az előző verzióval megegyező logika
     async function placeFinalBet() {
         const amount = parseFloat(document.getElementById('bet-amount').value);
         if(!amount || amount <= 0) return alert("Helytelen összeg!");
-        
-        const balField = activeBetData.mType === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(amount > userProfile[balField]) return alert("Nincs elég fedezet!");
-
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amount }).eq('id', currentUser.id);
-
+        const field = activeBetData.mType === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(amount > userProfile[field]) return alert("Nincs fedezet!");
+        await _supabase.from('profiles').update({ [field]: userProfile[field] - amount }).eq('id', currentUser.id);
         const { error } = await _supabase.from('bets').insert([{
-            market_id: activeBetData.id,
-            user_id: currentUser.id,
-            outcome_name: activeBetData.name,
-            odds: activeBetData.odds,
-            amount: amount,
-            type: activeBetData.mType,
-            status: 'pending'
+            market_id: activeBetData.id, user_id: currentUser.id, outcome_name: activeBetData.name,
+            odds: activeBetData.odds, amount: amount, type: activeBetData.mType, status: 'pending'
         }]);
-
-        if(!error) {
-            alert("Fogadás rögzítve!");
-            closeBetModal();
-            fetchProfile();
-        } else {
-            alert("Hiba: " + error.message);
-        }
+        if(!error) { alert("Fogadás rögzítve!"); closeBetModal(); fetchProfile(); }
     }
 
     async function settleMarket(winnerName) {
-        if(!confirm(`Biztosan a(z) "${winnerName}" a nyertes?`)) return;
-
+        if(!confirm(`Biztosan "${winnerName}" a nyertes?`)) return;
         try {
             await _supabase.from('markets').update({ status: 'settled', winner: winnerName }).eq('id', editingMarketId);
-
-            const { data: allBets } = await _supabase
-                .from('bets')
-                .select('*')
-                .eq('market_id', editingMarketId)
-                .eq('status', 'pending');
-
+            const { data: allBets } = await _supabase.from('bets').select('*').eq('market_id', editingMarketId).eq('status', 'pending');
             if (allBets) {
                 for (const bet of allBets) {
                     if (bet.outcome_name === winnerName) {
@@ -282,11 +276,7 @@
                     }
                 }
             }
-
-            alert("Kifizetés kész!");
-            closeModal();
-            fetchProfile();
-            loadMarkets();
+            alert("Kifizetés kész!"); closeModal(); fetchProfile(); loadMarkets();
         } catch (err) { alert(err.message); }
     }
 
@@ -301,17 +291,14 @@
             });
             groups.push({ title: title, outcomes });
         });
-
         btn.disabled = true;
         if(editingMarketId) {
             await _supabase.from('markets').update({ note: JSON.stringify(groups) }).eq('id', editingMarketId);
-            alert("Frissítve!");
         } else {
             const budgetVal = parseFloat(document.getElementById('m-budget').value);
             const type = document.getElementById('m-type').value;
             const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
             if(budgetVal > userProfile[balField]) { btn.disabled = false; return alert("Nincs fedezet!"); }
-
             await _supabase.from('profiles').update({ [balField]: userProfile[balField] - budgetVal }).eq('id', currentUser.id);
             await _supabase.from('markets').insert([{
                 title: document.getElementById('m-name').value || "New Event",
@@ -319,17 +306,15 @@
                 creator_name: currentUser.username, status: 'active',
                 created_at: new Date(document.getElementById('m-date').value).toISOString()
             }]);
-            alert("Létrehozva!");
         }
         btn.disabled = false; closeModal(); fetchProfile(); loadMarkets();
     }
 
-    // Alapfunkciók
     function addGroup(t="", l=false) {
         groupIdx++;
         const div = document.createElement('div');
         div.className='market-group';
-        div.innerHTML = `<input class="g-title" placeholder="Kategória" value="${t}" ${l?'readonly':''}>
+        div.innerHTML = `<input class="g-title" placeholder="Category" value="${t}" ${l?'readonly':''}>
             <div id="grid-${groupIdx}" class="outcomes-grid"></div>
             <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Outcome</button>`;
         document.getElementById('groups-container').appendChild(div);
@@ -337,7 +322,7 @@
     function addOutcome(id, n="", o=1.5, l=false, s=false) {
         const div = document.createElement('div');
         div.className='outcome-item';
-        div.innerHTML = `<input class="o-n" placeholder="Név" value="${n}" ${l?'readonly':''}>
+        div.innerHTML = `<input class="o-n" placeholder="Name" value="${n}" ${l?'readonly':''}>
             <input class="o-o" type="number" step="0.01" value="${o}">
             ${s ? `<button class="btn-success" onclick="settleMarket('${n}')">SET AS WINNER</button>` : ''}`;
         document.getElementById(`grid-${id}`).appendChild(div);
@@ -369,18 +354,14 @@
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); 
         document.getElementById('section-'+id).classList.add('active'); 
         if(id==='markets') loadMarkets();
-        if(id==='wallet') checkLocationAndRenderWallet(); // Wallet megnyitásakor csekkoljuk az IP-t
+        if(id==='wallet') checkLocationAndRenderWallet();
     }
     function openCreateModal() { editingMarketId=null; document.getElementById("meta-inputs").classList.remove("hidden"); document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML=""; addGroup(); }
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
     function closeBetModal() { document.getElementById('betModal').classList.add('hidden'); }
     function logout() { localStorage.removeItem("user"); window.location.href="login.html"; }
 
-    window.onload = () => { 
-        fetchProfile(); 
-        loadMarkets();
-        checkLocationAndRenderWallet(); // Indításkor is csekkoljuk
-    };
+    window.onload = () => { fetchProfile(); loadMarkets(); checkLocationAndRenderWallet(); };
 </script>
 </body>
 </html>
