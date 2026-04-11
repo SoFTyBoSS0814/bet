@@ -3,55 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | All-in-One</title>
+    <title>StakeForge | Pro Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --success: #00ff88; --danger: #ff4444; --demo: #ffcc00; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        :root { --primary: #00d4ff; --bg: #0b1218; --text: #fff; --card: #16212a; --danger: #ff4444; --demo: #ffcc00; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; }
         
-        /* NAVBAR */
-        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; height: 70px; position: sticky; top: 0; z-index: 1000; }
-        .nav-left { display: flex; align-items: center; gap: 20px; }
-        .nav-links { display: flex; gap: 20px; }
-        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding-bottom: 5px; }
-        .nav-links a.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        
-        .wallet-info { display: flex; gap: 15px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; }
+        /* NAVBAR - ARÁNYOSÍTVA */
+        .navbar { background: #111b22; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 40px; border-bottom: 1px solid #2c4f60; position: sticky; top: 0; z-index: 1000; }
+        .nav-left { display: flex; align-items: center; gap: 40px; }
+        .logo { font-weight: 900; color: var(--primary); font-size: 24px; letter-spacing: 1px; cursor: pointer; }
+        .nav-links { display: flex; gap: 25px; }
+        .nav-links a { color: #8899a6; text-decoration: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+        .nav-links a:hover, .nav-links a.active { color: var(--primary); }
 
-        .container { max-width: 1100px; margin: auto; padding: 30px; }
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+        .wallet-display { background: rgba(0,0,0,0.4); border: 1px solid #2c4f60; padding: 8px 16px; border-radius: 10px; display: flex; gap: 20px; font-weight: bold; font-size: 14px; align-items: center; height: 38px; box-sizing: border-box; }
+        
+        /* GOMBOK */
+        .btn { height: 38px; padding: 0 20px; border-radius: 8px; font-weight: bold; cursor: pointer; border: none; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-primary:hover { filter: brightness(1.2); }
+        .btn-danger { background: var(--danger); color: #fff; }
+
+        .container { max-width: 1200px; margin: auto; padding: 40px; }
         .section { display: none; }
         .section.active { display: block; }
 
-        /* GOMBOK */
-        .btn { padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-primary { background: var(--primary); color: #000; }
-        .btn-danger { background: var(--danger); color: #fff; }
-        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
-
-        /* AUTH MODAL */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 10001; }
-        .auth-box { background: var(--card); padding: 30px; border-radius: 15px; width: 350px; border: 1px solid #2c4f60; position: relative; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
+        /* MODAL RENDESEN */
+        .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        .modal-box { background: var(--card); width: 100%; max-width: 550px; padding: 30px; border-radius: 16px; border: 1px solid #2c4f60; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         
-        /* PIAC KÁRTYÁK */
-        .market-card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); border: 1px solid #2c4f60; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 11px; color: #8899a6; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+        input, select { width: 100%; background: #0b1218; border: 1px solid #2c4f60; color: #fff; padding: 12px; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        
+        .market-card { background: var(--card); padding: 25px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #2c4f60; display: flex; justify-content: space-between; align-items: center; }
         .hidden { display: none !important; }
-        .msg { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="navbar">
     <div class="nav-left">
-        <span style="font-weight:900; color:var(--primary); font-size:22px; cursor:pointer;" onclick="location.reload()">STAKEFORGE</span>
-        <div id="logged-in-menu" class="nav-links hidden">
-            <a onclick="showSection('markets')" id="link-markets" class="active">Markets</a>
-            <a onclick="showSection('wallet')" id="link-wallet">Wallet</a>
-            <a onclick="showSection('account')" id="link-account">Account</a>
-            <a onclick="showSection('settings')" id="link-settings">Settings</a>
+        <div class="logo">STAKEFORGE</div>
+        <div id="main-menu" class="nav-links hidden">
+            <a onclick="showSection('markets')" class="active" id="link-markets">Markets</a>
+            <a onclick="showSection('wallet')">Wallet</a>
+            <a onclick="showSection('account')">Account</a>
         </div>
     </div>
-    <div class="nav-right" id="nav-auth">
+    <div class="nav-right" id="nav-tools">
         <button class="btn btn-primary" onclick="openAuth()">Login / Register</button>
     </div>
 </div>
@@ -59,79 +63,58 @@
 <div class="container">
     <div id="section-markets" class="section active">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-            <h2>Live P2P Markets</h2>
-            <button id="create-btn" class="btn btn-primary hidden" onclick="openCreateModal()">+ Create Market</button>
+            <h1 style="margin:0;">Live Markets</h1>
+            <button id="create-btn" class="btn btn-primary hidden" onclick="toggleModal('market-modal', true)">+ Create Market</button>
         </div>
-        <div id="market-list">Betöltés...</div>
+        <div id="market-list">Loading markets...</div>
     </div>
 
-    <div id="section-wallet" class="section">
-        <h2>Wallet & Finances</h2>
-        <div class="market-card">
-            <p>Itt kezelheted a befizetéseidet és kifizetéseidet.</p>
-        </div>
-    </div>
-
-    <div id="section-account" class="section">
-        <h2>My Account</h2>
-        <div class="market-card" id="user-details">Betöltés...</div>
-    </div>
-
-    <div id="section-settings" class="section">
-        <h2>Settings</h2>
-        <div class="market-card"><p>Értesítések és biztonsági beállítások.</p></div>
-    </div>
+    <div id="section-wallet" class="section"><h1>My Wallet</h1></div>
+    <div id="section-account" class="section"><h1>Account Details</h1><div id="profile-info"></div></div>
 </div>
 
-<div id="auth-modal" class="modal-overlay hidden">
-    <div class="auth-box">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <h3 id="auth-title" style="margin:0;">Login</h3>
-            <span style="cursor:pointer" onclick="closeAuth()">✕</span>
+<div id="market-modal" class="modal-bg hidden">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 style="margin:0">Create New Market</h2>
+            <span style="cursor:pointer; font-size:24px;" onclick="toggleModal('market-modal', false)">×</span>
         </div>
-        <div id="login-fields">
-            <input type="email" id="login-email" placeholder="Email" value="nokilifemta@gmail.com">
-            <input type="password" id="login-pass" placeholder="Password">
-            <button class="btn btn-primary" style="width:100%" onclick="handleLogin()">Sign In</button>
-            <p style="font-size:12px; text-align:center; margin-top:15px;">Nincs fiókod? <a href="#" onclick="toggleAuth(true)" style="color:var(--primary)">Regisztrálj</a></p>
-        </div>
-        <div id="reg-fields" class="hidden">
-            <input type="text" id="reg-user" placeholder="Username">
-            <input type="email" id="reg-email" placeholder="Email">
-            <input type="password" id="reg-pass" placeholder="Password">
-            <button class="btn btn-primary" style="width:100%" onclick="handleRegister()">Register</button>
-            <p style="font-size:12px; text-align:center; margin-top:15px;">Van már fiókod? <a href="#" onclick="toggleAuth(false)" style="color:var(--primary)">Lépj be</a></p>
-        </div>
-        <div id="auth-msg" class="msg hidden"></div>
-    </div>
-</div>
-
-<div id="create-modal" class="modal-overlay hidden">
-    <div class="auth-box" style="width:600px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <h3 style="margin:0;">Create New Market</h3>
-            <span style="cursor:pointer" onclick="closeCreateModal()">✕</span>
-        </div>
-        <label style="font-size:11px; color:#888;">EVENT NAME *</label>
-        <input id="m-title" placeholder="e.g. Man City vs Real Madrid">
         
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div><label style="font-size:11px; color:#888;">START TIME</label><input id="m-start" type="datetime-local"></div>
-            <div><label style="font-size:11px; color:#888;">TYPE</label><select id="m-type"><option value="DEMO">DEMO (D)</option><option value="REAL">REAL (€)</option></select></div>
+        <div class="form-group">
+            <label>Event Name (Title) *</label>
+            <input id="m-title" placeholder="e.g. Man City vs Real Madrid">
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div><label style="font-size:11px; color:#888;">BUDGET (TAKE)</label><input id="m-take" type="number" value="1000"></div>
-            <div><label style="font-size:11px; color:#888;">MAX STAKE</label><input id="m-max" type="number" value="100"></div>
+        <div class="form-grid">
+            <div class="form-group"><label>Start Time</label><input id="m-start" type="datetime-local"></div>
+            <div class="form-group">
+                <label>Account Type</label>
+                <select id="m-type"><option value="DEMO">DEMO (D)</option><option value="REAL">REAL (€)</option></select>
+            </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-            <div><label style="font-size:11px; color:#888;">ODDS 1</label><input id="m-o1" type="number" step="0.01" value="2.00"></div>
-            <div><label style="font-size:11px; color:#888;">ODDS X</label><input id="m-ox" type="number" step="0.01" value="3.00"></div>
-            <div><label style="font-size:11px; color:#888;">ODDS 2</label><input id="m-o2" type="number" step="0.01" value="2.50"></div>
+        <div class="form-grid">
+            <div class="form-group"><label>Budget (Take)</label><input id="m-take" type="number" value="1000"></div>
+            <div class="form-group"><label>Max Stake</label><input id="m-max" type="number" value="100"></div>
         </div>
 
-        <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="saveMarket()">Save Market</button>
+        <label>Odds (1 - X - 2)</label>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 20px;">
+            <input id="m-o1" type="number" step="0.01" value="2.00">
+            <input id="m-ox" type="number" step="0.01" value="3.00">
+            <input id="m-o2" type="number" step="0.01" value="2.50">
+        </div>
+
+        <button class="btn btn-primary" style="width:100%; height:45px;" onclick="submitMarket()">Save Market</button>
+    </div>
+</div>
+
+<div id="auth-modal" class="modal-bg hidden">
+    <div class="modal-box" style="max-width:350px;">
+        <h2 style="text-align:center; color:var(--primary);">Login</h2>
+        <input id="auth-email" type="email" placeholder="Email" value="nokilifemta@gmail.com">
+        <input id="auth-pass" type="password" placeholder="Password">
+        <button class="btn btn-primary" style="width:100%; margin-top:15px;" onclick="login()">Sign In</button>
     </div>
 </div>
 
@@ -139,97 +122,29 @@
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
-    let currentUser = JSON.parse(localStorage.getItem("user"));
+    let user = JSON.parse(localStorage.getItem("user"));
 
-    // INICIALIZÁLÁS
-    window.onload = () => {
-        updateUI();
-        loadMarkets();
-    };
-
-    function updateUI() {
-        const navAuth = document.getElementById('nav-auth');
-        const loggedMenu = document.getElementById('logged-in-menu');
-        const createBtn = document.getElementById('create-btn');
-
-        if(currentUser) {
-            loggedMenu.classList.remove('hidden');
-            createBtn.classList.remove('hidden');
-            navAuth.innerHTML = `
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <div class="wallet-info">
-                        <span style="color:var(--primary)">${currentUser.real_balance.toFixed(2)} €</span>
-                        <span style="color:var(--demo)">${currentUser.demo_balance.toFixed(2)} D</span>
-                    </div>
-                    <button class="btn btn-danger" style="padding:5px 10px;" onclick="logout()">Logout</button>
-                </div>`;
-            document.getElementById('user-details').innerHTML = `<b>Username:</b> ${currentUser.username}<br><b>Email:</b> ${currentUser.email}`;
-        } else {
-            loggedMenu.classList.add('hidden');
-            createBtn.classList.add('hidden');
-            navAuth.innerHTML = `<button class="btn btn-primary" onclick="openAuth()">Login / Register</button>`;
-        }
-    }
-
-    // AUTH FUNKCIÓK
-    async function handleLogin() {
-        const email = document.getElementById('login-email').value;
-        const pass = document.getElementById('login-pass').value;
-        const msg = document.getElementById('auth-msg');
-
-        const { data, error } = await _supabase.from('profiles').select('*').eq('email', email).eq('password', pass).single();
-
-        if (error || !data) {
-            msg.innerText = "Error: Invalid credentials!";
-            msg.className = "msg msg-danger";
-            msg.classList.remove('hidden');
-        } else {
-            localStorage.setItem("user", JSON.stringify(data));
-            currentUser = data;
-            msg.innerText = "Success! Logging in...";
-            msg.className = "msg msg-success";
-            msg.classList.remove('hidden');
-            setTimeout(() => { closeAuth(); updateUI(); }, 1000);
-        }
-    }
-
-    async function handleRegister() {
-        const user = document.getElementById('reg-user').value;
-        const email = document.getElementById('reg-email').value;
-        const pass = document.getElementById('reg-pass').value;
-        
-        const { error } = await _supabase.from('profiles').insert([{ 
-            username: user, email: email, password: pass, demo_balance: 5000, real_balance: 0 
-        }]);
-
-        if (error) {
-            alert("Error: " + error.message);
-        } else {
-            alert("Registration successful! Please login.");
-            toggleAuth(false);
-        }
-    }
-
-    // PIAC FUNKCIÓK
-    async function saveMarket() {
-        const payload = {
+    async function submitMarket() {
+        // CSAK AZOKAT AZ ADATOKAT KÜLDJÜK, AMIK LÉTEZNEK AZ ADATBÁZISODBAN
+        const marketData = {
             title: document.getElementById('m-title').value,
-            creator_name: currentUser.username,
-            type: document.getElementById('m-type').value,
-            take: parseInt(document.getElementById('m-take').value),
             start_time: document.getElementById('m-start').value,
+            type: document.getElementById('m-type').value,
+            take: parseFloat(document.getElementById('m-take').value),
+            max_stake: parseFloat(document.getElementById('m-max').value),
             odd_1: parseFloat(document.getElementById('m-o1').value),
             odd_x: parseFloat(document.getElementById('m-ox').value),
             odd_2: parseFloat(document.getElementById('m-o2').value),
-            max_stake: parseInt(document.getElementById('m-max').value)
+            creator_name: user.username // Az adatbázisodban username van
         };
 
-        const { error } = await _supabase.from('markets').insert([payload]);
+        const { error } = await _supabase.from('markets').insert([marketData]);
 
-        if(error) alert("Save Error: " + error.message);
-        else {
-            alert("Market created!");
-            closeCreateModal();
+        if (error) {
+            alert("Hiba: " + error.message);
+        } else {
+            alert("Sikeres mentés!");
+            toggleModal('market-modal', false);
             loadMarkets();
         }
     }
@@ -241,38 +156,58 @@
         data?.forEach(m => {
             list.innerHTML += `
                 <div class="market-card">
-                    <div style="display:flex; justify-content:space-between;">
-                        <b>${m.title}</b>
-                        <span style="color:var(--primary); font-size:12px;">${m.type}</span>
+                    <div>
+                        <h3 style="margin:0 0 5px 0">${m.title}</h3>
+                        <small style="color:#8899a6">${m.type} | Created by: ${m.creator_name}</small>
                     </div>
-                    <div style="margin-top:10px; display:flex; gap:20px; font-size:14px;">
-                        <span>1: <b>${m.odd_1}</b></span>
-                        <span>X: <b>${m.odd_x}</b></span>
-                        <span>2: <b>${m.odd_2}</b></span>
+                    <div style="display:flex; gap:15px; font-weight:bold;">
+                        <div style="text-align:center"><div style="font-size:10px; color:#8899a6">1</div>${m.odd_1}</div>
+                        <div style="text-align:center"><div style="font-size:10px; color:#8899a6">X</div>${m.odd_x}</div>
+                        <div style="text-align:center"><div style="font-size:10px; color:#8899a6">2</div>${m.odd_2}</div>
                     </div>
                 </div>`;
         });
     }
 
-    // NAVIGÁCIÓ
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
-        document.getElementById('section-' + id).classList.add('active');
-        document.getElementById('link-' + id).classList.add('active');
+    function updateNav() {
+        const tools = document.getElementById('nav-tools');
+        const menu = document.getElementById('main-menu');
+        const createBtn = document.getElementById('create-btn');
+
+        if (user) {
+            menu.classList.remove('hidden');
+            createBtn.classList.remove('hidden');
+            tools.innerHTML = `
+                <div class="wallet-display">
+                    <span style="color:var(--primary)">${user.real_balance.toFixed(2)} €</span>
+                    <span style="color:var(--demo)">${user.demo_balance.toFixed(2)} D</span>
+                </div>
+                <button class="btn btn-danger" onclick="logout()">Logout</button>
+            `;
+            document.getElementById('profile-info').innerHTML = `<h3>Welcome, ${user.username}!</h3>`;
+        }
     }
 
-    // MODAL KEZELÉS
-    function openAuth() { document.getElementById('auth-modal').classList.remove('hidden'); }
-    function closeAuth() { document.getElementById('auth-modal').classList.add('hidden'); }
-    function toggleAuth(isReg) {
-        document.getElementById('login-fields').classList.toggle('hidden', isReg);
-        document.getElementById('reg-fields').classList.toggle('hidden', !isReg);
-        document.getElementById('auth-title').innerText = isReg ? "Register" : "Login";
+    async function login() {
+        const email = document.getElementById('auth-email').value;
+        const pass = document.getElementById('auth-pass').value;
+        const { data, error } = await _supabase.from('profiles').select('*').eq('email', email).eq('password', pass).single();
+        if (data) {
+            localStorage.setItem("user", JSON.stringify(data));
+            user = data;
+            location.reload();
+        } else { alert("Hibás adatok!"); }
     }
-    function openCreateModal() { document.getElementById('create-modal').classList.remove('hidden'); }
-    function closeCreateModal() { document.getElementById('create-modal').classList.add('hidden'); }
+
+    function toggleModal(id, show) { document.getElementById(id).classList.toggle('hidden', !show); }
+    function openAuth() { toggleModal('auth-modal', true); }
     function logout() { localStorage.removeItem("user"); location.reload(); }
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+    }
+
+    window.onload = () => { updateNav(); loadMarkets(); };
 </script>
 </body>
 </html>
