@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Multi-Settle System</title>
+    <title>StakeForge | Final System</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
@@ -21,24 +20,18 @@
         .section.active { display: block; }
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 25px; border: 1px solid var(--border); }
-        .deadline-tag { display: inline-block; background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 6px; font-size: 11px; margin-top: 10px; }
-        .expired { color: var(--danger); border: 1px solid var(--danger); }
-
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
-        .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; }
-        .btn-bet:hover:not(:disabled) { border-color: var(--primary); }
+        .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-bet.selected-win { background: var(--success) !important; color: #000; font-weight: bold; border-color: #fff; }
+        .btn-bet.selected-loss { background: var(--danger) !important; color: #fff; font-weight: bold; border-color: #fff; }
         .btn-bet:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 
-        /* Settle Modal Styles */
-        .settle-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,0,0,0.2); margin-bottom: 5px; border-radius: 6px; }
-        .status-badge { font-size: 10px; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; font-weight: bold; }
-        .status-win { background: var(--success); color: #000; }
-        .status-loss { background: var(--danger); color: #fff; }
+        .settle-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); margin-bottom: 5px; border-radius: 8px; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 500px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
@@ -72,8 +65,8 @@
     </div>
 
     <div id="section-history" class="section">
-        <h2>History</h2>
-        <div id="history-list">No closed events yet.</div>
+        <h2>Market History</h2>
+        <div id="history-list">Loading closed events...</div>
     </div>
 
     <div id="section-wallet" class="section">
@@ -121,7 +114,7 @@
         <h3 id="edit-title"></h3>
         <div id="settle-area"></div>
         <hr style="border:0.5px solid var(--border); margin:20px 0;">
-        <button class="btn-primary" style="width:100%; background:var(--success)" onclick="finalSubmitSettle()">CLOSE MARKET & PAYOUT</button>
+        <button class="btn-primary" style="width:100%; background:var(--success)" onclick="finalSubmitSettle()">RESOLVE ALL & PAYOUT</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('editModal')">Cancel</button>
     </div>
 </div>
@@ -178,157 +171,136 @@
             const deadline = m.deadline ? new Date(m.deadline) : null;
             const expired = deadline && now > deadline;
 
-            const card = document.createElement('div');
-            card.className = 'market-card';
-
             if(m.status === 'active') {
+                const card = document.createElement('div');
+                card.className = 'market-card';
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between">
                         <div>
                             <h3 style="margin:0">${m.title}</h3>
-                            <small>Host: ${m.creator_name} | Liq: ${m.take.toFixed(2)}</small><br>
-                            <span class="deadline-tag ${expired?'expired':''}">
-                                ${expired ? '⌛ Closed (Time)' : '⏳ Ends: ' + m.deadline.replace('T',' ')}
-                            </span>
+                            <small>Host: ${m.creator_name}</small><br>
+                            <span style="font-size:10px; color:${expired?'var(--danger)':'#aaa'}">${expired?'⌛ EXPIRED':'⏳ Ends: '+m.deadline.replace('T',' ')}</span>
                         </div>
                         <div style="text-align:right">
-                            <b style="color:${m.type==='REAL'?'var(--primary)':'var(--demo)'}">${m.type}</b>
-                            ${isHost ? `<br><button class="btn-primary" style="font-size:10px; padding:5px 10px; margin-top:5px;" onclick="openSettle('${m.id}', '${m.title}')">SETTLE</button>` : ''}
+                            <b style="color:var(--primary)">${m.type}</b><br>
+                            ${isHost ? `<button class="btn-primary" style="font-size:10px; padding:4px 8px; margin-top:5px;" onclick="openSettle('${m.id}', '${m.title}')">SETTLE</button>` : ''}
                         </div>
                     </div>
                     ${groups.map(g => `
                         <div class="market-group">
                             <b>${g.title}</b>
                             <div class="outcomes-grid">
-                                ${g.outcomes.map(o => `
-                                    <button class="btn-bet" ${expired?'disabled':''} onclick="openBet('${m.id}', '${o.n}', ${o.o}, '${m.type}', '${m.deadline}')">
-                                        ${o.n}<br><b>${o.o.toFixed(2)}</b>
-                                    </button>
-                                `).join('')}
+                                ${g.outcomes.map(o => `<button class="btn-bet" ${expired?'disabled':''} onclick="openBet('${m.id}', '${o.n}', ${o.o}, '${m.type}', '${m.deadline}')">${o.n}<br><b>${o.o}</b></button>`).join('')}
                             </div>
                         </div>
                     `).join('')}`;
                 mList.appendChild(card);
             } else {
-                card.innerHTML = `<h3>${m.title}</h3><p style="color:var(--success)">Resolved</p>`;
+                const card = document.createElement('div');
+                card.className = 'market-card';
+                card.style.opacity = "0.8";
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3>${m.title} (Closed)</h3>
+                        <span style="color:var(--success); font-weight:bold;">RESOLVED ✔</span>
+                    </div>
+                    ${groups.map(g => `
+                        <div style="font-size:12px; margin-top:10px; color:#aaa;">
+                            <b>${g.title}:</b> 
+                            ${g.outcomes.filter(o => o.status === 'win').map(o => `<span style="color:var(--success)">${o.n} (Winner)</span>`).join(', ') || 'No winner marked'}
+                        </div>
+                    `).join('')}
+                `;
                 hList.appendChild(card);
             }
         });
     }
 
-    // SETTLE LOGIC (Több kimenetel kezelése)
-    async function openSettle(mId, title) {
+    function openSettle(mId, title) {
         currentSettleData.mId = mId;
         document.getElementById('edit-title').innerText = title;
-        const { data } = await _supabase.from('markets').select('note').eq('id', mId).single();
-        const groups = JSON.parse(data.note);
-        currentSettleData.groups = groups;
+        _supabase.from('markets').select('note').eq('id', mId).single().then(({data}) => {
+            currentSettleData.groups = JSON.parse(data.note);
+            renderSettleUI();
+            document.getElementById('editModal').classList.remove('hidden');
+        });
+    }
 
+    function renderSettleUI() {
         const container = document.getElementById('settle-area');
-        container.innerHTML = "<h4>Mark Winners & Losers</h4>";
-
-        groups.forEach((g, gIdx) => {
+        container.innerHTML = "";
+        currentSettleData.groups.forEach((g, gIdx) => {
             const gDiv = document.createElement('div');
-            gDiv.innerHTML = `<p style="color:var(--primary); margin-bottom:5px;">${g.title}</p>`;
+            gDiv.style.marginTop = "15px";
+            gDiv.innerHTML = `<div style="color:var(--primary); font-weight:bold; margin-bottom:5px;">${g.title}</div>`;
             g.outcomes.forEach((o, oIdx) => {
-                // Alapértelmezett státusz: Pending
-                if(!o.status) o.status = 'pending';
-                
                 const row = document.createElement('div');
                 row.className = 'settle-row';
                 row.innerHTML = `
                     <span>${o.n}</span>
                     <div style="display:flex; gap:5px;">
-                        <button class="btn-bet" style="width:60px; font-size:10px; background:${o.status==='win'? 'var(--success)':'#000'}" onclick="setOutcomeStatus(${gIdx}, ${oIdx}, 'win')">WIN</button>
-                        <button class="btn-bet" style="width:60px; font-size:10px; background:${o.status==='loss'? 'var(--danger)':'#000'}" onclick="setOutcomeStatus(${gIdx}, ${oIdx}, 'loss')">LOSS</button>
-                    </div>
-                `;
+                        <button class="btn-bet ${o.status==='win'?'selected-win':''}" style="width:60px; font-size:10px;" onclick="updateLocalStatus(${gIdx},${oIdx},'win')">WIN</button>
+                        <button class="btn-bet ${o.status==='loss'?'selected-loss':''}" style="width:60px; font-size:10px;" onclick="updateLocalStatus(${gIdx},${oIdx},'loss')">LOSS</button>
+                    </div>`;
                 gDiv.appendChild(row);
             });
             container.appendChild(gDiv);
         });
-        document.getElementById('editModal').classList.remove('hidden');
     }
 
-    function setOutcomeStatus(gIdx, oIdx, status) {
+    function updateLocalStatus(gIdx, oIdx, status) {
         currentSettleData.groups[gIdx].outcomes[oIdx].status = status;
-        // Újrarajzoljuk a modált, hogy látszódjon a kijelölés
-        const mId = currentSettleData.mId;
-        const title = document.getElementById('edit-title').innerText;
-        // Csak a gombokat színezzük át helyben a frissítés helyett a sebességért:
-        openSettle(mId, title); 
+        renderSettleUI(); // Azonnal újrarajzolja a gombokat a kijelöléssel
     }
 
     async function finalSubmitSettle() {
-        if(!confirm("Biztosan lezárod? A Win-re jelölt fogadások kifizetésre kerülnek!")) return;
-        
+        if(!confirm("Biztosan lezárod az összes kimenetelt? Ez kifizeti a nyerteseket!")) return;
         const mId = currentSettleData.mId;
         const groups = currentSettleData.groups;
 
-        // 1. Összes fogadás lekérése erre a piacra
         const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mId).eq('status', 'pending');
-
+        
         for (let bet of (bets || [])) {
-            // Megkeressük a kimenetelt a csoportokban
-            let outcomeStatus = 'loss';
-            groups.forEach(g => {
-                g.outcomes.forEach(o => {
-                    if(o.n === bet.outcome_name) outcomeStatus = o.status;
-                });
-            });
+            let result = 'loss';
+            groups.forEach(g => g.outcomes.forEach(o => {
+                if(o.n === bet.outcome_name && o.status === 'win') result = 'win';
+            }));
 
-            if(outcomeStatus === 'win') {
+            if(result === 'win') {
                 const field = bet.type === 'REAL' ? 'real_balance' : 'demo_balance';
-                const { data: prof } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
-                await _supabase.from('profiles').update({ [field]: prof[field] + (bet.amount * bet.odds) }).eq('id', bet.user_id);
+                const { data: p } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
+                await _supabase.from('profiles').update({ [field]: p[field] + (bet.amount * bet.odds) }).eq('id', bet.user_id);
                 await _supabase.from('bets').update({ status: 'won' }).eq('id', bet.id);
             } else {
                 await _supabase.from('bets').update({ status: 'lost' }).eq('id', bet.id);
             }
         }
-
-        // 2. Market lezárása
-        await _supabase.from('markets').update({ 
-            status: 'closed', 
-            note: JSON.stringify(groups) 
-        }).eq('id', mId);
-
+        await _supabase.from('markets').update({ status: 'closed', note: JSON.stringify(groups) }).eq('id', mId);
         location.reload();
     }
 
-    // FOGADÁS ÉS EGYEBEK
-    function openBet(mId, name, odds, type, dl) {
-        if(new Date() > new Date(dl)) return alert("Expired!");
-        activeBet = { mId, name, odds, type };
-        document.getElementById('bet-on').innerText = name;
-        document.getElementById('bet-odds').innerText = "x" + odds;
+    // CREATE / BET / NAV (Standard logikák)
+    function openBet(mId, n, o, t, dl) {
+        if(new Date() > new Date(dl)) return alert("Deadline passed!");
+        activeBet = { mId, n, o, t };
+        document.getElementById('bet-on').innerText = n;
+        document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden');
         calcWin();
     }
-
-    function calcWin() {
-        const a = document.getElementById('bet-amount').value;
-        document.getElementById('bet-win-text').innerText = "Win: " + (a * activeBet.odds).toFixed(2);
-    }
-
+    function calcWin() { document.getElementById('bet-win-text').innerText = "Win: "+(document.getElementById('bet-amount').value * activeBet.o).toFixed(2); }
     async function placeBet() {
-        const amt = parseFloat(document.getElementById('bet-amount').value);
-        const field = activeBet.type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(amt > userProfile[field]) return alert("No funds!");
-
-        await _supabase.from('profiles').update({ [field]: userProfile[field] - amt }).eq('id', currentUser.id);
-        await _supabase.from('bets').insert([{
-            user_id: currentUser.id, market_id: activeBet.mId,
-            outcome_name: activeBet.name, amount: amt, odds: activeBet.odds,
-            type: activeBet.type, status: 'pending'
-        }]);
+        const a = parseFloat(document.getElementById('bet-amount').value);
+        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(a > userProfile[f]) return alert("No money!");
+        await _supabase.from('profiles').update({ [f]: userProfile[f] - a }).eq('id', currentUser.id);
+        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: a, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
-
     function addGroup() {
         const id = Date.now();
         const div = document.createElement('div'); div.className = 'market-group';
-        div.innerHTML = `<input class="g-t" placeholder="Category (e.g. Winner)"><div id="grid-${id}"></div><button class="btn-bet" style="font-size:10px" onclick="addO('${id}')">+ Option</button>`;
+        div.innerHTML = `<input class="g-t" placeholder="Category"><div id="grid-${id}"></div><button class="btn-bet" style="font-size:10px" onclick="addO('${id}')">+ Option</button>`;
         document.getElementById('groups-container').appendChild(div);
         addO(id);
     }
@@ -337,11 +309,10 @@
         d.innerHTML = `<input class="o-n" placeholder="Name"><input class="o-o" type="number" step="0.1" value="2.0" style="width:70px">`;
         document.getElementById('grid-'+id).appendChild(d);
     }
-
     async function saveMarket() {
-        const title = document.getElementById('m-name').value;
-        const budget = parseFloat(document.getElementById('m-budget').value);
-        const deadline = document.getElementById('m-deadline').value;
+        const t = document.getElementById('m-name').value;
+        const b = parseFloat(document.getElementById('m-budget').value);
+        const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
         const groups = Array.from(document.querySelectorAll('.market-group')).map(g => ({
             title: g.querySelector('.g-t').value,
@@ -349,12 +320,11 @@
                 n: o.querySelector('.o-n').value, o: parseFloat(o.querySelector('.o-o').value), status: 'pending'
             }))
         }));
-        await _supabase.from('markets').insert([{ title, type, take: budget, deadline, note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
+        await _supabase.from('markets').insert([{ title: t, type, take: b, deadline: dl, note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
-
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    function showSection(id) { 
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); 
         document.getElementById('section-'+id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-'+id).classList.add('active');
