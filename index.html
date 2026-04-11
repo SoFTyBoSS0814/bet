@@ -22,9 +22,18 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        /* Toast Notification */
         #toast { position: fixed; bottom: 20px; right: 20px; background: var(--success); color: white; padding: 15px 25px; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transform: translateY(100px); transition: 0.4s; z-index: 10000; display: flex; align-items: center; gap: 10px; }
         #toast.show { transform: translateY(0); }
+
+        .info-card { background: var(--card); padding: 30px; border-radius: 15px; border: 1px solid #2c4f60; max-width: 600px; margin: auto; }
+        .info-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 20px; text-align: left; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .info-row label { color: var(--primary); font-size: 11px; letter-spacing: 1px; font-weight: bold; text-transform: uppercase; }
+        .info-row span { font-size: 18px; font-weight: 600; color: #eee; }
+
+        .faucet-box { background: linear-gradient(45deg, #1d2d3a, #14212b); border: 2px dashed var(--demo); padding: 20px; border-radius: 12px; margin-top: 20px; text-align: center; }
+        .btn-faucet { background: var(--demo); color: #000; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 900; cursor: pointer; transition: 0.3s; width: 100%; font-size: 16px; }
+        .btn-faucet:disabled { background: #444; color: #888; cursor: not-allowed; }
+        .faucet-timer { font-size: 12px; color: var(--demo); margin-top: 10px; font-weight: bold; }
 
         .market-card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2c4f60; position: relative; }
         .market-card.settled { opacity: 0.9; border-color: #444; background: #161d24; }
@@ -50,6 +59,7 @@
         .bet-table th { text-align: left; color: var(--primary); padding: 10px; border-bottom: 1px solid #334756; }
         .bet-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
+        .warning-box { background: rgba(255, 204, 0, 0.1); border: 1px solid var(--warning); color: var(--warning); padding: 15px; border-radius: 8px; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; font-size: 14px; text-align: center; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -93,15 +103,27 @@
     <div id="section-wallet" class="section">
         <div class="info-card" style="text-align:center;">
             <h2>Wallet Balance</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div style="background: rgba(0, 212, 255, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary);"><small>REAL</small><h1 id="wallet-real">0.00 €</h1></div>
+                <div style="background: rgba(255, 204, 0, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--demo);"><small>DEMO</small><h1 id="wallet-demo">0.00 D</h1></div>
+            </div>
             <div id="wallet-dynamic-area"></div>
         </div>
     </div>
 
     <div id="section-account" class="section">
         <div class="info-card">
-            <h2>Account Details</h2>
+            <h2 style="text-align:center; border-bottom: 2px solid var(--primary); padding-bottom: 10px;">Account Details</h2>
             <div class="info-row"><label>Username</label><span id="acc-username">---</span></div>
             <div class="info-row"><label>Email Address</label><span id="acc-email">---</span></div>
+            
+            <div class="faucet-box">
+                <h3 style="margin-top:0; color:var(--demo);">🎁 Daily Demo Gift</h3>
+                <p style="font-size:12px; color:#aaa;">Claim between 500 - 50,000 Demo coins every 24h!</p>
+                <button id="faucet-btn" class="btn-faucet" onclick="claimFaucet()">CLAIM REWARD</button>
+                <div id="faucet-timer" class="faucet-timer"></div>
+            </div>
+
             <button class="btn-danger" style="width:100%; margin-top:30px;" onclick="logout()">Logout</button>
         </div>
     </div>
@@ -175,6 +197,11 @@
             userProfile = data;
             document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
             document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
+            if(document.getElementById("wallet-real")) {
+                document.getElementById("wallet-real").innerText = data.real_balance.toFixed(2) + " €";
+                document.getElementById("wallet-demo").innerText = data.demo_balance.toFixed(2) + " D";
+            }
+            updateFaucetUI();
             if(!document.getElementById("createModal").classList.contains("hidden")) updateAvailableBalance();
         }
     }
@@ -185,6 +212,12 @@
         document.getElementById('section-'+id).classList.add('active'); 
         document.getElementById('link-'+id).classList.add('active');
         if(id==='markets' || id==='history') loadMarkets();
+        if(id==='wallet') checkLocationAndRenderWallet();
+        if(id==='account') {
+            document.getElementById('acc-username').innerText = currentUser.username;
+            document.getElementById('acc-email').innerText = currentUser.email;
+            updateFaucetUI();
+        }
     }
 
     function updateAvailableBalance() {
@@ -193,6 +226,31 @@
         const infoSpan = document.getElementById('available-info');
         if (type === 'REAL') infoSpan.innerText = `(Available: ${userProfile.real_balance.toFixed(2)} €)`;
         else infoSpan.innerText = `(Available: ${userProfile.demo_balance.toFixed(2)} D)`;
+    }
+
+    // --- FAUCET LOGIC ---
+    async function claimFaucet() {
+        if (!userProfile) return;
+        const now = new Date().getTime();
+        const lastClaim = userProfile.last_faucet ? new Date(userProfile.last_faucet).getTime() : 0;
+        if (now - lastClaim < 86400000) return;
+        const reward = Math.floor(Math.random() * 49501) + 500;
+        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + reward, last_faucet: new Date().toISOString() }).eq('id', currentUser.id);
+        showToast(`Reward Claimed: +${reward} D`); 
+        fetchProfile();
+    }
+
+    function updateFaucetUI() {
+        const btn = document.getElementById('faucet-btn');
+        const timer = document.getElementById('faucet-timer');
+        if (!userProfile || !btn) return;
+        const lastFaucet = userProfile.last_faucet ? new Date(userProfile.last_faucet).getTime() : 0;
+        const diff = new Date().getTime() - lastFaucet;
+        if (diff < 86400000) {
+            btn.disabled = true;
+            const rem = 86400000 - diff;
+            timer.innerText = `Next claim in: ${Math.floor(rem/3600000)}h ${Math.floor((rem%3600000)/60000)}m`;
+        } else { btn.disabled = false; timer.innerText = "Daily Reward Ready!"; }
     }
 
     async function loadMarkets() {
@@ -249,12 +307,10 @@
         showToast("Event Settled!"); closeModal(); loadMarkets(); fetchProfile();
     }
 
-    // --- MARKET CREATOR (VISSZAÁLLÍTVA AZ EREDETI LOGIKA) ---
     function addGroup(t="", l=false) { 
         groupIdx++; 
         const div = document.createElement('div'); 
         div.className='market-group'; 
-        div.id = `group-wrapper-${groupIdx}`;
         div.innerHTML = `<input class="g-title" placeholder="Category" value="${t}" ${l?'readonly':''}> <div id="grid-${groupIdx}" class="outcomes-grid"></div> <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Outcome</button>`; 
         document.getElementById('groups-container').appendChild(div); 
     }
@@ -297,6 +353,21 @@
     }
 
     function openCreateModal() { editingMarketId=null; document.getElementById("meta-inputs").classList.remove("hidden"); document.getElementById("createModal").classList.remove("hidden"); document.getElementById('groups-container').innerHTML=""; addGroup(); updateAvailableBalance(); }
+    
+    // WALLET SECURE AREA
+    async function checkLocationAndRenderWallet() {
+        const area = document.getElementById('wallet-dynamic-area');
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.country_code === 'HU') {
+                area.innerHTML = `<div class="warning-box">⚠️ Hungary blocked. Real Money Deposit/Withdraw disabled.</div>`;
+            } else {
+                area.innerHTML = `<div style="display:flex; gap:10px; margin-top:20px;"><button class="btn-primary" style="flex:1">DEPOSIT</button><button class="btn-outline" style="flex:1">WITHDRAW</button></div>`;
+            }
+        } catch(e) { area.innerHTML = "Security system active."; }
+    }
+
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
     function closeBetModal() { document.getElementById('betModal').classList.add('hidden'); }
     function handleBet(id, name, odds, mType) { activeBetData={id,name,odds,mType}; document.getElementById('bet-outcome-name').innerText=name; document.getElementById('bet-odds-display').innerText=odds.toFixed(2); document.getElementById('betModal').classList.remove('hidden'); calculateWin(); }
