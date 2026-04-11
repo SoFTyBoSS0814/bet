@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Dashboard</title>
+    <title>StakeForge | History & Transparency</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --warning: #ffcc00; }
@@ -13,11 +13,8 @@
         .nav-left { display: flex; align-items: center; gap: 30px; }
         .logo { font-weight: 900; color: var(--primary); font-size: 22px; cursor: pointer; letter-spacing: 1px; }
         .nav-links span { color: #aaa; font-size: 14px; cursor: pointer; margin-right: 20px; font-weight: bold; transition: 0.2s; }
-        .nav-links span:hover { color: #fff; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
-        .nav-right { display: flex; align-items: center; gap: 15px; }
-        .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
-
+        
         .container { max-width: 1100px; margin: auto; padding: 30px; }
         .section { display: none; }
         .section.active { display: block; }
@@ -28,18 +25,18 @@
         .history-badge { background: var(--success); color: white; padding: 4px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; position: absolute; top: 20px; right: 20px; }
         .winner-display { margin-top: 15px; padding: 10px; background: rgba(40, 167, 69, 0.1); border: 1px solid var(--success); border-radius: 8px; color: var(--success); font-weight: bold; text-align: center; margin-bottom: 10px; }
 
-        .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-danger { background: var(--danger); color: #fff; border: none; padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-outline { background: none; border: 1px solid #334756; color: #aaa; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 5px; font-size: 12px; transition: 0.3s; }
-        .btn-outline:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .btn-outline { background: none; border: 1px solid #334756; color: #00d4ff; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; margin-top: 5px; font-size: 13px; font-weight: bold; transition: 0.3s; }
+        .btn-outline:hover { background: rgba(0, 212, 255, 0.1); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
 
-        /* Bets Table Style */
-        .bets-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; color: #ccc; }
-        .bets-table th { text-align: left; padding: 8px; border-bottom: 1px solid #334756; color: var(--primary); }
-        .bets-table td { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        /* Full Transparent Bets Table */
+        .bets-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        .bets-table th { text-align: left; padding: 12px 8px; border-bottom: 2px solid #334756; color: var(--primary); font-size: 11px; text-transform: uppercase; }
+        .bets-table td { padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .time-col { color: #666; font-size: 11px; }
+        .user-col { color: #eee; font-weight: bold; }
 
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
-        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 850px; max-width: 95vw; max-height: 90vh; overflow-y: auto; border: 1px solid #2c4f60; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 850px; max-width: 95vw; max-height: 85vh; overflow-y: auto; border: 1px solid #2c4f60; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -49,7 +46,7 @@
     <div class="nav-left">
         <div class="logo" onclick="window.location.reload()">STAKEFORGE</div>
         <div class="nav-links">
-            <span id="link-markets" class="active" onclick="showSection('markets')">Markets</span>
+            <span id="link-markets" onclick="showSection('markets')">Markets</span>
             <span id="link-history" onclick="showSection('history')">History</span>
             <span id="link-wallet" onclick="showSection('wallet')">Wallet</span>
             <span id="link-account" onclick="showSection('account')">Account</span>
@@ -60,134 +57,109 @@
             <span id="nav-real" style="color:var(--primary)">0.00 €</span>
             <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
         </div>
-        <button class="btn-danger" style="background:#441111" onclick="logout()">Logout</button>
     </div>
 </div>
 
 <div class="container">
-    <div id="section-markets" class="section active">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-            <h2 style="margin:0;">Live P2P Markets</h2>
-            <button class="btn-primary" onclick="openCreateModal()">+ Create Market</button>
-        </div>
-        <div id="market-list">Loading...</div>
+    <div id="section-history" class="section active">
+        <h2 style="margin-bottom:25px; color: #fff;">Closed Events & Transparency</h2>
+        <div id="history-list">Loading closed events...</div>
     </div>
-
-    <div id="section-history" class="section">
-        <h2 style="margin-bottom:25px; color: #888;">Closed Events</h2>
-        <div id="history-list">No closed events found.</div>
     </div>
-
-    <div id="section-wallet" class="section">
-        <div class="info-card" style="text-align:center; background: var(--card); padding: 30px; border-radius: 15px;">
-            <h2>Wallet</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div style="background: rgba(0, 212, 255, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary);">
-                    <small style="color:var(--primary); font-weight:bold;">REAL</small><h1 id="wallet-real">0.00 €</h1>
-                </div>
-                <div style="background: rgba(255, 204, 0, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--demo);">
-                    <small style="color:var(--demo); font-weight:bold;">DEMO</small><h1 id="wallet-demo">0.00 D</h1>
-                </div>
-            </div>
-            <div id="wallet-dynamic-area" style="margin-top: 20px;"></div>
-        </div>
-    </div>
-
-    <div id="section-account" class="section">
-        <div class="info-card" style="background: var(--card); padding: 30px; border-radius: 15px;">
-            <h2 style="margin-top:0; border-bottom: 2px solid var(--primary); padding-bottom: 10px;">Account</h2>
-            <p>Username: <b id="acc-username">---</b></p>
-            <p>Email: <b id="acc-email">---</b></p>
-            <button class="btn-danger" style="width:100%;" onclick="logout()">Logout</button>
-        </div>
-    </div>
-</div>
 
 <div id="historyBetsModal" class="modal hidden">
-    <div class="modal-box" style="width: 600px;">
-        <h2 style="color:var(--primary); margin-top:0;">Market Bets</h2>
-        <div id="history-bets-content">
-            <p>Loading bets...</p>
+    <div class="modal-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #334756; padding-bottom: 15px;">
+            <h2 id="history-modal-title" style="color:var(--primary); margin:0;">Event Bets</h2>
+            <button onclick="closeHistoryBetsModal()" style="background:none; border:none; color:#ff4444; font-size:24px; cursor:pointer;">&times;</button>
         </div>
-        <button class="btn-danger" style="width:100%; margin-top:20px;" onclick="closeHistoryBetsModal()">Close</button>
+        <div id="history-bets-content">
+            </div>
     </div>
 </div>
 
-<div id="createModal" class="modal hidden">...</div> <script>
+<script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
-
     let currentUser = JSON.parse(localStorage.getItem("user"));
-
-    function showSection(id) { 
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); 
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-' + id).classList.add('active'); 
-        document.getElementById('link-' + id).classList.add('active');
-        if(id === 'markets' || id === 'history') loadMarkets();
-        if(id === 'account') updateAccountUI();
-    }
 
     async function loadMarkets() {
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
-        const list = document.getElementById('market-list');
         const historyList = document.getElementById('history-list');
+        if(!historyList) return;
         
-        list.innerHTML = "";
         historyList.innerHTML = "";
+        const settledMarkets = markets.filter(m => m.status === 'settled');
 
-        markets.forEach(m => {
+        if(settledMarkets.length === 0) {
+            historyList.innerHTML = "<p style='color:#666'>No settled events found.</p>";
+            return;
+        }
+
+        settledMarkets.forEach(m => {
             const card = document.createElement('div');
             card.className = 'market-card';
-
-            if(m.status === 'settled') {
-                card.innerHTML = `
-                    <div class="history-badge">✓ CLOSED</div>
-                    <div style="padding:10px;">
-                        <h3 style="margin:0;">${m.title}</h3>
-                        <div class="market-meta"><span>Host: <b>${m.creator_name}</b> | Type: <b>${m.type}</b></span></div>
-                        <div class="winner-display">WINNER: ${m.winner || '---'}</div>
-                        <button class="btn-outline" onclick="viewAllBets('${m.id}', '${m.title}')">👁 View All Bets</button>
-                    </div>`;
-                historyList.appendChild(card);
-            } else {
-                // Aktív piacok kódja (leegyszerűsítve a helytakarékosság miatt, de a funkció ugyanaz)
-                card.innerHTML = `<div style="padding:10px;"><h3>${m.title}</h3><p>Active Market</p></div>`;
-                list.appendChild(card);
-            }
+            card.innerHTML = `
+                <div class="history-badge">✓ CLOSED</div>
+                <div style="padding:10px;">
+                    <h3 style="margin:0 0 5px 0; color:#fff;">${m.title}</h3>
+                    <div class="market-meta">
+                        <span>Host: <b>${m.creator_name}</b></span>
+                        <span>Type: <b style="color:var(--primary)">${m.type}</b></span>
+                    </div>
+                    <div class="winner-display">WINNER: ${m.winner || 'PENDING'}</div>
+                    <button class="btn-outline" onclick="viewAllBets('${m.id}', '${m.title}')">
+                        👁 VIEW ALL PLACED BETS (PUBLIC)
+                    </button>
+                </div>`;
+            historyList.appendChild(card);
         });
     }
 
-    // --- ÚJ FUNKCIÓ: MINDEN FOGADÁS MEGTEKINTÉSE ---
     async function viewAllBets(marketId, marketTitle) {
         const modal = document.getElementById('historyBetsModal');
         const content = document.getElementById('history-bets-content');
+        document.getElementById('history-modal-title').innerText = marketTitle;
+        
         modal.classList.remove('hidden');
-        content.innerHTML = `<p style="color:var(--primary)">Fetching data for: ${marketTitle}...</p>`;
+        content.innerHTML = `<p style="color:var(--primary); text-align:center;">Loading ledger data...</p>`;
 
-        // Lekérjük az összes fogadást ehhez a piachoz
-        // Megjegyzés: A 'profiles' táblából lekérjük a nevet is a user_id alapján
+        // Lekérjük a fogadásokat ÉS a hozzájuk tartozó felhasználókat (profiles tábla join)
+        // Feltételezve, hogy a 'bets' táblában van 'user_id' és a 'profiles' táblában 'id' és 'username'
         const { data: bets, error } = await _supabase
             .from('bets')
             .select(`
+                created_at,
                 amount,
                 odds,
                 outcome_name,
                 status,
                 user_id
             `)
-            .eq('market_id', marketId);
+            .eq('market_id', marketId)
+            .order('created_at', { ascending: false });
 
         if(error || !bets || bets.length === 0) {
-            content.innerHTML = "<p>No bets were placed on this event.</p>";
+            content.innerHTML = "<div style='text-align:center; padding:20px; color:#666;'>No bets were recorded for this event.</div>";
             return;
         }
+
+        // Mivel a felhasználóneveket külön kellhet lekérni (ha nincs direkt Relation beállítva)
+        // Lekérjük az összes egyedi user_id-hoz tartozó profilnevet
+        const userIds = [...new Set(bets.map(b => b.user_id))];
+        const { data: profiles } = await _supabase.from('profiles').select('id, username').in('id', userIds);
+        
+        // Név-térkép készítése az egyszerűbb eléréshez
+        const userMap = {};
+        profiles.forEach(p => userMap[p.id] = p.username);
 
         let tableHtml = `
             <table class="bets-table">
                 <thead>
                     <tr>
+                        <th>Time</th>
+                        <th>User</th>
                         <th>Selection</th>
                         <th>Stake</th>
                         <th>Odds</th>
@@ -198,14 +170,19 @@
         `;
 
         bets.forEach(b => {
+            const date = new Date(b.created_at).toLocaleString('hu-HU', { hour: '2-digit', minute: '2-digit', second: '2-digit', month: 'short', day: 'numeric' });
             const isWin = b.status === 'won';
-            const color = isWin ? 'var(--success)' : (b.status === 'lost' ? 'var(--danger)' : '#aaa');
+            const statusColor = isWin ? 'var(--success)' : (b.status === 'lost' ? 'var(--danger)' : '#aaa');
+            const userName = userMap[b.user_id] || "Unknown User";
+
             tableHtml += `
                 <tr>
-                    <td><b>${b.outcome_name}</b></td>
-                    <td>${b.amount.toFixed(2)}</td>
-                    <td>x${b.odds.toFixed(2)}</td>
-                    <td style="color:${color}; font-weight:bold;">${b.status.toUpperCase()}</td>
+                    <td class="time-col">${date}</td>
+                    <td class="user-col">${userName}</td>
+                    <td><span style="color:#fff">${b.outcome_name}</span></td>
+                    <td>${b.amount.toLocaleString()}</td>
+                    <td style="color:#888">x${b.odds.toFixed(2)}</td>
+                    <td style="color:${statusColor}; font-weight:900;">${b.status.toUpperCase()}</td>
                 </tr>
             `;
         });
@@ -218,18 +195,19 @@
         document.getElementById('historyBetsModal').classList.add('hidden');
     }
 
-    function updateAccountUI() {
-        if(currentUser) {
-            document.getElementById('acc-username').innerText = currentUser.username;
-            document.getElementById('acc-email').innerText = currentUser.email;
-        }
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById('section-' + id);
+        if(target) target.classList.add('active');
+        const link = document.getElementById('link-' + id);
+        if(link) link.classList.add('active');
+        if(id === 'history') loadMarkets();
     }
-
-    function logout() { localStorage.removeItem("user"); window.location.href="login.html"; }
 
     window.onload = () => {
         if(!currentUser) window.location.href="login.html";
-        showSection('markets');
+        loadMarkets(); 
     };
 </script>
 </body>
