@@ -29,7 +29,7 @@
         .market-card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #2c4f60; }
         .market-meta { display: flex; gap: 15px; font-size: 11px; color: #8899a6; margin-top: 5px; text-transform: uppercase; }
         .market-group { background: rgba(255,255,255,0.03); border: 1px solid #2c4f60; border-radius: 10px; padding: 20px; margin-bottom: 20px; border-left: 4px solid var(--primary); }
-        .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+        .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
         .outcome-item { background: #14212b; padding: 12px; border-radius: 8px; border: 1px solid #253948; margin-bottom: 10px; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
@@ -74,7 +74,7 @@
     <div id="section-wallet" class="section">
         <div class="wallet-card" style="background:var(--card); padding:30px; border-radius:15px; text-align:center; border:1px solid #2c4f60;">
             <h2>Wallet Status</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top:20px;">
+            <div id="wallet-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top:20px;">
                 <div style="background: rgba(0, 212, 255, 0.05); padding: 20px; border-radius: 12px; border: 1px solid var(--primary);">
                     <small style="color:var(--primary); font-weight:bold;">REAL</small><h1 id="wallet-real">0.00 €</h1>
                 </div>
@@ -89,7 +89,7 @@
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 id="modal-title" style="margin:0; color:var(--primary);">Market Manager</h2>
+            <h2 id="modal-title" style="margin:0; color:var(--primary);">Manager</h2>
             <div style="display:flex; gap:10px;">
                 <button class="btn-primary" id="final-save-btn" onclick="saveMarket()">💾 Save Changes</button>
                 <button class="btn-danger" onclick="closeModal()">Close</button>
@@ -192,77 +192,112 @@
         });
     }
 
-    async function openEditModal(id) {
-        editingMarketId = id;
-        const { data } = await _supabase.from('markets').select('*').eq('id', id).single();
-        if(!data) return;
+    // --- FOGADÁS ÉS KIFIZETÉS LOGIKA ---
 
-        document.getElementById("modal-title").innerText = "Host Control Panel";
-        document.getElementById("meta-inputs").classList.add("hidden");
-        document.getElementById("createModal").classList.remove("hidden");
-        document.getElementById('groups-container').innerHTML = "";
+    async function placeFinalBet() {
+        const amount = parseFloat(document.getElementById('bet-amount').value);
+        if(!amount || amount <= 0) return alert("Helytelen összeg!");
+        
+        const balField = activeBetData.mType === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(amount > userProfile[balField]) return alert("Nincs elég fedezet!");
 
-        const groups = JSON.parse(data.note || "[]");
-        groups.forEach(g => {
-            addGroup(g.title, true);
-            g.outcomes.forEach(o => addOutcome(groupIdx, o.n, o.o, true, true));
-        });
+        // 1. Levonás
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amount }).eq('id', currentUser.id);
+
+        // 2. Beírás a bets táblába
+        const { error } = await _supabase.from('bets').insert([{
+            market_id: activeBetData.id,
+            user_id: currentUser.id,
+            outcome_name: activeBetData.name,
+            odds: activeBetData.odds,
+            amount: amount,
+            type: activeBetData.mType,
+            status: 'pending'
+        }]);
+
+        if(!error) {
+            alert("Fogadás sikeresen rögzítve!");
+            closeBetModal();
+            fetchProfile();
+        } else {
+            alert("Hiba a fogadás rögzítésekor: " + error.message);
+        }
     }
 
     async function settleMarket(winnerName) {
-        if(!confirm(`Biztosan a(z) "${winnerName}" a nyertes? Ez lezárja a piacot.`)) return;
-        const { error } = await _supabase.from('markets').update({ status: 'settled', winner: winnerName }).eq('id', editingMarketId);
-        if(!error) {
-            alert("Sikeres kiértékelés!");
+        if(!confirm(`Biztosan a(z) "${winnerName}" a nyertes? Ez kifizeti az összes nyertest!`)) return;
+
+        try {
+            // 1. Piac lezárása
+            await _supabase.from('markets').update({ status: 'settled', winner: winnerName }).eq('id', editingMarketId);
+
+            // 2. Fogadások lekérése
+            const { data: allBets } = await _supabase
+                .from('bets')
+                .select('*')
+                .eq('market_id', editingMarketId)
+                .eq('status', 'pending');
+
+            if (allBets) {
+                for (const bet of allBets) {
+                    if (bet.outcome_name === winnerName) {
+                        // NYERTES: Kifizetés RPC hívással (increment_balance)
+                        const winAmount = bet.amount * bet.odds;
+                        const balField = bet.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+                        await _supabase.rpc('increment_balance', { 
+                            user_id: bet.user_id, 
+                            amount: winAmount, 
+                            field: balField 
+                        });
+
+                        await _supabase.from('bets').update({ status: 'won' }).eq('id', bet.id);
+                    } else {
+                        // VESZTES
+                        await _supabase.from('bets').update({ status: 'lost' }).eq('id', bet.id);
+                    }
+                }
+            }
+
+            alert("Sikeres kifizetés és lezárás!");
             closeModal();
             fetchProfile();
             loadMarkets();
-        } else {
-            alert("Hiba: " + error.message);
+        } catch (err) {
+            alert("Váratlan hiba: " + err.message);
         }
     }
+
+    // --- UI ÉS EGYÉB FUNKCIÓK ---
 
     async function saveMarket() {
         const btn = document.getElementById('final-save-btn');
         const groups = [];
-        
         document.querySelectorAll('.market-group').forEach(g => {
             const outcomes = [];
-            const categoryTitle = g.querySelector('.g-title').value || "Market";
+            const title = g.querySelector('.g-title').value || "Market";
             g.querySelectorAll('.outcome-item').forEach(i => {
-                outcomes.push({ 
-                    n: i.querySelector('.o-n').value, 
-                    o: parseFloat(i.querySelector('.o-o').value) || 1.0 
-                });
+                outcomes.push({ n: i.querySelector('.o-n').value, o: parseFloat(i.querySelector('.o-o').value) || 1.0 });
             });
-            groups.push({ title: categoryTitle, outcomes });
+            groups.push({ title: title, outcomes });
         });
 
         btn.disabled = true;
-
         if(editingMarketId) {
             await _supabase.from('markets').update({ note: JSON.stringify(groups) }).eq('id', editingMarketId);
-            alert("Változtatások mentve!");
+            alert("Sikeres frissítés!");
         } else {
             const budgetVal = parseFloat(document.getElementById('m-budget').value);
             const type = document.getElementById('m-type').value;
             const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-            const localDate = document.getElementById('m-date').value;
-
-            if(!localDate) { btn.disabled = false; return alert("Adj meg egy dátumot!"); }
             if(budgetVal > userProfile[balField]) { btn.disabled = false; return alert("Nincs elég egyenleg!"); }
-
-            const utcDate = new Date(localDate).toISOString();
 
             await _supabase.from('profiles').update({ [balField]: userProfile[balField] - budgetVal }).eq('id', currentUser.id);
             await _supabase.from('markets').insert([{
-                title: document.getElementById('m-name').value || "Esemény",
-                type: type,
-                take: budgetVal,
-                note: JSON.stringify(groups),
-                creator_name: currentUser.username,
-                created_at: utcDate,
-                status: 'active'
+                title: document.getElementById('m-name').value || "New Event",
+                type: type, take: budgetVal, note: JSON.stringify(groups),
+                creator_name: currentUser.username, status: 'active',
+                created_at: new Date(document.getElementById('m-date').value).toISOString()
             }]);
             alert("Piac létrehozva!");
         }
@@ -273,19 +308,32 @@
         groupIdx++;
         const div = document.createElement('div');
         div.className='market-group';
-        div.innerHTML = `<input class="g-title" placeholder="Kategória neve" value="${t}" ${l?'readonly':''}>
+        div.innerHTML = `<input class="g-title" placeholder="Kategória" value="${t}" ${l?'readonly':''}>
             <div id="grid-${groupIdx}" class="outcomes-grid"></div>
-            <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Outcome hozzáadása</button>`;
+            <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Kimenetel</button>`;
         document.getElementById('groups-container').appendChild(div);
     }
 
     function addOutcome(id, n="", o=1.5, l=false, s=false) {
         const div = document.createElement('div');
         div.className='outcome-item';
-        div.innerHTML = `<input class="o-n" placeholder="Kimenetel" value="${n}" ${l?'readonly':''}>
+        div.innerHTML = `<input class="o-n" placeholder="Név" value="${n}" ${l?'readonly':''}>
             <input class="o-o" type="number" step="0.01" value="${o}">
             ${s ? `<button class="btn-success" onclick="settleMarket('${n}')">SET AS WINNER</button>` : ''}`;
         document.getElementById(`grid-${id}`).appendChild(div);
+    }
+
+    async function openEditModal(id) {
+        editingMarketId = id;
+        const { data } = await _supabase.from('markets').select('*').eq('id', id).single();
+        document.getElementById("modal-title").innerText = "Host Panel";
+        document.getElementById("meta-inputs").classList.add("hidden");
+        document.getElementById("createModal").classList.remove("hidden");
+        document.getElementById('groups-container').innerHTML = "";
+        JSON.parse(data.note).forEach(g => {
+            addGroup(g.title, true);
+            g.outcomes.forEach(o => addOutcome(groupIdx, o.n, o.o, true, true));
+        });
     }
 
     function handleBet(id, name, odds, mType) {
@@ -294,16 +342,6 @@
         document.getElementById('bet-odds-display').innerText = odds.toFixed(2);
         document.getElementById('betModal').classList.remove('hidden');
         calculateWin();
-    }
-
-    async function placeFinalBet() {
-        const amount = parseFloat(document.getElementById('bet-amount').value);
-        if(!amount || amount <= 0) return alert("Helytelen összeg!");
-        const field = activeBetData.mType === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(amount > userProfile[field]) return alert("Nincs elég fedezet!");
-
-        const { error } = await _supabase.from('profiles').update({ [field]: userProfile[field] - amount }).eq('id', currentUser.id);
-        if(!error) { alert("Fogadás elfogadva!"); closeBetModal(); fetchProfile(); }
     }
 
     function calculateWin() { 
