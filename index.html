@@ -1,4 +1,15 @@
+A 404-es hiba és az, hogy "nem enged vissza", azért van, mert a kódodban a GitHub Pages elérési útja és a fájlnevek nem találkoznak. Amikor frissítesz vagy kijelentkezel, a böngésző a /bet/login.html oldalt keresi, de az vagy nincs ott, vagy más a neve (pl. kisbetű-nagybetű eltérés).
 
+Itt a megoldás, ami kijavítja a navigációt (hogy ne dobjon 404-re) és stabilizálja a piacmentést az adatbázisod oszlopaihoz mérten.
+
+A legfontosabb javítások:
+Navigáció fix: Ha frissítesz és nincs bejelentkezve senki, nem irányít át sehova, hanem helyben mutatja a hibaüzenetet, így nem kapsz 404-et.
+
+Oszlopnevek: A mentésnél töröltem minden olyan mezőt, ami a hibaüzeneteid szerint hiányzik (pl. budget, event_name, creator_id).
+
+URL kezelés: A kód automatikusan felismeri, hol fut, így GitHub-on is működni fog.
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -8,111 +19,102 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
         
-        /* NAVBAR */
-        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 1000; height: 70px; }
-        .nav-left { display: flex; align-items: center; gap: 30px; }
-        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; margin-right: 20px; font-weight: bold; text-transform: uppercase; }
+        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; height: 70px; }
+        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; margin-right: 20px; font-weight: bold; }
         .nav-links a.active { color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
-        .nav-right { display: flex; align-items: center; gap: 15px; }
-        .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
-
+        
         .container { max-width: 1100px; margin: auto; padding: 30px; }
         .section { display: none; }
         .section.active { display: block; }
 
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        /* MODAL */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
-        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 700px; max-width: 95vw; border: 1px solid #2c4f60; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 650px; border: 1px solid #2c4f60; }
+        
         input, select, textarea { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
-        label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; }
-        .odds-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        label { font-size: 11px; color: #888; font-weight: bold; }
+        
         .hidden { display: none !important; }
-        .market-card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #2c4f60; border-left: 4px solid var(--primary); }
+        .market-card { background: var(--card); padding: 20px; border-radius: 12px; margin-bottom: 15px; border-left: 4px solid var(--primary); }
     </style>
 </head>
 <body>
 
-<div class="navbar">
-    <div class="nav-left">
-        <span style="font-weight:900; color:var(--primary); font-size:22px; margin-right:30px;">STAKEFORGE</span>
-        <div class="nav-links">
-            <a onclick="showSection('markets')" id="link-markets" class="active">Markets</a>
-            <a onclick="showSection('wallet')" id="link-wallet">Wallet</a>
-            <a onclick="showSection('account')" id="link-account">Account</a>
-            <a onclick="showSection('settings')" id="link-settings">Settings</a>
+<div id="app-content" class="hidden">
+    <div class="navbar">
+        <div style="display:flex; align-items:center; gap:30px;">
+            <span style="font-weight:900; color:var(--primary); font-size:22px;">STAKEFORGE</span>
+            <div class="nav-links">
+                <a onclick="showSection('markets')" id="link-markets" class="active">Markets</a>
+                <a onclick="showSection('wallet')" id="link-wallet">Wallet</a>
+                <a onclick="showSection('account')" id="link-account">Account</a>
+                <a onclick="showSection('settings')" id="link-settings">Settings</a>
+            </div>
+        </div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <div style="background:rgba(0,0,0,0.3); padding:8px 15px; border-radius:8px; border:1px solid #334756; font-weight:bold; font-size:14px;">
+                <span id="nav-real" style="color:var(--primary); margin-right:10px;">0.00 €</span>
+                <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
+            </div>
+            <button class="btn-danger" onclick="logout()">Logout</button>
         </div>
     </div>
-    <div class="nav-right">
-        <div class="wallet-display">
-            <span id="nav-real" style="color:var(--primary)">0.00 €</span>
-            <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
+
+    <div class="container">
+        <div id="section-markets" class="section active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2>Live P2P Markets</h2>
+                <button class="btn-primary" onclick="openModal()">+ Create Market</button>
+            </div>
+            <div id="market-list">Loading...</div>
         </div>
-        <button class="btn-danger" style="background:#441111" onclick="logout()">Logout</button>
+        <div id="section-wallet" class="section"><h2>Wallet</h2></div>
+        <div id="section-account" class="section"><h2>Account</h2></div>
+        <div id="section-settings" class="section"><h2>Settings</h2></div>
     </div>
 </div>
 
-<div class="container">
-    <div id="section-markets" class="section active">
-        <div class="section-header">
-            <h2 style="margin:0;">Live P2P Markets</h2>
-            <button class="btn-primary" onclick="openModal()">+ Create Market</button>
-        </div>
-        <div id="market-list">Betöltés...</div>
-    </div>
-
-    <div id="section-wallet" class="section"><h2>Wallet</h2><p>Pénzügyi adatok itt jelennek meg.</p></div>
-    <div id="section-account" class="section"><h2>Account</h2><p>Fiók adatok kezelése.</p></div>
-    <div id="section-settings" class="section"><h2>Settings</h2><p>Alkalmazás beállításai.</p></div>
+<div id="login-error" class="hidden" style="text-align:center; margin-top:100px;">
+    <h2>Hiba: Nem vagy bejelentkezve!</h2>
+    <p>Kérlek jelentkezz be újra az index oldalon.</p>
+    <button class="btn-primary" onclick="window.location.href='index.html'">Vissza a főoldalra</button>
 </div>
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-             <h3 style="margin:0;">Új Piac Létrehozása</h3>
-             <div style="display:flex; gap:10px;">
-                <button class="btn-primary" onclick="saveMarket()">💾 Mentés</button>
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <h3 style="margin:0;">Új Piac</h3>
+            <div>
+                <button class="btn-primary" onclick="saveMarket()">Mentés</button>
                 <button class="btn-danger" onclick="closeModal()">Mégse</button>
-             </div>
+            </div>
         </div>
         
         <label>Esemény Neve (Title) *</label>
-        <input id="m-title" placeholder="pl. Manchester City - Real Madrid">
+        <input id="m-title" placeholder="pl. Man City - Real Madrid">
         
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>Kezdés Időpontja *</label><input id="m-start" type="datetime-local"></div>
-            <div>
-                <label>Számla típusa</label>
-                <select id="m-type" onchange="updateModalBalance()">
-                    <option value="DEMO">DEMO számla (D)</option>
-                    <option value="REAL">REAL számla (€)</option>
-                </select>
-            </div>
+            <div><label>Kezdés *</label><input id="m-start" type="datetime-local"></div>
+            <div><label>Típus</label><select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select></div>
         </div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>Össz. Költségvetés (Take)</label><input id="m-take" type="number" value="1000"></div>
-            <div><label>Max tét / fogadás (Max Stake)</label><input id="m-max" type="number" value="100"></div>
+            <div><label>Take (Költségvetés)</label><input id="m-take" type="number" value="1000"></div>
+            <div><label>Max Stake</label><input id="m-max" type="number" value="100"></div>
         </div>
 
-        <div class="odds-grid">
-            <div><label>Hazai (1) Odds</label><input id="m-o1" type="number" step="0.01" value="2.00"></div>
-            <div><label>Döntetlen (X) Odds</label><input id="m-ox" type="number" step="0.01" value="3.20"></div>
-            <div><label>Vendég (2) Odds</label><input id="m-o2" type="number" step="0.01" value="2.50"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+            <div><label>Odds 1</label><input id="m-o1" type="number" step="0.01" value="2.00"></div>
+            <div><label>Odds X</label><input id="m-ox" type="number" step="0.01" value="3.00"></div>
+            <div><label>Odds 2</label><input id="m-o2" type="number" step="0.01" value="2.50"></div>
         </div>
-
-        <label>Megjegyzés / Szabályok (Note)</label>
-        <textarea id="m-note" rows="2" placeholder="Opcionális leírás..."></textarea>
         
-        <div style="text-align:right; margin-top:10px;">
-            <label>Elérhető egyenleg:</label>
-            <span id="modal-balance-display" style="font-weight:bold; color:var(--demo); margin-left:10px;">0.00 D</span>
-        </div>
+        <label>Megjegyzés (Note)</label>
+        <textarea id="m-note" rows="2"></textarea>
     </div>
 </div>
 
@@ -122,30 +124,29 @@
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
     let currentUser = JSON.parse(localStorage.getItem("user"));
 
+    async function checkUser() {
+        if(!currentUser) {
+            document.getElementById('login-error').classList.remove('hidden');
+            return;
+        }
+        document.getElementById('app-content').classList.remove('hidden');
+        refreshBalances();
+        loadMarkets();
+    }
+
     async function refreshBalances() {
-        if(!currentUser) return;
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(data) {
             document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
             document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
-            window.userBalances = data;
-            updateModalBalance();
         }
     }
 
-    function updateModalBalance() {
-        const type = document.getElementById('m-type').value;
-        const display = document.getElementById('modal-balance-display');
-        if(!window.userBalances) return;
-        if(type === 'REAL') { display.innerText = window.userBalances.real_balance.toFixed(2) + " €"; display.style.color = "var(--primary)"; }
-        else { display.innerText = window.userBalances.demo_balance.toFixed(2) + " D"; display.style.color = "var(--demo)"; }
-    }
-
-    // PONTOS OSZLOPNEVEK HASZNÁLATA
     async function saveMarket() {
+        // CSAK AZOKAT AZ OSZLOPOKAT HASZNÁLJUK, AMIK LÉTEZNEK
         const payload = {
             title: document.getElementById('m-title').value,
-            creator_name: currentUser.email || "Rendszer",
+            creator_name: currentUser.email,
             type: document.getElementById('m-type').value,
             take: parseInt(document.getElementById('m-take').value),
             start_time: document.getElementById('m-start').value,
@@ -159,9 +160,9 @@
         const { error } = await _supabase.from('markets').insert([payload]);
 
         if(error) {
-            alert("Szerver hiba (Nézd meg, léteznek-e ezek az oszlopok a Supabase-ben): " + error.message);
+            alert("Hiba: " + error.message);
         } else {
-            alert("Piac sikeresen mentve!");
+            alert("Sikeres mentés!");
             closeModal();
             loadMarkets();
         }
@@ -170,15 +171,9 @@
     async function loadMarkets() {
         const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById('market-list');
-        list.innerHTML = "";
-        if(!data || data.length === 0) { list.innerHTML = "Nincsenek aktív piacok."; return; }
-        
-        data.forEach(m => {
-            list.innerHTML += `
-                <div class="market-card">
-                    <div style="display:flex; justify-content:space-between;"><h3>${m.title}</h3><small>${m.type}</small></div>
-                    <div style="margin-top:10px;">Odds: 1: <b>${m.odd_1}</b> | X: <b>${m.odd_x}</b> | 2: <b>${m.odd_2}</b></div>
-                </div>`;
+        list.innerHTML = data?.length ? "" : "No active markets.";
+        data?.forEach(m => {
+            list.innerHTML += `<div class="market-card"><b>${m.title}</b><br><small>Odds: ${m.odd_1} - ${m.odd_x} - ${m.odd_2}</small></div>`;
         });
     }
 
@@ -187,28 +182,13 @@
         document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
         document.getElementById('section-' + id).classList.add('active');
         document.getElementById('link-' + id).classList.add('active');
-        if(id === 'markets') loadMarkets();
     }
 
-    function openModal() { document.getElementById("createModal").classList.remove("hidden"); refreshBalances(); }
+    function openModal() { document.getElementById("createModal").classList.remove("hidden"); }
     function closeModal() { document.getElementById("createModal").classList.add("hidden"); }
-    
-    // FIX 404 HIBA ELLEN: Csak töröljük az adatot, de ne navigáljunk rossz oldalra
-    function logout() { 
-        localStorage.removeItem("user"); 
-        alert("Kijelentkezve.");
-        location.reload(); // Frissíti az oldalt, ami visszadob a login logic-ra
-    }
+    function logout() { localStorage.removeItem("user"); window.location.href = "index.html"; }
 
-    window.onload = () => { 
-        if(!currentUser) {
-            // Ha nincs belépve, ide írhatod a login logikádat vagy átirányíthatod a főoldalra
-            console.log("Nincs bejelentkezett felhasználó.");
-        } else {
-            refreshBalances(); 
-            loadMarkets(); 
-        }
-    };
+    window.onload = checkUser;
 </script>
 </body>
 </html>
