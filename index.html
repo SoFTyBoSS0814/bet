@@ -1,3 +1,10 @@
+Látom, mi történik: az adatbázisod (Supabase) sémája és a kód nincs összhangban. A legutóbbi hibaüzenet szerint a creator_id oszlopot sem találja.
+
+Ahhoz, hogy ezt végleg megoldjuk anélkül, hogy az adatbázisodban oszlopokat kellene fabrikálnod, minden adatot egyetlen közös mezőbe (market_data) küldünk. Ebben a Supabase táblában valószínűleg csak az event_name és a market_data oszlopok fixek.
+
+Íme a javított, "golyóálló" kód:
+
+HTML
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -7,11 +14,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         
+        /* NAVBAR FIX */
         .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c4f60; position: sticky; top: 0; z-index: 1000; height: 70px; }
         .nav-left { display: flex; align-items: center; gap: 30px; }
-        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; margin-right: 20px; text-transform: uppercase; font-weight: bold; }
+        .nav-links a { color: #aaa; text-decoration: none; font-size: 14px; cursor: pointer; margin-right: 20px; font-weight: bold; }
         .nav-links a.active { color: var(--primary); }
         .nav-right { display: flex; align-items: center; gap: 15px; }
         .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
@@ -19,15 +27,18 @@
         .container { max-width: 1100px; margin: auto; padding: 30px; }
         .section { display: none; }
         .section.active { display: block; }
+
+        /* GOMB JOBB OLDALON */
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 
+        /* MODAL FIX */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 15px; width: 950px; max-width: 95vw; max-height: 92vh; overflow-y: auto; border: 1px solid #2c4f60; }
         
         input, select, textarea { width: 100%; padding: 12px; margin: 5px 0 15px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 6px; box-sizing: border-box; }
         label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; }
 
-        .event-group { background: rgba(255,255,255,0.03); border: 1px solid #2c4f60; border-radius: 10px; padding: 20px; margin-bottom: 20px; position: relative; }
+        .event-group { background: rgba(255,255,255,0.03); border: 1px solid #2c4f60; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .outcome-item { background: #14212b; padding: 12px; border-radius: 8px; border: 1px solid #253948; }
 
@@ -64,7 +75,7 @@
             <h2 style="margin:0;">Live P2P Markets</h2>
             <button class="btn-primary" onclick="openCreateModal()">+ Create Market</button>
         </div>
-        <div id="market-list">Töltés...</div>
+        <div id="market-list">Piacok betöltése...</div>
     </div>
     <div id="section-wallet" class="section"><h2>Wallet</h2></div>
     <div id="section-account" class="section"><h2>Account</h2></div>
@@ -138,14 +149,13 @@
         const container = document.getElementById('groups-container');
         const div = document.createElement('div');
         div.className = 'event-group';
-        div.id = `group-${groupIdx}`;
         div.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-                <input class="g-title" style="width:80%; font-weight:bold;" placeholder="pl. Mérkőzés Győztese">
+                <input class="g-title" style="width:80%; font-weight:bold;" placeholder="Csoport neve (pl. Gólszám)">
                 <button class="btn-danger" style="padding:5px 10px;" onclick="this.parentElement.parentElement.remove()">Törlés</button>
             </div>
             <div class="outcomes-grid" id="grid-${groupIdx}"></div>
-            <button class="btn-outline" style="border-style:solid; font-size:12px;" onclick="addOutcome(${groupIdx})">+ Új mező (MAX 6)</button>
+            <button class="btn-outline" style="border-style:solid; font-size:12px;" onclick="addOutcome(${groupIdx})">+ Új kimenetel (MAX 6)</button>
         `;
         container.appendChild(div);
         addOutcome(groupIdx);
@@ -160,6 +170,7 @@
         grid.appendChild(oDiv);
     }
 
+    // GOLYÓÁLLÓ MENTÉS: Mindent a market_data-ba rakunk
     async function saveMarket() {
         const groups = [];
         document.querySelectorAll('.event-group').forEach(group => {
@@ -170,30 +181,31 @@
             groups.push({ title: group.querySelector('.g-title').value, outcomes });
         });
 
-        const { error } = await _supabase.from('markets').insert([{
+        const insertData = {
             event_name: document.getElementById('m-name').value,
-            deadline: document.getElementById('m-date').value,
-            description: document.getElementById('m-desc').value,
-            creator_id: currentUser.id,
             market_data: { 
-                groups: groups,
+                deadline: document.getElementById('m-date').value,
+                description: document.getElementById('m-desc').value,
                 budget: parseInt(document.getElementById('m-budget').value),
-                type: document.getElementById('m-type').value
+                account_type: document.getElementById('m-type').value,
+                creator: currentUser.id,
+                groups: groups
             }
-        }]);
+        };
 
-        if(error) alert("Hiba a mentésnél: " + error.message);
-        else { alert("Sikeres mentés!"); closeModal(); loadMarkets(); }
+        const { error } = await _supabase.from('markets').insert([insertData]);
+
+        if(error) alert("Hiba! Valószínűleg hiányzik egy oszlop az adatbázisból: " + error.message);
+        else { alert("Piac sikeresen mentve!"); closeModal(); loadMarkets(); }
     }
 
     async function loadMarkets() {
         const { data } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const list = document.getElementById('market-list');
-        list.innerHTML = data?.length ? "" : "Nincsenek aktív piacok.";
+        list.innerHTML = "";
         data?.forEach(m => {
-            list.innerHTML += `<div style="background:var(--card); padding:20px; border-radius:12px; margin-bottom:15px; border:1px solid #2c4f60;">
-                <div style="display:flex; justify-content:space-between;"><h3>${m.event_name}</h3><span style="color:var(--primary)">${m.market_data.type || 'N/A'}</span></div>
-                <p style="font-size:12px; color:#888;">Deadline: ${m.deadline.replace('T', ' ')}</p>
+            list.innerHTML += `<div style="background:var(--card); padding:20px; border-radius:12px; margin-bottom:15px; border-left:4px solid var(--primary);">
+                <div style="display:flex; justify-content:space-between;"><h3>${m.event_name}</h3><span style="color:var(--demo)">${m.market_data.account_type || ''}</span></div>
             </div>`;
         });
     }
@@ -201,6 +213,7 @@
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('section-' + id).classList.add('active');
+        if(id === 'markets') loadMarkets();
     }
 
     function openCreateModal() { document.getElementById("createModal").classList.remove("hidden"); if(!document.querySelector('.event-group')) addGroup(); refreshBalances(); }
