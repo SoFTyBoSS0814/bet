@@ -279,11 +279,11 @@
         } catch(e) { console.error(e); alert("Hiba a mentés során."); }
     }
 
-    function addGroup(t="", l=false) { 
+function addGroup(t="", l=false) { 
         groupIdx++; 
         const div = document.createElement('div'); 
         div.className='market-group'; 
-        div.innerHTML = `<input class="g-title" placeholder="Kategória pl. Ki nyeri?" value="${t}"> <div id="grid-${groupIdx}" class="outcomes-grid"></div> <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Kimenetel</button>`; 
+        div.innerHTML = `<input class="g-title" placeholder="Category" value="${t}" ${l?'readonly':''}> <div id="grid-${groupIdx}" class="outcomes-grid"></div> <button class="btn-outline" onclick="addOutcome(${groupIdx})">+ Outcome</button>`; 
         document.getElementById('groups-container').appendChild(div); 
     }
 
