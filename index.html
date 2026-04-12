@@ -41,7 +41,8 @@
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
         .hidden { display: none !important; }
-        .btn-del-group { position: absolute; top: 10px; right: 10px; font-size: 16px; background:none; border:none; color:var(--danger); cursor:pointer; }
+        .btn-del-group, .btn-del-outcome { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
+        .btn-del-group { position: absolute; top: 10px; right: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -177,7 +178,6 @@
 
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
-            const isDemo = m.type === 'DEMO';
             const isHost = m.creator_name === currentUser.username;
             const isLive = new Date(m.deadline) > new Date();
 
@@ -222,37 +222,30 @@
 
         const { error: payErr } = await _supabase.rpc('settle_market_payouts', { m_id: currentEditMarket.id });
         if(payErr) alert("Hiba a kifizetésnél: " + payErr.message);
-        else { alert("Sikeres lezárás és kifizetés!"); location.reload(); }
+        else { alert("Sikeres lezárás!"); location.reload(); }
     }
 
-    async function claimDailyDemo() {
-        const display = document.getElementById('reward-display');
-        const now = new Date();
-        const last = userProfile.last_claim ? new Date(userProfile.last_claim) : new Date(0);
-        if (now - last < 86400000) { alert("Várj holnapig!"); return; }
-        let c = 0; const iv = setInterval(() => {
-            display.innerText = Math.floor(Math.random() * 50000) + " D";
-            if(++c > 20) { clearInterval(iv); const final = Math.floor(Math.random() * 49000 + 1000); display.innerText = final + " D";
-                _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + final, last_claim: now.toISOString() }).eq('id', currentUser.id).then(() => location.reload());
-            }
-        }, 50);
-    }
-
-    // Helper functions
     function addGroup() {
         const container = document.getElementById('groups-container');
         const id = "g-" + Date.now();
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
-        d.innerHTML = `<button class="btn-del-group" onclick="this.parentElement.remove()">✕</button><input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div>
+        const count = container.querySelectorAll('.market-group').length;
+        const delBtn = count > 0 ? `<button class="btn-del-group" onclick="this.parentElement.remove()">✕</button>` : '';
+        d.innerHTML = `${delBtn}<input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div>
             <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px; border-style:dashed">+ Add Option</button>`;
         container.appendChild(d); addO(id); addO(id);
     }
+
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
-        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome" style="margin:0"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px; margin:0"><button onclick="this.parentElement.remove()">✕</button>`;
+        const count = cont.querySelectorAll('.o-row').length;
+        const oid = "o-" + Date.now() + Math.random();
+        const d = document.createElement('div'); d.className = 'o-row'; d.id = oid; d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
+        const delBtn = count >= 2 ? `<button class="btn-del-outcome" onclick="document.getElementById('${oid}').remove()">✕</button>` : `<div style="width:25px"></div>`;
+        d.innerHTML = `<input class="on" placeholder="Outcome" style="margin:0"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px; margin:0">${delBtn}`;
         cont.appendChild(d);
     }
+
     async function saveMarket() {
         const t = document.getElementById('m-name').value;
         const b = parseFloat(document.getElementById('m-budget').value);
@@ -260,11 +253,13 @@
         const type = document.getElementById('m-type').value;
         const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
             title: g.querySelector('.gt').value,
-            outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
+            outcomes: Array.from(g.querySelectorAll('.o-row')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
         }));
+        if(!t || isNaN(b) || !dl) return alert("Tölts ki minden mezőt!");
         await _supabase.from('markets').insert([{ title: t, type, take: b, deadline: dl, note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
+
     async function openEdit(id) {
         const { data } = await _supabase.from('markets').select('*').eq('id', id).single();
         currentEditMarket = data;
@@ -278,12 +273,14 @@
         document.getElementById('edit-container').innerHTML = html;
         document.getElementById('editModal').classList.remove('hidden');
     }
+
     async function saveOdds() {
         const groups = JSON.parse(currentEditMarket.note);
         document.querySelectorAll('.edit-odds-input').forEach(i => { groups[i.dataset.gi].outcomes[i.dataset.oi].o = parseFloat(i.value); });
         await _supabase.from('markets').update({ note: JSON.stringify(groups) }).eq('id', currentEditMarket.id);
         location.reload();
     }
+
     async function openSettle(id) {
         const { data } = await _supabase.from('markets').select('*').eq('id', id).single();
         currentEditMarket = data;
@@ -297,7 +294,9 @@
         document.getElementById('settle-container').innerHTML = html;
         document.getElementById('settleModal').classList.remove('hidden');
     }
+
     function openBet(mId, n, o, t) { activeBet = { mId, n, o, t }; document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o; document.getElementById('betModal').classList.remove('hidden'); }
+
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
@@ -308,6 +307,20 @@
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
+
+    async function claimDailyDemo() {
+        const display = document.getElementById('reward-display');
+        const now = new Date();
+        const last = userProfile.last_claim ? new Date(userProfile.last_claim) : new Date(0);
+        if (now - last < 86400000) return alert("Várj holnapig!");
+        let c = 0; const iv = setInterval(() => {
+            display.innerText = Math.floor(Math.random() * 50000) + " D";
+            if(++c > 20) { clearInterval(iv); const final = Math.floor(Math.random() * 49000 + 1000); display.innerText = final + " D";
+                _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + final, last_claim: now.toISOString() }).eq('id', currentUser.id).then(() => location.reload());
+            }
+        }, 50);
+    }
+
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('section-' + id).classList.add('active');
