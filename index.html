@@ -88,8 +88,8 @@
             </div>
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
-                <div id="reward-msg"></div>
-                <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()">TRY MY LUCK</button>
+                <div id="reward-msg">Ready to roll!</div>
+                <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo); color: #000;" onclick="claimDailyDemo()">TRY MY LUCK</button>
             </div>
         </div>
     </div>
@@ -124,12 +124,14 @@
     let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
+    let isLuckWaiting = false;
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
+        setInterval(updateRewardUI, 1000); // 24 órás visszaszámláló frissítése
     };
 
     async function fetchProfile() {
@@ -143,6 +145,7 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         updateCreateBalanceDisplay();
+        updateRewardUI();
     }
 
     function updateCreateBalanceDisplay() {
@@ -151,6 +154,73 @@
         const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
         document.getElementById('create-balance-display').innerText = "Balance: " + bal;
     }
+
+    // --- TRY MY LUCK LOGIKA ---
+    function updateRewardUI() {
+        if (!userProfile || isLuckWaiting) return;
+        const msg = document.getElementById('reward-msg');
+        const btn = document.getElementById('btn-claim-reward');
+        
+        if (!userProfile.last_claim) {
+            msg.innerText = "Ready to roll!";
+            msg.style.color = "var(--success)";
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            return;
+        }
+
+        const last = new Date(userProfile.last_claim).getTime();
+        const now = new Date().getTime();
+        const diff = 24 * 60 * 60 * 1000 - (now - last);
+
+        if (diff > 0) {
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
+            msg.style.color = "var(--danger)";
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+        } else {
+            msg.innerText = "Ready to roll!";
+            msg.style.color = "var(--success)";
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        }
+    }
+
+    async function claimDailyDemo() {
+        if (isLuckWaiting) return;
+        const amt = Math.floor(Math.random() * (50000 - 500 + 1)) + 500;
+        const now = new Date().toISOString();
+
+        const { error } = await _supabase.from('profiles')
+            .update({ 
+                demo_balance: userProfile.demo_balance + amt,
+                last_claim: now 
+            })
+            .eq('id', currentUser.id);
+
+        if (error) return alert("Hiba: " + error.message);
+
+        isLuckWaiting = true;
+        const msg = document.getElementById('reward-msg');
+        const btn = document.getElementById('btn-claim-reward');
+
+        msg.innerText = `BOOM! +${amt.toLocaleString()} D`;
+        msg.style.color = "var(--demo)";
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+
+        // Profil frissítése a háttérben reload nélkül
+        await fetchProfile();
+
+        setTimeout(() => {
+            isLuckWaiting = false;
+            updateRewardUI();
+        }, 5000);
+    }
+    // --------------------------
 
     async function loadMarkets() {
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
@@ -180,14 +250,14 @@
                 card.className = 'market-card';
                 const typeColor = m.type === 'REAL' ? 'var(--primary)' : 'var(--demo)';
                 
-                // Dátum formázása: YYYY/MM/DD/HH/MM/SS
                 const date = new Date(m.created_at);
-                const fD = date.getFullYear() + '-' + 
-                String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(date.getDate()).padStart(2, '0') + ' ' + // Ide került a szóköz
+                const fD = date.getFullYear() + '/' + 
+                String(date.getMonth() + 1).padStart(2, '0') + '/' + 
+                String(date.getDate()).padStart(2, '0') + ' ' + 
                 String(date.getHours()).padStart(2, '0') + ':' + 
                 String(date.getMinutes()).padStart(2, '0') + ':' + 
                 String(date.getSeconds()).padStart(2, '0');
+
                 let rowsHtml = "";
                 groups.forEach(g => {
                     g.outcomes.forEach(o => {
@@ -346,13 +416,6 @@
         await _supabase.from('markets').insert({ title, deadline: new Date(document.getElementById('m-deadline').value).toISOString(), type, stake: budget, take: budget, creator_name: currentUser.username, note: JSON.stringify(groups), status: 'active' });
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - budget }).eq('id', currentUser.id);
         location.reload();
-    }
-
-    async function claimDailyDemo() {
-        const amt = Math.floor(Math.random() * 200) + 50;
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + amt }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = `+${amt} Demo Coins claimed!`;
-        setTimeout(() => location.reload(), 1500);
     }
 
     function logout() { localStorage.removeItem("user"); location.href="login.html"; }
