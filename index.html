@@ -165,6 +165,7 @@
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
+        setInterval(updateRewardUI, 1000); // ÚJ: Reward UI frissítő
     };
 
     async function fetchProfile() {
@@ -178,6 +179,40 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         updateCreateBalanceDisplay();
+        updateRewardUI(); // ÚJ: Profil töltésekor UI frissítés
+    }
+
+    // ÚJ: 24 órás visszaszámláló és UI logika
+    function updateRewardUI() {
+        const msg = document.getElementById('reward-msg');
+        const btn = document.getElementById('btn-claim-reward');
+        if (!userProfile) return;
+
+        if (!userProfile.last_claim) {
+            msg.innerText = "Ready to roll!";
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            return;
+        }
+
+        const last = new Date(userProfile.last_claim).getTime();
+        const now = new Date().getTime();
+        const diff = 24 * 60 * 60 * 1000 - (now - last);
+
+        if (diff > 0) {
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
+            msg.style.color = "var(--danger)";
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+        } else {
+            msg.innerText = "Ready to roll!";
+            msg.style.color = "var(--success)";
+            btn.disabled = false;
+            btn.style.opacity = "1";
+        }
     }
 
     function updateCreateBalanceDisplay() {
@@ -354,13 +389,11 @@
         if(!winName) return alert("Válassz egy győztest!");
 
         try {
-            // --- HOST REFUND LOGIKA ---
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
             const remainingPool = parseFloat(mData.take);
             const hostName = mData.creator_name;
             const balField = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-            // Keressük meg a Host profilját a neve alapján a visszautaláshoz
             const { data: hostProf } = await _supabase.from('profiles').select('*').eq('username', hostName).single();
 
             if (hostProf && remainingPool > 0) {
@@ -368,7 +401,6 @@
                     .update({ [balField]: hostProf[balField] + remainingPool })
                     .eq('id', hostProf.id);
             }
-            // ---------------------------
 
             await _supabase.from('markets').update({ 
                 note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
@@ -382,11 +414,24 @@
         }
     }
 
+    // JAVÍTOTT: Daily Demo Claim 24 órás logikával
     async function claimDailyDemo() {
+        if (userProfile.last_claim) {
+            const last = new Date(userProfile.last_claim).getTime();
+            const now = new Date().getTime();
+            if (now - last < 24 * 60 * 60 * 1000) return alert("Hoppá! Még nem telt el 24 óra.");
+        }
+
         const final = Math.floor(Math.random() * 8000 + 1000);
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + final }).eq('id', currentUser.id);
+        const now = new Date().toISOString();
+
+        await _supabase.from('profiles').update({ 
+            demo_balance: userProfile.demo_balance + final,
+            last_claim: now 
+        }).eq('id', currentUser.id);
+
         document.getElementById('reward-msg').innerText = "WON " + final + " D!";
-        setTimeout(() => location.reload(), 2000);
+        await fetchProfile(); // Azonnali frissítés
     }
 
     function showSection(id) {
