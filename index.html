@@ -39,8 +39,6 @@
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
         #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
 
-        .geo-restriction { color: var(--danger); font-weight: bold; font-size: 13px; margin: 15px 0; padding: 10px; border: 1px solid rgba(255,68,68,0.3); border-radius: 8px; background: rgba(255,68,68,0.05); text-align: center; }
-
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
@@ -88,7 +86,6 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-            <div class="geo-restriction">Magyarország területéről korlátozva van a BE/KI fizetés.</div>
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
                 <div id="reward-msg"></div>
@@ -103,9 +100,7 @@
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
                 <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
-                <p style="margin:5px 0; color:#aaa">Account ID</p>
                 <p id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">-</p>
             </div>
             <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold;">LOG OUT</button>
@@ -167,7 +162,7 @@
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
-        setInterval(checkDeadlines, 1000); // 1 másodpercenként ellenőrzi a gombokat
+        setInterval(checkDeadlines, 1000);
     };
 
     async function fetchProfile() {
@@ -246,17 +241,15 @@
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => {
             const dl = new Date(btn.dataset.deadline);
-            if(dl < new Date()) {
-                btn.disabled = true;
-            }
+            if(dl < new Date()) btn.disabled = true;
         });
     }
 
     function addGroup() {
         const container = document.getElementById('groups-container');
         const id = "g-" + Date.now();
-        const isFirst = container.children.length === 0;
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
+        const isFirst = container.children.length === 0;
         const delBtn = !isFirst ? `<button onclick="this.parentElement.remove()" style="position:absolute;right:10px;top:10px;background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : '';
         d.innerHTML = `${delBtn}<input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
         container.appendChild(d); addO(id); addO(id);
@@ -274,26 +267,38 @@
     async function saveMarket() {
         const t = document.getElementById('m-name').value;
         const b = parseFloat(document.getElementById('m-budget').value);
-        const dl = document.getElementById('m-deadline').value;
+        const deadlineInput = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
+
+        if(!deadlineInput || isNaN(b) || b <= 0) return alert("Helytelen adatok!");
         
-        const bal = type === 'REAL' ? userProfile.real_balance : userProfile.demo_balance;
-        if(b > bal) return alert("Liquidity Pool exceeds your balance!");
-        if(!dl) return alert("Please set a deadline!");
+        // IDŐZÓNA FIX: A datetime-local értéket helyi időként kezeljük
+        const deadlineDate = new Date(deadlineInput);
+        const deadlineISO = deadlineDate.toISOString();
+
+        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(b > userProfile[balField]) return alert("Nincs elég fedezeted a likviditáshoz!");
+
+        // 1. LEVONJUK A FEDEZETET A HOSTRÓL
+        const { error: balErr } = await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
+        if(balErr) return alert("Hiba az egyenleg levonásakor!");
 
         const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
             title: g.querySelector('.gt').value,
             outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
         }));
-        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: dl, note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
+
+        // 2. PIAC LÉTREHOZÁSA
+        await _supabase.from('markets').insert([{ 
+            title: t, type, take: b, stake: b, deadline: deadlineISO, 
+            note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' 
+        }]);
+
         location.reload();
     }
 
     function openBet(mId, n, o, t, deadline) {
-        if(new Date(deadline) < new Date()) {
-            alert("This market is already closed!");
-            return;
-        }
+        if(new Date(deadline) < new Date()) return alert("A piac lezárult!");
         activeBet = { mId, n, o, t, dl: deadline };
         document.getElementById('bet-on').innerText = n;
         document.getElementById('bet-odds').innerText = "x" + o;
@@ -302,14 +307,10 @@
     }
 
     async function placeBet() {
-        if(new Date(activeBet.dl) < new Date()) {
-            alert("Time's up! You cannot place this bet anymore.");
-            location.reload();
-            return;
-        }
+        if(new Date(activeBet.dl) < new Date()) { alert("Lejárt az idő!"); location.reload(); return; }
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(amt > userProfile[f]) return alert("Insufficient balance!");
+        if(amt > userProfile[f]) return alert("Nincs elég egyenleged!");
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
@@ -344,14 +345,10 @@
         });
         if(!winName) return alert("Select a WINNER!");
 
-        const { error: updErr } = await _supabase.from('markets').update({ 
-            note: JSON.stringify(currentSettleGroups), 
-            status: 'settled',
-            winner: winName,
-            start_time: new Date().toISOString()
+        await _supabase.from('markets').update({ 
+            note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
         }).eq('id', currentSettleId);
 
-        if(updErr) return alert("Update failed!");
         await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
         location.reload();
     }
