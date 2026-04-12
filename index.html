@@ -37,10 +37,6 @@
         .btn-del-group { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; opacity: 0.6; }
         .btn-del-outcome { background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; padding: 0 5px; width: 25px; font-size: 14px; }
 
-        .settled-badge { position: absolute; top: 20px; left: 20px; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; z-index: 1; }
-        .history-category-box { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px; margin-top: 12px; border-left: 3px solid #334756; }
-        .history-item { display: flex; justify-content: space-between; padding: 8px 10px; background: rgba(255,255,255,0.03); margin-top: 4px; border-radius: 6px; font-size: 13px; }
-
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
@@ -102,7 +98,12 @@
 </div>
 
 <div id="settleModal" class="modal hidden">
-    <div class="modal-box"><h3 id="settle-title"></h3><div id="settle-area"></div><button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button><button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button></div>
+    <div class="modal-box">
+        <h3 id="settle-title">Settle Market</h3>
+        <div id="settle-area"></div>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
+    </div>
 </div>
 
 <script>
@@ -182,7 +183,7 @@
             } else {
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                card.innerHTML = `<div class="settled-badge">Settled</div><h3>${m.title}</h3><small>Host: ${m.creator_name} | Balance: ${m.take} ${currency}</small>`;
+                card.innerHTML = `<div style="background:var(--primary); color:#000; font-size:10px; font-weight:900; padding:4px 10px; border-radius:4px; display:inline-block; margin-bottom:10px;">SETTLED</div><h3>${m.title}</h3><small>Host: ${m.creator_name} | Balance: ${m.take} ${currency}</small>`;
                 hList.appendChild(card);
             }
         });
@@ -206,6 +207,67 @@
         if(liqErr) { alert("Market balance reached!"); return; }
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
+        location.reload();
+    }
+
+    function openSettle(mId, title) {
+        currentSettleData.mId = mId;
+        _supabase.from('markets').select('note').eq('id', mId).single().then(({data, error}) => {
+            if (error) return;
+            currentSettleData.groups = JSON.parse(data.note);
+            document.getElementById('settle-title').innerText = "Settle: " + title;
+            renderSettleUI();
+            document.getElementById('settleModal').classList.remove('hidden');
+        });
+    }
+
+    function renderSettleUI() {
+        const cont = document.getElementById('settle-area'); 
+        cont.innerHTML = "";
+        currentSettleData.groups.forEach((g, gi) => {
+            cont.innerHTML += `<p style="color:var(--primary); margin: 15px 0 5px 0; font-weight:bold; font-size:12px; text-transform:uppercase;">${g.title}</p>`;
+            g.outcomes.forEach((o, oi) => {
+                const isWin = o.status === 'win';
+                const isLoss = o.status === 'loss';
+                cont.innerHTML += `
+                    <div style="display:flex; gap:10px; margin-bottom:8px; align-items:center; background:rgba(0,0,0,0.2); padding:8px; border-radius:8px;">
+                        <span style="flex:1; font-size:14px;">${o.n}</span>
+                        <button class="btn-bet" onclick="setResult(${gi},${oi},'win')" style="width:65px; padding:6px; background:${isWin ? 'var(--success)' : '#222'}; border-color:${isWin ? 'var(--success)' : '#334756'}">WIN</button>
+                        <button class="btn-bet" onclick="setResult(${gi},${oi},'loss')" style="width:65px; padding:6px; background:${isLoss ? 'var(--danger)' : '#222'}; border-color:${isLoss ? 'var(--danger)' : '#334756'}">LOSS</button>
+                    </div>`;
+            });
+        });
+    }
+
+    function setResult(gi, oi, res) {
+        currentSettleData.groups[gi].outcomes[oi].status = res;
+        renderSettleUI();
+    }
+
+    async function finalSubmitSettle() {
+        const { mId, groups } = currentSettleData;
+        
+        // Ellenőrzés: minden kimenetelnek legyen státusza
+        let allSet = true;
+        groups.forEach(g => g.outcomes.forEach(o => { if(o.status === 'pending') allSet = false; }));
+        if(!allSet) { alert("Please set a result for all options!"); return; }
+
+        const { data: mData } = await _supabase.from('markets').select('*').eq('id', mId).single();
+        const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mId).eq('status', 'pending');
+        const f = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+        for (let b of (bets || [])) {
+            let win = false;
+            groups.forEach(g => g.outcomes.forEach(o => { if(o.n === b.outcome_name && o.status === 'win') win = true; }));
+            if(win) {
+                const { data: up } = await _supabase.from('profiles').select(f).eq('id', b.user_id).single();
+                await _supabase.from('profiles').update({ [f]: up[f] + (b.amount * b.odds) }).eq('id', b.user_id);
+                await _supabase.from('bets').update({ status: 'won' }).eq('id', b.id);
+            } else { 
+                await _supabase.from('bets').update({ status: 'lost' }).eq('id', b.id); 
+            }
+        }
+        await _supabase.from('markets').update({ status: 'closed', note: JSON.stringify(groups) }).eq('id', mId);
         location.reload();
     }
 
