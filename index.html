@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -278,7 +279,6 @@
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // --- HISTORY SECTION RE-ADDED ---
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
@@ -287,6 +287,7 @@
                     <div style="margin-bottom:15px">
                         <small style="display:block"><b>Type:</b> <span style="color:var(--demo)">${m.type} Event</span></small>
                         <small style="display:block"><b>Host:</b> ${m.creator_name}</small>
+                        <small style="display:block; font-size:11px; color:#aaa; margin-top:5px;">⏳ Closed: ${m.deadline.split('+')[0].replace('T',' ')}</small>
                     </div>
                     ${groups.map(g => `
                         <div style="margin-top:10px">
