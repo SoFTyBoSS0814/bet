@@ -230,6 +230,7 @@
         document.getElementById('bet-win-text').innerText = "Payout: " + (amt * activeBet.odds).toFixed(2);
     }
 
+    // FRISSÍTETT PLACEBET A KÉRT FORMÁTUMMAL
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
         if(amt <= 0 || isNaN(amt)) return;
@@ -241,16 +242,20 @@
             const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
             if(mData.take < profit) return alert("Market liquidity exceeded!");
 
-            // BESZÚRÁS A BETS TÁBLÁBA - user_name mezővel
-            const { error: betError } = await _supabase.from('bets').insert({
-                market_id: activeBet.mId,
-                user_id: currentUser.id,
-                username: currentUser.username, 
-                outcome_name: activeBet.oName,
-                amount: amt,
-                odds: activeBet.odds,
-                type: activeBet.type
-            });
+            // BESZÚRÁS A BETS TÁBLÁBA ARRAY FORMÁTUMBAN
+            const { error: betError } = await _supabase.from('bets').insert([
+                { 
+                    user_id: currentUser.id, 
+                    user_name: currentUser.username, 
+                    market_id: activeBet.mId, 
+                    outcome_name: activeBet.oName, 
+                    amount: amt, 
+                    odds: activeBet.odds, 
+                    type: activeBet.type, 
+                    status: 'pending' 
+                }
+            ]);
+
             if(betError) throw betError;
 
             await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amt }).eq('id', currentUser.id);
