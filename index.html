@@ -38,7 +38,7 @@
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
         #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
 
-        .geo-restriction { color: var(--danger); font-weight: bold; font-size: 13px; margin: 15px 0; padding: 10px; border: 1px solid rgba(255,68,68,0.3); border-radius: 8px; background: rgba(255,68,68,0.05); }
+        .geo-restriction { color: var(--danger); font-weight: bold; font-size: 13px; margin: 15px 0; padding: 10px; border: 1px solid rgba(255,68,68,0.3); border-radius: 8px; background: rgba(255,68,68,0.05); text-align: center; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
@@ -78,20 +78,16 @@
 
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
-            <h2>Your Balances</h2>
+            <h2>Balances</h2>
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>REAL BALANCE</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
+                    <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
                 </div>
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>DEMO BALANCE</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
+                    <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-            
-            <div class="geo-restriction">
-                ⚠️ Magyarország területéről korlátozva van a BE/KI fizetés.
-            </div>
-
+            <div class="geo-restriction">Magyarország területéről korlátozva van a BE/KI fizetés.</div>
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
                 <div id="reward-msg"></div>
@@ -102,14 +98,12 @@
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:450px; margin:auto;">
-            <h2 style="text-align:center">Account Settings</h2>
+            <h2 style="text-align:center">Account Profile</h2>
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
                 <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                
                 <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
-                
                 <p style="margin:5px 0; color:#aaa">Account ID</p>
                 <p id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">-</p>
             </div>
@@ -175,10 +169,8 @@
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
-        
-        // Account adatok
         document.getElementById("acc-username").innerText = currentUser.username;
-        document.getElementById("acc-email").innerText = currentUser.email || "No email provided";
+        document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
     }
 
@@ -210,16 +202,25 @@
             } else {
                 const card = document.createElement('div');
                 card.className = 'market-card';
+                
+                // 4-jegyű év és percre pontos dátum
+                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
+                const year = sDate.getFullYear();
+                const month = String(sDate.getMonth() + 1).padStart(2, '0');
+                const day = String(sDate.getDate()).padStart(2, '0');
+                const hours = String(sDate.getHours()).padStart(2, '0');
+                const minutes = String(sDate.getMinutes()).padStart(2, '0');
+                const formattedSettledDate = `${year}/${month}/${day} ${hours}:${minutes}`;
+
                 card.innerHTML = `
                     <div class="settled-badge">Settled</div>
                     <div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <div style="margin-top:15px;">
                         <h3 style="margin:0;">${m.title}</h3>
-                        <small style="color:#888">Host: ${m.creator_name} | Total Pool: ${m.take} | Ended: ${new Date(m.deadline).toLocaleDateString()}</small>
+                        <p style="margin:5px 0; font-size:12px; color:#aaa;">Host: ${m.creator_name} | Total Pool: ${m.take} | <b>Settled - ${formattedSettledDate}</b></p>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
-                        ${g.outcomes.map(o => `
-                            <div class="history-item ${o.status==='win' ? 'winner-row' : ''}">
+                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win' ? 'winner-row' : ''}">
                                 <span>${o.n}</span>
                                 <b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status.toUpperCase()}</b>
                             </div>`).join('')}
@@ -229,7 +230,6 @@
         });
     }
 
-    // --- CSOPORT ÉS OPTION KEZELÉS ---
     function addGroup() {
         const container = document.getElementById('groups-container');
         const id = "g-" + Date.now();
@@ -249,7 +249,6 @@
         cont.appendChild(d);
     }
 
-    // --- LOGIKA ---
     async function saveMarket() {
         const t = document.getElementById('m-name').value;
         const b = parseFloat(document.getElementById('m-budget').value);
@@ -295,7 +294,8 @@
         const { error: updErr } = await _supabase.from('markets').update({ 
             note: JSON.stringify(currentSettleGroups), 
             status: 'settled',
-            winner: winName 
+            winner: winName,
+            start_time: new Date().toISOString()
         }).eq('id', currentSettleId);
 
         if(updErr) return alert("Update failed!");
@@ -319,7 +319,6 @@
         setTimeout(() => location.reload(), 2000);
     }
 
-    // UI HELPEREK
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('section-' + id).classList.add('active');
