@@ -131,7 +131,7 @@
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
-        setInterval(updateRewardUI, 1000); // 24 órás visszaszámláló frissítése
+        setInterval(updateRewardUI, 1000);
     };
 
     async function fetchProfile() {
@@ -155,7 +155,6 @@
         document.getElementById('create-balance-display').innerText = "Balance: " + bal;
     }
 
-    // --- TRY MY LUCK LOGIKA ---
     function updateRewardUI() {
         if (!userProfile || isLuckWaiting) return;
         const msg = document.getElementById('reward-msg');
@@ -212,7 +211,6 @@
         btn.disabled = true;
         btn.style.opacity = "0.5";
 
-        // Profil frissítése a háttérben reload nélkül
         await fetchProfile();
 
         setTimeout(() => {
@@ -220,7 +218,6 @@
             updateRewardUI();
         }, 5000);
     }
-    // --------------------------
 
     async function loadMarkets() {
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
@@ -339,13 +336,28 @@
     }
 
     async function finalSubmitSettle() {
+        let winCount = 0;
+        let loseCount = 0;
         let winName = "";
+
+        // Eredmények ellenőrzése
         document.querySelectorAll('.settle-select').forEach(s => {
-            const gi = s.dataset.gi; const oi = s.dataset.oi;
-            currentSettleGroups[gi].outcomes[oi].status = s.value;
-            if(s.value === 'win') winName = currentSettleGroups[gi].outcomes[oi].n;
+            const gi = s.dataset.gi; 
+            const oi = s.dataset.oi;
+            const val = s.value;
+            currentSettleGroups[gi].outcomes[oi].status = val;
+
+            if (val === 'win') {
+                winCount++;
+                winName = currentSettleGroups[gi].outcomes[oi].n;
+            } else {
+                loseCount++;
+            }
         });
-        if(!winName) return alert("Select a winner!");
+
+        // VALIDÁCIÓ: Minimum 1 nyertes és 1 vesztes kell
+        if (winCount === 0) return alert("Hiba: Legalább egy opciót meg kell jelölni NYERTESNEK!");
+        if (loseCount === 0) return alert("Hiba: Legalább egy opciót meg kell jelölni VESZTESNEK!");
 
         try {
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
@@ -365,7 +377,7 @@
             await _supabase.from('markets').update({ status: 'settled', winner: winName, note: JSON.stringify(currentSettleGroups), take: hostRefundAmount }).eq('id', currentSettleId);
             await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
             location.reload();
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error(err); alert("Hiba a mentés során!"); }
     }
 
     function showSection(s) {
