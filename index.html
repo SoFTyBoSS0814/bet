@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Dashboard</title>
+    <title>StakeForge | Professional Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
@@ -28,15 +28,17 @@
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-bet:hover:not(:disabled) { border-color: var(--primary); background: rgba(0, 212, 255, 0.05); }
         
+        /* SZUPER TILTÁS */
         .market-bet-btn:disabled, .market-bet-btn.disabled-state { 
             opacity: 0.15 !important; 
             cursor: not-allowed !important; 
             pointer-events: none !important;
             filter: grayscale(1) !important;
+            border-color: #222 !important;
         }
 
-        .selected-win { background: var(--success) !important; color: #000 !important; font-weight: bold; border: none; }
-        .selected-loss { background: var(--danger) !important; color: #fff !important; font-weight: bold; border: none; }
+        .selected-win { background: var(--success) !important; color: #000 !important; font-weight: bold; }
+        .selected-loss { background: var(--danger) !important; color: #fff !important; font-weight: bold; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
@@ -73,11 +75,11 @@
             <h2>Live Markets</h2>
             <button class="btn-primary" onclick="openCreateModal()">+ CREATE</button>
         </div>
-        <div id="market-list">Betöltés...</div>
+        <div id="market-list">Loading...</div>
     </div>
 
     <div id="section-history" class="section">
-        <h2>Market History</h2>
+        <h2>History</h2>
         <div id="history-list"></div>
     </div>
 
@@ -152,24 +154,22 @@
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
-        setInterval(checkAllDeadlines, 500);
+        setInterval(checkAllDeadlines, 1000);
     };
+
+    // IDŐZÓNA KORREKCIÓ: A Supabase UTC dátumát helyi idővé alakítja
+    function getCorrectedTime(dlStr) {
+        if(!dlStr) return 0;
+        // Ha a dátumban nincs zóna infó, hozzáadjuk a Z-t (UTC jelzés)
+        let formatted = dlStr.includes('+') || dlStr.endsWith('Z') ? dlStr : dlStr.replace(" ", "T") + "Z";
+        return new Date(formatted).getTime();
+    }
 
     async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         userProfile = data;
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
-        if(document.getElementById("w-real-val")) {
-            document.getElementById("w-real-val").innerText = data.real_balance.toFixed(2) + " €";
-            document.getElementById("w-demo-val").innerText = data.demo_balance.toFixed(2) + " D";
-            document.getElementById("acc-username").innerText = currentUser.username;
-        }
-    }
-
-    function getDeadlineTime(dlStr) {
-        if(!dlStr) return 0;
-        return new Date(dlStr.replace(" ", "T")).getTime();
     }
 
     async function loadMarkets() {
@@ -183,7 +183,7 @@
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const isHost = m.creator_name === currentUser.username;
-            const dlTime = getDeadlineTime(m.deadline);
+            const dlTime = getCorrectedTime(m.deadline);
             const isExpired = now >= dlTime;
 
             if(m.status === 'active') {
@@ -194,8 +194,8 @@
                         <div>
                             <h3 style="margin:0">${m.title}</h3>
                             <small>Host: ${m.creator_name} | Liq: ${m.take.toFixed(2)}</small><br>
-                            <span class="deadline-timer" data-time="${m.deadline}" style="font-size:10px; font-weight:bold; color:${isExpired?'var(--danger)':'#aaa'}">
-                                ${isExpired ? '⛔ LEJÁRT' : '⏳ Deadline: ' + m.deadline.replace('T', ' ')}
+                            <span class="deadline-timer" data-time="${m.deadline}" style="font-size:11px; font-weight:bold; color:${isExpired?'var(--danger)':'#aaa'}">
+                                ${isExpired ? '⛔ CLOSED' : '⏳ Deadline: ' + m.deadline.split('.')[0]}
                             </span>
                         </div>
                         <div style="text-align:right">
@@ -218,33 +218,21 @@
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // HISTORY KÁRTYA RECONSTRUCTION
                 const card = document.createElement('div');
-                card.className = 'market-card';
-                card.style.borderLeft = "4px solid var(--border)";
+                card.className = 'market-card'; card.style.borderLeft = "4px solid var(--border)";
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:start">
-                        <div>
-                            <h3 style="margin:0">${m.title}</h3>
-                            <small style="color:#aaa">Host: ${m.creator_name} | Deadline: ${m.deadline.replace('T', ' ')}</small>
-                        </div>
-                        <div style="text-align:right">
-                            <span style="background:var(--primary); color:#000; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px">SETTLED</span><br>
-                            <small style="color:var(--primary)">${m.type}</small>
-                        </div>
+                    <div style="display:flex; justify-content:space-between">
+                        <div><h3 style="margin:0">${m.title}</h3><small style="color:#aaa">Host: ${m.creator_name}</small></div>
+                        <div style="text-align:right"><span style="background:var(--primary); color:#000; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px">SETTLED</span></div>
                     </div>
                     <div style="margin-top:15px; background:rgba(0,0,0,0.2); border-radius:8px; padding:10px">
                         ${groups.map(g => `
                             <div style="margin-bottom:8px">
                                 <small style="color:var(--primary); font-weight:bold">${g.title}</small>
                                 ${g.outcomes.map(o => `
-                                    <div class="history-outcome">
-                                        <span>${o.n}</span>
-                                        <b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b>
-                                    </div>
+                                    <div class="history-outcome"><span>${o.n}</span><b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b></div>
                                 `).join('')}
-                            </div>
-                        `).join('')}
+                            </div>`).join('')}
                     </div>`;
                 hList.appendChild(card);
             }
@@ -254,24 +242,24 @@
     function checkAllDeadlines() {
         const now = new Date().getTime();
         document.querySelectorAll('.market-bet-btn').forEach(btn => {
-            const dlTime = getDeadlineTime(btn.getAttribute('data-deadline'));
-            if (now >= dlTime) {
+            const dl = getCorrectedTime(btn.getAttribute('data-deadline'));
+            if (now >= dl) {
                 btn.disabled = true;
                 btn.classList.add('disabled-state');
                 btn.onclick = null;
             }
         });
         document.querySelectorAll('.deadline-timer').forEach(span => {
-            const dlTime = getDeadlineTime(span.getAttribute('data-time'));
-            if (now >= dlTime && !span.innerText.includes('⛔')) {
-                span.innerText = "⛔ LEJÁRT";
+            const dl = getCorrectedTime(span.getAttribute('data-time'));
+            if (now >= dl && !span.innerText.includes('⛔')) {
+                span.innerText = "⛔ CLOSED";
                 span.style.color = "var(--danger)";
             }
         });
     }
 
     function openBet(mId, n, o, t, dl, liq) {
-        if(new Date().getTime() >= getDeadlineTime(dl)) return alert("Closed!");
+        if(new Date().getTime() >= getCorrectedTime(dl)) return alert("Market closed!");
         activeBet = { mId, n, o, t, liq, dl };
         document.getElementById('bet-on').innerText = n;
         document.getElementById('bet-odds').innerText = "x" + o;
@@ -281,20 +269,17 @@
 
     function calcWin() {
         const amt = parseFloat(document.getElementById('bet-amount').value) || 0;
-        const win = amt * (activeBet?.o || 0);
-        document.getElementById('bet-win-text').innerText = "Win: " + win.toFixed(2);
+        document.getElementById('bet-win-text').innerText = "Win: " + (amt * (activeBet?.o || 0)).toFixed(2);
     }
 
     async function placeBet() {
-        if(new Date().getTime() >= getDeadlineTime(activeBet.dl)) return alert("Closed!");
+        if(new Date().getTime() >= getCorrectedTime(activeBet.dl)) return alert("Closed!");
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const win = amt * activeBet.o;
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         if(amt > userProfile[f]) return alert("Low balance");
-
         const { error: liqErr } = await _supabase.rpc('decrease_market_liq', { m_id: activeBet.mId, amount: win });
         if(liqErr) return alert("Liquidity Error");
-
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
@@ -335,7 +320,6 @@
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', mId).single();
         const f = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
         const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mId).eq('status', 'pending');
-        
         for (let bet of (bets || [])) {
             let won = false;
             groups.forEach(g => g.outcomes.forEach(o => { if(o.n === bet.outcome_name && o.status === 'win') won = true; }));
@@ -343,9 +327,7 @@
                 const { data: p } = await _supabase.from('profiles').select(f).eq('id', bet.user_id).single();
                 await _supabase.from('profiles').update({ [f]: p[f] + (bet.amount * bet.odds) }).eq('id', bet.user_id);
                 await _supabase.from('bets').update({ status: 'won' }).eq('id', bet.id);
-            } else {
-                await _supabase.from('bets').update({ status: 'lost' }).eq('id', bet.id);
-            }
+            } else { await _supabase.from('bets').update({ status: 'lost' }).eq('id', bet.id); }
         }
         await _supabase.from('markets').update({ status: 'closed', note: JSON.stringify(groups) }).eq('id', mId);
         location.reload();
@@ -356,7 +338,7 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
-        if(id==='wallet') fetchProfile();
+        if(id==='wallet' || id==='account') fetchProfile();
     }
 
     function addGroup() {
@@ -377,12 +359,10 @@
         const type = document.getElementById('m-type').value;
         const groups = Array.from(document.querySelectorAll('.market-group')).map(g => ({
             title: g.querySelector('.g-t').value,
-            outcomes: Array.from(g.querySelectorAll('[id^="grid-"] > div')).map(o => ({
-                n: o.querySelector('.o-n').value, o: parseFloat(o.querySelector('.o-o').value), status: 'pending'
-            }))
+            outcomes: Array.from(g.querySelectorAll('[id^="grid-"] > div')).map(o => ({ n: o.querySelector('.o-n').value, o: parseFloat(o.querySelector('.o-o').value), status: 'pending' }))
         }));
         const f = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[f]) return alert("Low balance");
+        if(b > userProfile[f]) return alert("Low funds");
         await _supabase.from('profiles').update({ [f]: userProfile[f] - b }).eq('id', currentUser.id);
         await _supabase.from('markets').insert([{ title: t, type, take: b, deadline: dl, note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
