@@ -28,17 +28,15 @@
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-bet:hover:not(:disabled) { border-color: var(--primary); background: rgba(0, 212, 255, 0.05); }
         
-        /* SZUPER TILTÁS */
         .market-bet-btn:disabled, .market-bet-btn.disabled-state { 
             opacity: 0.15 !important; 
             cursor: not-allowed !important; 
             pointer-events: none !important;
             filter: grayscale(1) !important;
-            border-color: #222 !important;
         }
 
-        .selected-win { background: var(--success) !important; color: #000 !important; font-weight: bold; }
-        .selected-loss { background: var(--danger) !important; color: #fff !important; font-weight: bold; }
+        .selected-win { background: var(--success) !important; color: #000 !important; font-weight: bold; border: none; }
+        .selected-loss { background: var(--danger) !important; color: #fff !important; font-weight: bold; border: none; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
@@ -75,11 +73,11 @@
             <h2>Live Markets</h2>
             <button class="btn-primary" onclick="openCreateModal()">+ CREATE</button>
         </div>
-        <div id="market-list">Loading...</div>
+        <div id="market-list">Betöltés...</div>
     </div>
 
     <div id="section-history" class="section">
-        <h2>History</h2>
+        <h2>Market History</h2>
         <div id="history-list"></div>
     </div>
 
@@ -157,12 +155,14 @@
         setInterval(checkAllDeadlines, 1000);
     };
 
-    // IDŐZÓNA KORREKCIÓ: A Supabase UTC dátumát helyi idővé alakítja
+    // BIZTONSÁGOS UTC IDŐ KEZELÉS
     function getCorrectedTime(dlStr) {
-        if(!dlStr) return 0;
-        // Ha a dátumban nincs zóna infó, hozzáadjuk a Z-t (UTC jelzés)
-        let formatted = dlStr.includes('+') || dlStr.endsWith('Z') ? dlStr : dlStr.replace(" ", "T") + "Z";
-        return new Date(formatted).getTime();
+        if (!dlStr) return 0;
+        let isoDl = dlStr.replace(" ", "T");
+        if (!isoDl.includes('+') && !isoDl.includes('Z')) {
+            isoDl += "Z"; // Kényszerített UTC értelmezés
+        }
+        return new Date(isoDl).getTime();
     }
 
     async function fetchProfile() {
@@ -170,6 +170,11 @@
         userProfile = data;
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
+        if(document.getElementById("w-real-val")) {
+            document.getElementById("w-real-val").innerText = data.real_balance.toFixed(2) + " €";
+            document.getElementById("w-demo-val").innerText = data.demo_balance.toFixed(2) + " D";
+            document.getElementById("acc-username").innerText = currentUser.username;
+        }
     }
 
     async function loadMarkets() {
@@ -211,26 +216,36 @@
                                     <button class="btn-bet market-bet-btn" 
                                         data-deadline="${m.deadline}"
                                         ${isExpired ? 'disabled' : ''} 
-                                        onclick="openBet('${m.id}', '${o.n}', ${o.o}, '${m.type}', '${m.deadline}', ${m.take})">
+                                        onclick="${isExpired ? 'return false;' : `openBet('${m.id}', '${o.n}', ${o.o}, '${m.type}', '${m.deadline}', ${m.take})`}">
                                         ${o.n}<br><b>${o.o}</b>
                                     </button>`).join('')}
                             </div>
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
+                // HISTORY RECONSTRUCTION (Settle utáni kártyák)
                 const card = document.createElement('div');
                 card.className = 'market-card'; card.style.borderLeft = "4px solid var(--border)";
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between">
-                        <div><h3 style="margin:0">${m.title}</h3><small style="color:#aaa">Host: ${m.creator_name}</small></div>
-                        <div style="text-align:right"><span style="background:var(--primary); color:#000; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px">SETTLED</span></div>
+                        <div>
+                            <h3 style="margin:0">${m.title}</h3>
+                            <small style="color:#aaa">Host: ${m.creator_name} | Deadline: ${m.deadline.split('.')[0]}</small>
+                        </div>
+                        <div style="text-align:right">
+                            <span style="background:var(--primary); color:#000; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:4px">SETTLED</span><br>
+                            <small style="color:var(--primary)">${m.type}</small>
+                        </div>
                     </div>
                     <div style="margin-top:15px; background:rgba(0,0,0,0.2); border-radius:8px; padding:10px">
                         ${groups.map(g => `
                             <div style="margin-bottom:8px">
                                 <small style="color:var(--primary); font-weight:bold">${g.title}</small>
                                 ${g.outcomes.map(o => `
-                                    <div class="history-outcome"><span>${o.n}</span><b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b></div>
+                                    <div class="history-outcome">
+                                        <span>${o.n}</span>
+                                        <b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b>
+                                    </div>
                                 `).join('')}
                             </div>`).join('')}
                     </div>`;
@@ -278,8 +293,10 @@
         const win = amt * activeBet.o;
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         if(amt > userProfile[f]) return alert("Low balance");
+        
         const { error: liqErr } = await _supabase.rpc('decrease_market_liq', { m_id: activeBet.mId, amount: win });
-        if(liqErr) return alert("Liquidity Error");
+        if(liqErr) return alert("Liquidity Error: Market cannot cover this win.");
+
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
