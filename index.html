@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -34,12 +35,15 @@
 
         /* Delete Buttons */
         .btn-del-group { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; opacity: 0.6; }
-        .btn-del-group:hover { opacity: 1; }
         .btn-del-outcome { background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; padding: 0 5px; width: 25px; }
 
         .settled-badge { position: absolute; top: 20px; right: 20px; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
         .history-category-box { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px; margin-top: 12px; border-left: 3px solid #334756; }
         .history-item { display: flex; justify-content: space-between; padding: 8px 10px; background: rgba(255,255,255,0.03); margin-top: 4px; border-radius: 6px; font-size: 13px; }
+
+        /* Reward Box */
+        .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 20px; border-radius: 12px; margin-top: 20px; text-align: center; }
+        #reward-display { font-size: 24px; font-weight: 900; color: var(--demo); margin: 10px 0; min-height: 32px; }
 
         /* Modals */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
@@ -90,14 +94,24 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-            <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()">TRY MY LUCK</button>
+
+            <div class="reward-box">
+                <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
+                <p style="font-size:12px; color:#aaa;">Win 500 - 50,000 D every 24h!</p>
+                <div id="reward-display">???? D</div>
+                <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()">TRY MY LUCK</button>
+            </div>
         </div>
     </div>
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:400px; margin:auto; text-align:center;">
             <h3>Profile Settings</h3>
-            <p><b>Username:</b> <span id="acc-username">...</span></p>
+            <div style="text-align:left; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:20px;">
+                <p><b>Username:</b> <span id="acc-username">...</span></p>
+                <p><b>Account ID:</b> <br><span id="acc-id" style="font-family:monospace; font-size:11px; color:var(--primary)">...</span></p>
+                <p><b>Type:</b> <span id="acc-type" style="color:var(--success); font-weight:bold">PLAYER</span></p>
+            </div>
             <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color: var(--danger);">LOGOUT</button>
         </div>
     </div>
@@ -177,16 +191,55 @@
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("acc-username").innerText = currentUser.username;
+        document.getElementById("acc-id").innerText = currentUser.id;
+        if(currentUser.username.toLowerCase().includes('admin')) {
+             document.getElementById("acc-type").innerText = "ADMIN";
+             document.getElementById("acc-type").style.color = "var(--danger)";
+        }
     }
 
     async function claimDailyDemo() {
         const btn = document.getElementById('btn-claim-reward');
+        const display = document.getElementById('reward-display');
         const now = new Date();
         const lastClaim = userProfile.last_claim ? new Date(userProfile.last_claim) : new Date(0);
-        if (now - lastClaim < 24 * 60 * 60 * 1000) { alert("Try again later!"); return; }
-        const finalAmount = Math.floor(Math.random() * 49501 + 500); 
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + finalAmount, last_claim: now.toISOString() }).eq('id', currentUser.id);
-        location.reload();
+        
+        if (now - lastClaim < 24 * 60 * 60 * 1000) {
+            const diff = (24 * 60 * 60 * 1000) - (now - lastClaim);
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            btn.style.background = "var(--danger)";
+            btn.innerText = `WAIT ${hours}h ${mins}m`;
+            setTimeout(() => { btn.style.background = "var(--demo)"; btn.innerText = "TRY MY LUCK"; }, 3000);
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "SPINNING...";
+        let counter = 0;
+        const interval = setInterval(() => {
+            display.innerText = Math.floor(Math.random() * 50000 + 500) + " D";
+            counter++;
+            if(counter > 20) { clearInterval(interval); finalizeClaim(); }
+        }, 50);
+
+        async function finalizeClaim() {
+            const finalAmount = Math.floor(Math.random() * 49501 + 500); 
+            display.innerText = finalAmount + " D";
+            const { error } = await _supabase.from('profiles').update({ 
+                demo_balance: userProfile.demo_balance + finalAmount,
+                last_claim: now.toISOString()
+            }).eq('id', currentUser.id);
+
+            if(!error) {
+                btn.style.background = "var(--success)";
+                btn.innerText = `WON ${finalAmount} D!`;
+                userProfile.demo_balance += finalAmount;
+                userProfile.last_claim = now.toISOString();
+                document.getElementById("nav-demo").innerText = userProfile.demo_balance.toFixed(2) + " D";
+                document.getElementById("w-demo").innerText = userProfile.demo_balance.toFixed(2) + " D";
+            }
+        }
     }
 
     async function loadMarkets() {
@@ -219,8 +272,8 @@
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `<div class="settled-badge">Settled</div><h3>${m.title}</h3>
-                    <small>Type: ${m.type} | Host: ${m.creator_name}</small>
-                    ${groups.map(g => `<div class="history-category-box"><small style="color:var(--primary)">${g.title}</small>
+                    <small>Type: ${m.type} | Host: ${m.creator_name} | Closed: ${m.deadline.split('T')[0]}</small>
+                    ${groups.map(g => `<div class="history-category-box"><small style="color:var(--primary); font-weight:bold">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item"><span>${o.n}</span><b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b></div>`).join('')}
                     </div>`).join('')}`;
                 hList.appendChild(card);
@@ -293,48 +346,25 @@
         location.reload();
     }
 
-    // --- MARKET CREATION LOGIC ---
     function addGroup() {
-        const id = "g-" + Date.now();
         const container = document.getElementById('groups-container');
         const groupCount = container.querySelectorAll('.market-group').length;
-
-        const d = document.createElement('div'); 
-        d.className = 'market-group';
-        d.id = id;
-        
-        // Csak a 2. kategóriától (index > 0) van törlés gomb
+        const id = "g-" + Date.now();
+        const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
         const delBtn = groupCount > 0 ? `<button class="btn-del-group" onclick="removeEl('${id}')">✕</button>` : '';
-
-        d.innerHTML = `
-            ${delBtn}
-            <input class="gt" placeholder="Category Name (e.g. Winner)">
-            <div id="o-cont-${id}"></div>
+        d.innerHTML = `${delBtn}<input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div>
             <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px; border-style:dashed">+ Add Option</button>`;
-        
         container.appendChild(d); 
-        
-        // Alapból minden kategóriához létrehozunk 2 outcome-ot
-        addO(id);
-        addO(id);
+        addO(id); addO(id);
     }
     
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
         const outcomeCount = cont.querySelectorAll('div').length;
         const oid = "o-" + Date.now() + Math.random();
-        
-        const d = document.createElement('div'); 
-        d.id = oid;
-        d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
-        
-        // Csak a 3. outcome-tól (index > 1) van törlés gomb
+        const d = document.createElement('div'); d.id = oid; d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
         const delBtn = outcomeCount > 1 ? `<button class="btn-del-outcome" onclick="removeEl('${oid}')">✕</button>` : `<div style="width:25px"></div>`;
-
-        d.innerHTML = `
-            <input class="on" placeholder="Outcome" style="margin:0">
-            <input class="oo" type="number" step="0.1" value="2.0" style="width:70px; margin:0">
-            ${delBtn}`;
+        d.innerHTML = `<input class="on" placeholder="Outcome" style="margin:0"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px; margin:0">${delBtn}`;
         cont.appendChild(d);
     }
 
