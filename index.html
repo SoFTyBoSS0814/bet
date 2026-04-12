@@ -344,6 +344,7 @@
         document.getElementById('settleModal').classList.remove('hidden');
     }
 
+    // --- JAVÍTOTT SETTLE FÜGGVÉNY ---
     async function finalSubmitSettle() {
         let winName = "";
         document.querySelectorAll('.settle-select').forEach(s => {
@@ -354,27 +355,45 @@
         if(!winName) return alert("Válassz egy győztest!");
 
         try {
-            // --- HOST REFUND LOGIKA ---
+            // 1. Piac adatok lekérése
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
-            const remainingPool = parseFloat(mData.take);
             const hostName = mData.creator_name;
             const balField = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-            // Keressük meg a Host profilját a neve alapján a visszautaláshoz
+            // 2. Összes fogadás lekérése ehhez a piachoz
+            const { data: allBets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId);
+            
+            // 3. Számolás: Mi jár vissza a Hostnak?
+            // - Alapból visszakapja a megmaradt szabad likviditást (take)
+            let hostRefundAmount = parseFloat(mData.take);
+
+            // - Minden olyan fogadás TÉTJÉT megkapja, ami VESZTETT
+            if (allBets) {
+                allBets.forEach(bet => {
+                    // Ha a fogadás kimenetele NEM a győztes kimenetel, akkor a Hosté a tét
+                    if (bet.outcome_name !== winName) {
+                        hostRefundAmount += parseFloat(bet.amount);
+                    }
+                });
+            }
+
+            // 4. Host profil lekérése és egyenleg frissítése
             const { data: hostProf } = await _supabase.from('profiles').select('*').eq('username', hostName).single();
 
-            if (hostProf && remainingPool > 0) {
+            if (hostProf && hostRefundAmount > 0) {
                 await _supabase.from('profiles')
-                    .update({ [balField]: hostProf[balField] + remainingPool })
+                    .update({ [balField]: hostProf[balField] + hostRefundAmount })
                     .eq('id', hostProf.id);
             }
-            // ---------------------------
 
+            // 5. Piac lezárása és nyertesek kifizetése (RPC hívás a Supabase felé)
             await _supabase.from('markets').update({ 
                 note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
             }).eq('id', currentSettleId);
 
+            // Ez a függvény intézi a nyertesek kifizetését (a tét + az elvont likviditás visszajuttatását)
             await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
+            
             location.reload();
         } catch (err) {
             console.error(err);
