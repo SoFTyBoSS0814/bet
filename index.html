@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Final Edition</title>
+    <title>StakeForge | Professional Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
@@ -30,7 +30,6 @@
         .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 
-        /* History specifikus */
         .settled-badge { position: absolute; top: 20px; right: 20px; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
         .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.2); margin-top: 5px; border-radius: 8px; font-size: 14px; }
 
@@ -38,6 +37,10 @@
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; }
         .hidden { display: none !important; }
+
+        /* Demo Reward Styles */
+        .reward-box { background: rgba(255, 204, 0, 0.1); border: 1px solid var(--demo); padding: 15px; border-radius: 12px; margin-top: 20px; }
+        input[type=range] { width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -81,14 +84,26 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
+
+            <div class="reward-box">
+                <h4 style="margin:0; color:var(--demo)">Daily Demo Reward</h4>
+                <p style="font-size:12px; margin:5px 0;">Select amount (500 - 50,000 D)</p>
+                <input type="range" id="reward-slider" min="500" max="50000" step="500" value="5000" oninput="updateRewardLabel(this.value)">
+                <div style="font-weight:bold; margin:10px 0;" id="reward-label">5000 D</div>
+                <button class="btn-bet" id="btn-claim-reward" style="background:var(--demo); color:#000; border:none; font-weight:bold" onclick="claimDailyDemo()">CLAIM REWARD</button>
+            </div>
         </div>
     </div>
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:400px; margin:auto; text-align:center;">
             <h3>Profile</h3>
-            <p>User: <b id="acc-username">...</b></p>
-            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color: var(--danger); margin-top:20px">LOGOUT</button>
+            <div style="text-align:left; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:20px;">
+                <p style="margin:5px 0"><b>Username:</b> <span id="acc-username">...</span></p>
+                <p style="margin:5px 0"><b>Account ID:</b> <span id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">...</span></p>
+                <p style="margin:5px 0"><b>Type:</b> <span id="acc-type" style="color:var(--success); font-weight:bold">PLAYER</span></p>
+            </div>
+            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color: var(--danger);">LOGOUT</button>
         </div>
     </div>
 </div>
@@ -108,7 +123,7 @@
     <div class="modal-box">
         <h3>New Market</h3>
         <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
-        <input id="m-name" placeholder="Event Name (pl. Real Madrid vs Barcelona)">
+        <input id="m-name" placeholder="Event Name">
         <input id="m-deadline" type="datetime-local">
         <input id="m-budget" type="number" placeholder="Liquidity Pool">
         <div id="groups-container"></div>
@@ -137,7 +152,6 @@
     let currentSettleData = { mId: null, groups: [] };
     let activeBet = null;
 
-    // --- DEADLINE FIX: Kényszerített UTC kezelés ---
     function getSafeTime(dlStr) {
         if (!dlStr) return 0;
         let t = dlStr.replace(" ", "T");
@@ -172,6 +186,40 @@
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("acc-username").innerText = currentUser.username;
+        document.getElementById("acc-id").innerText = currentUser.id;
+        
+        // Admin check logic (e.g., if username is 'admin' or has a flag)
+        if(currentUser.username.toLowerCase().includes('admin')) {
+             document.getElementById("acc-type").innerText = "ADMIN";
+             document.getElementById("acc-type").style.color = "var(--danger)";
+        }
+    }
+
+    // Daily Reward Logic
+    function updateRewardLabel(val) { document.getElementById('reward-label').innerText = val + " D"; }
+
+    async function claimDailyDemo() {
+        const amount = parseInt(document.getElementById('reward-slider').value);
+        const now = new Date();
+        const lastClaim = userProfile.last_claim ? new Date(userProfile.last_claim) : new Date(0);
+        
+        // 24 hours check
+        if (now - lastClaim < 24 * 60 * 60 * 1000) {
+            const nextClaim = new Date(lastClaim.getTime() + 24 * 60 * 60 * 1000);
+            return alert(`You can claim again at: ${nextClaim.toLocaleString()}`);
+        }
+
+        const { error } = await _supabase.from('profiles').update({ 
+            demo_balance: userProfile.demo_balance + amount,
+            last_claim: now.toISOString()
+        }).eq('id', currentUser.id);
+
+        if(!error) {
+            alert(`Successfully claimed ${amount} D!`);
+            location.reload();
+        } else {
+            alert("Error claiming reward.");
+        }
     }
 
     async function loadMarkets() {
@@ -212,7 +260,6 @@
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // --- HISTORY SECTION ---
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
