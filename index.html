@@ -1,16 +1,14 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Professional Dashboard</title>
+    <title>StakeForge | Final Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
         
-        /* Navbar */
         .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); height: 70px; position: sticky; top: 0; z-index: 1000; }
         .logo { font-weight: 900; color: var(--primary); font-size: 22px; cursor: pointer; letter-spacing: 1px; }
         .nav-links { display: flex; gap: 20px; }
@@ -22,28 +20,24 @@
         .section { display: none; }
         .section.active { display: block; }
 
-        /* Card & Market UI */
-        .market-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .market-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
-        /* Gombok */
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
-        .btn-bet:hover:not(:disabled) { border-color: var(--primary); background: rgba(0, 212, 255, 0.05); }
         .market-bet-btn:disabled { opacity: 0.15 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(1); }
 
-        /* Create gomb javítása - visszafogottabb méret */
-        .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.3s; }
-        .btn-create:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3); }
+        .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 
-        .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; }
+        /* History specifikus */
+        .settled-badge { position: absolute; top: 20px; right: 20px; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.2); margin-top: 5px; border-radius: 8px; font-size: 14px; }
 
-        /* Modal */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; }
         .hidden { display: none !important; }
-        .history-outcome { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
     </style>
 </head>
 <body>
@@ -78,15 +72,13 @@
 
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
-            <h2>Your Balances</h2>
+            <h2>Balances</h2>
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>REAL €</small>
-                    <h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
+                    <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
                 </div>
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>DEMO D</small>
-                    <h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
+                    <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
         </div>
@@ -94,11 +86,9 @@
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:400px; margin:auto; text-align:center;">
-            <h3>Account Settings</h3>
+            <h3>Profile</h3>
             <p>User: <b id="acc-username">...</b></p>
-            <p style="font-size: 12px; color: #aaa;">ID: <span id="acc-id">...</span></p>
-            <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
-            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color: var(--danger);">LOGOUT</button>
+            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color: var(--danger); margin-top:20px">LOGOUT</button>
         </div>
     </div>
 </div>
@@ -118,12 +108,12 @@
     <div class="modal-box">
         <h3>New Market</h3>
         <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
-        <input id="m-name" placeholder="Market / Match Name">
+        <input id="m-name" placeholder="Event Name (pl. Real Madrid vs Barcelona)">
         <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" placeholder="Liquidity Pool (Max payout risk)">
+        <input id="m-budget" type="number" placeholder="Liquidity Pool">
         <div id="groups-container"></div>
-        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Outcome Group</button>
-        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH MARKET</button>
+        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Market Category</button>
+        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
     </div>
 </div>
@@ -132,7 +122,7 @@
     <div class="modal-box">
         <h3 id="settle-title"></h3>
         <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE & PAYOUT</button>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
     </div>
 </div>
@@ -147,11 +137,12 @@
     let currentSettleData = { mId: null, groups: [] };
     let activeBet = null;
 
+    // --- DEADLINE FIX: Kényszerített UTC kezelés ---
     function getSafeTime(dlStr) {
         if (!dlStr) return 0;
-        let formatted = dlStr.replace(" ", "T");
-        if (!formatted.includes('Z') && !formatted.includes('+')) formatted += "Z";
-        return new Date(formatted).getTime();
+        let t = dlStr.replace(" ", "T");
+        if (!t.includes('Z') && !t.includes('+')) t += "Z";
+        return new Date(t).getTime();
     }
 
     function isExpired(dl) {
@@ -168,14 +159,7 @@
     function refreshTimers() {
         document.querySelectorAll('.market-bet-btn').forEach(btn => {
             if(isExpired(btn.getAttribute('data-dl'))) {
-                btn.disabled = true;
-                btn.onclick = null;
-            }
-        });
-        document.querySelectorAll('.timer').forEach(span => {
-            if(isExpired(span.getAttribute('data-dl'))) {
-                span.innerText = "⛔ CLOSED";
-                span.style.color = "var(--danger)";
+                btn.disabled = true; btn.onclick = null;
             }
         });
     }
@@ -188,7 +172,6 @@
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("acc-username").innerText = currentUser.username;
-        document.getElementById("acc-id").innerText = currentUser.id;
     }
 
     async function loadMarkets() {
@@ -209,16 +192,16 @@
                     <div style="display:flex; justify-content:space-between; align-items:start">
                         <div>
                             <h3 style="margin:0">${m.title}</h3>
-                            <small>By: ${m.creator_name} | Pool: ${m.take} | <b>${m.type}</b></small><br>
-                            <span class="timer" data-dl="${m.deadline}" style="font-size:11px; font-weight:bold;">
-                                ${expired ? '⛔ CLOSED' : '⏳ Deadline: ' + m.deadline.replace('T',' ').split('+')[0]}
+                            <small>Host: ${m.creator_name} | <b>${m.type}</b></small><br>
+                            <span style="font-size:11px; color:${expired?'var(--danger)':'#aaa'}">
+                                ${expired ? '⛔ CLOSED' : '⏳ Deadline: ' + m.deadline.split('+')[0].replace('T',' ')}
                             </span>
                         </div>
-                        ${isHost ? `<button onclick="openSettle('${m.id}','${m.title}')" style="background:var(--primary); color:#000; border:none; padding:5px 10px; border-radius:5px; font-size:10px; font-weight:bold; cursor:pointer">SETTLE</button>` : ''}
+                        ${isHost ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
                     ${groups.map(g => `
                         <div class="market-group">
-                            <small>${g.title}</small>
+                            <small style="color:var(--primary); font-weight:bold">${g.title}</small>
                             <div class="outcomes-grid">
                                 ${g.outcomes.map(o => `
                                     <button class="btn-bet market-bet-btn" data-dl="${m.deadline}" ${expired?'disabled':''} 
@@ -229,11 +212,27 @@
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
+                // --- HISTORY SECTION ---
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                card.innerHTML = `<h3>${m.title} <small style="color:var(--primary); font-size:12px">SETTLED</small></h3>
-                    ${groups.map(g => `<div><small>${g.title}</small>${g.outcomes.map(o => `
-                        <div class="history-outcome"><span>${o.n}</span><b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WIN':'LOSS'}</b></div>`).join('')}</div>`).join('')}`;
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <h3 style="margin:0 0 5px 0">${m.title}</h3>
+                    <div style="margin-bottom:15px">
+                        <small style="display:block"><b>Type:</b> <span style="color:var(--demo)">${m.type} Event</span></small>
+                        <small style="display:block"><b>Host:</b> ${m.creator_name}</small>
+                        <small style="display:block"><b>Deadline:</b> ${m.deadline.split('+')[0].replace('T',' ')}</small>
+                    </div>
+                    ${groups.map(g => `
+                        <div style="margin-top:10px">
+                            ${g.outcomes.map(o => `
+                                <div class="history-item" style="border-left: 3px solid ${o.status==='win'?'var(--success)':'#444'}">
+                                    <span><b>${g.title}:</b> ${o.n}</span>
+                                    <b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `).join('')}`;
                 hList.appendChild(card);
             }
         });
@@ -255,8 +254,10 @@
         const netWin = amt * (activeBet.o - 1);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         if(amt > userProfile[f]) return alert("Low funds");
+
         const { error: liqErr } = await _supabase.rpc('decrease_market_liq', { m_id: activeBet.mId, amount: netWin });
         if(liqErr) return alert("Liquidity Error!");
+
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
@@ -311,12 +312,12 @@
     function addGroup() {
         const id = Date.now();
         const d = document.createElement('div'); d.className = 'market-group';
-        d.innerHTML = `<input class="gt" placeholder="Group Name"><div id="o-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px">+ Option</button>`;
+        d.innerHTML = `<input class="gt" placeholder="Piac Neve (pl. Győztes)"><div id="o-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px">+ Option</button>`;
         document.getElementById('groups-container').appendChild(d); addO(id);
     }
     function addO(id) {
         const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Name"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">`;
+        d.innerHTML = `<input class="on" placeholder="Kimenetel"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">`;
         document.getElementById('o-'+id).appendChild(d);
     }
     async function saveMarket() {
@@ -340,7 +341,6 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
-        if(id === 'wallet' || id === 'account') fetchProfile();
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * activeBet.o).toFixed(2); }
     function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
