@@ -14,18 +14,32 @@
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
+        
+        /* SZAKASZOK */
         .container { max-width: 1000px; margin: auto; padding: 30px; }
         .section { display: none; }
         .section.active { display: block; }
+        
+        /* KÁRTYA ÉS HISTORY STÍLUSOK */
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+        
+        /* A KÉRT HISTORY CSS */
+        .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+        .history-type { position: absolute; top: 15px; right: 15px; font-weight: 900; font-size: 14px; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
+        .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.1); }
+
+        /* GOMBOK ÉS INPUTOK */
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; border-color: #222; }
         .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
+        
+        /* MODAL */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
@@ -183,6 +197,7 @@
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const isExpired = new Date(m.deadline) < new Date();
+            
             if(m.status === 'active') {
                 const card = document.createElement('div');
                 card.className = 'market-card';
@@ -202,21 +217,32 @@
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // VISSZAÁLLÍTOTT HISTORY DIZÁJN
+                // JAVÍTOTT HISTORY GENERÁLÁS A KÉRT SZERINT
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 const unit = m.type === 'REAL' ? '€' : 'D';
+                const typeColor = m.type === 'REAL' ? 'var(--primary)' : 'var(--demo)';
+                
+                let rowsHtml = "";
+                groups.forEach(g => {
+                    g.outcomes.forEach(o => {
+                        const isWinner = o.n === m.winner;
+                        rowsHtml += `
+                            <div class="history-item ${isWinner ? 'winner-row' : ''}">
+                                <span>${o.n}</span>
+                                <b>${o.o}</b>
+                            </div>`;
+                    });
+                });
+
                 card.innerHTML = `
-                    <div class="market-header">
-                        <div>
-                            <h2 style="margin:0; opacity:0.8;">${m.title}</h2>
-                            <small style="color:#aaa">Type: ${m.type} | Host: ${m.creator_name}</small>
-                        </div>
+                    <div class="settled-badge">Settled</div>
+                    <div class="history-type" style="color:${typeColor}">${m.type}</div>
+                    <div style="text-align:center; margin-top:20px; margin-bottom:15px;">
+                        <h2 style="margin:0; opacity:0.8;">${m.title}</h2>
+                        <small style="color:#aaa">Host: ${m.creator_name} | Pool: ${parseFloat(m.take).toFixed(2)} ${unit}</small>
                     </div>
-                    <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; border: 1px solid var(--border);">
-                        <span style="color:var(--primary); font-weight:bold;">Winner: ${m.winner}</span>
-                        <div style="float:right; font-weight:bold;">Final: ${parseFloat(m.take).toFixed(2)} ${unit}</div>
-                    </div>
+                    ${rowsHtml}
                 `;
                 hList.appendChild(card);
             }
