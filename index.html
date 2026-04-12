@@ -37,7 +37,7 @@
         .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.1); }
 
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
-        #reward-msg { font-size: 16px; font-weight: bold; margin: 10px 0; min-height: 24px; }
+        #reward-msg { font-size: 18px; font-weight: 900; margin: 10px 0; min-height: 24px; transition: 0.3s; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
@@ -89,7 +89,7 @@
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
                 <small style="color: #aaa;">Win 500 - 50,000 Demo Coins</small>
-                <div id="reward-msg"></div>
+                <div id="reward-msg">Ready to roll!</div>
                 <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo); color: #000;" onclick="claimDailyDemo()">TRY MY LUCK</button>
             </div>
         </div>
@@ -125,12 +125,14 @@
     let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
+    let isWaitingForTimer = false; // Új változó az 5 mp-es várakozáshoz
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
+        setInterval(checkRewardTimer, 1000); // Folyamatosan frissül a visszaszámláló
     };
 
     async function fetchProfile() {
@@ -138,22 +140,20 @@
         if(error) return;
         userProfile = data;
         
-        // UI Frissítés
-        const real = data.real_balance.toFixed(2);
-        const demo = data.demo_balance.toFixed(2);
-        document.getElementById("nav-real").innerText = real + " €";
-        document.getElementById("nav-demo").innerText = demo + " D";
-        document.getElementById("w-real").innerText = real + " €";
-        document.getElementById("w-demo").innerText = demo + " D";
+        document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
+        document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
+        document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
+        document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
-        checkRewardTimer();
+        if(!isWaitingForTimer) checkRewardTimer();
     }
 
     function checkRewardTimer() {
-        if(!userProfile.last_claim) return;
+        if(!userProfile || !userProfile.last_claim || isWaitingForTimer) return;
+        
         const last = new Date(userProfile.last_claim).getTime();
         const now = new Date().getTime();
         const hoursLeft = 24 - (now - last) / (1000 * 60 * 60);
@@ -166,7 +166,8 @@
             btn.style.opacity = "0.5";
             const h = Math.floor(hoursLeft);
             const m = Math.floor((hoursLeft % 1) * 60);
-            msg.innerText = `Available in: ${h}h ${m}m`;
+            const s = Math.floor(((hoursLeft % 1) * 60 % 1) * 60);
+            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
             msg.style.color = "var(--danger)";
         } else {
             btn.disabled = false;
@@ -177,9 +178,12 @@
     }
 
     async function claimDailyDemo() {
+        if(isWaitingForTimer) return;
+        
         const amt = Math.floor(Math.random() * (50000 - 500 + 1)) + 500;
         const now = new Date().toISOString();
 
+        // Adatbázis frissítés
         const { error } = await _supabase.from('profiles')
             .update({ 
                 demo_balance: userProfile.demo_balance + amt,
@@ -187,16 +191,25 @@
             })
             .eq('id', currentUser.id);
 
-        if(error) {
-            alert("Error claiming reward: " + error.message);
-            return;
-        }
+        if(error) return alert(error.message);
 
-        document.getElementById('reward-msg').innerText = `WIN: +${amt.toLocaleString()} D!`;
-        document.getElementById('reward-msg').style.color = "var(--success)";
+        // UI animáció és 5 másodperces várakozás
+        isWaitingForTimer = true;
+        const msg = document.getElementById('reward-msg');
+        const btn = document.getElementById('btn-claim-reward');
         
-        // Frissítés újratöltés nélkül
+        btn.disabled = true;
+        btn.style.opacity = "0.5";
+        msg.style.color = "var(--demo)";
+        msg.innerText = `BOOM! +${amt.toLocaleString()} D`;
+        
+        // Egyenleg frissítése a háttérben
         await fetchProfile();
+
+        setTimeout(() => {
+            isWaitingForTimer = false;
+            checkRewardTimer();
+        }, 5000);
     }
 
     async function loadMarkets() {
@@ -251,7 +264,7 @@
         document.getElementById('link-' + s).classList.add('active');
     }
 
-    // Alap funkciók (Bet, Create, Settle, Logout...)
+    // Alap funkciók maradnak
     function openBet(mId, oName, odds, type, deadline) { if(new Date(deadline) < new Date()) return; activeBet = { mId, oName, odds, type }; document.getElementById('bet-on').innerText = oName; document.getElementById('bet-odds').innerText = odds; document.getElementById('betModal').classList.remove('hidden'); calcWin(); }
     function calcWin() { const amt = document.getElementById('bet-amount').value; document.getElementById('bet-win-text').innerText = "Payout: " + (amt * activeBet.odds).toFixed(2); }
     async function placeBet() { const amt = parseFloat(document.getElementById('bet-amount').value); if(amt <= 0 || isNaN(amt)) return; const balField = activeBet.type === 'REAL' ? 'real_balance' : 'demo_balance'; if(userProfile[balField] < amt) return alert("Insufficient balance!"); try { const profit = amt * (activeBet.odds - 1); const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single(); if(mData.take < profit) return alert("Market liquidity exceeded!"); const { error: betError } = await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.oName, amount: amt, odds: activeBet.odds, type: activeBet.type, status: 'pending' }]); if(betError) throw betError; await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amt }).eq('id', currentUser.id); await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId); location.reload(); } catch (err) { alert("Bet Error: " + err.message); } }
