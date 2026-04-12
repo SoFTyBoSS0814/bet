@@ -245,7 +245,7 @@
             const { error: betError } = await _supabase.from('bets').insert({
                 market_id: activeBet.mId,
                 user_id: currentUser.id,
-                user_name: currentUser.username, 
+                username: currentUser.username, 
                 outcome_name: activeBet.oName,
                 amount: amt,
                 odds: activeBet.odds,
