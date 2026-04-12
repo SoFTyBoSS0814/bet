@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Dashboard</title>
+    <title>StakeForge | Liquidity Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
@@ -100,7 +100,9 @@
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
                 <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
+                <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
+                <p style="margin:5px 0; color:#aaa">Account ID</p>
                 <p id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">-</p>
             </div>
             <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold;">LOG OUT</button>
@@ -130,7 +132,7 @@
         </select>
         <input id="m-name" placeholder="Event Name">
         <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" placeholder="Liquidity Pool">
+        <input id="m-budget" type="number" placeholder="Initial Liquidity Pool">
         <div id="groups-container"></div>
         <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
         <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
@@ -203,7 +205,7 @@
                     <div class="market-header">
                         <div>
                             <h2 style="margin:0;">${m.title}</h2>
-                            <small style="color:#aaa">Host: ${m.creator_name} | Pool: ${m.take} ${m.type} | Deadline: ${new Date(m.deadline).toLocaleString()}</small>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Available Pool: ${parseFloat(m.take).toFixed(2)} ${m.type}</b> | Deadline: ${new Date(m.deadline).toLocaleString()}</small>
                         </div>
                         ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
@@ -225,7 +227,7 @@
                     <div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <div style="margin-top:15px;">
                         <h3 style="margin:0;">${m.title}</h3>
-                        <p style="margin:5px 0; font-size:12px; color:#aaa;">Host: ${m.creator_name} | Total Pool: ${m.take} | <b>Settled - ${formattedSettledDate}</b></p>
+                        <p style="margin:5px 0; font-size:12px; color:#aaa;">Host: ${m.creator_name} | Final Pool: ${m.take} | <b>Settled - ${formattedSettledDate}</b></p>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win' ? 'winner-row' : ''}">
@@ -271,15 +273,10 @@
         const type = document.getElementById('m-type').value;
 
         if(!deadlineInput || isNaN(b) || b <= 0) return alert("Helytelen adatok!");
-        
-        // IDŐZÓNA FIX: A datetime-local értéket helyi időként kezeljük
-        const deadlineDate = new Date(deadlineInput);
-        const deadlineISO = deadlineDate.toISOString();
-
+        const deadlineISO = new Date(deadlineInput).toISOString();
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return alert("Nincs elég fedezeted a likviditáshoz!");
+        if(b > userProfile[balField]) return alert("Nincs elég fedezeted!");
 
-        // 1. LEVONJUK A FEDEZETET A HOSTRÓL
         const { error: balErr } = await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
         if(balErr) return alert("Hiba az egyenleg levonásakor!");
 
@@ -288,7 +285,6 @@
             outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
         }));
 
-        // 2. PIAC LÉTREHOZÁSA
         await _supabase.from('markets').insert([{ 
             title: t, type, take: b, stake: b, deadline: deadlineISO, 
             note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' 
@@ -310,8 +306,25 @@
         if(new Date(activeBet.dl) < new Date()) { alert("Lejárt az idő!"); location.reload(); return; }
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        
+        // Matematika: Profit, amit a Poolból kell levonni
+        const potentialProfit = amt * (activeBet.o - 1);
+
+        // Lekérjük a piac aktuális Pool állapotát
+        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+        const currentPool = parseFloat(mData.take);
+
         if(amt > userProfile[f]) return alert("Nincs elég egyenleged!");
+        if(potentialProfit > currentPool) return alert("A piac likviditása nem fedezi ezt a fogadást!");
+
+        // 1. Levonjuk a pénzt a fogadótól (Tét)
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
+
+        // 2. LIQUIDITY LOGIKA: A Poolból levonjuk a potenciális profitot (Host kockázata)
+        const newPool = currentPool - potentialProfit;
+        await _supabase.from('markets').update({ take: newPool }).eq('id', activeBet.mId);
+
+        // 3. Rögzítjük a fogadást
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
@@ -343,7 +356,7 @@
             currentSettleGroups[gi].outcomes[oi].status = s.value;
             if(s.value === 'win') winName = currentSettleGroups[gi].outcomes[oi].n;
         });
-        if(!winName) return alert("Select a WINNER!");
+        if(!winName) return alert("Válassz egy győztest!");
 
         await _supabase.from('markets').update({ 
             note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
