@@ -276,7 +276,6 @@
 
     function openSettle(mId, title) {
         currentSettleId = mId;
-        const market = document.querySelector(`.market-card`).parentElement.innerHTML; 
         _supabase.from('markets').select('*').eq('id', mId).single().then(({data}) => {
             currentSettleGroups = JSON.parse(data.note);
             document.getElementById('settle-title').innerText = title;
@@ -299,7 +298,6 @@
         });
     }
 
-    // --- JAVÍTOTT MATEMATIKAI LOGIKA ---
     async function finalSubmitSettle() {
         let winName = "";
         document.querySelectorAll('.settle-select').forEach(s => {
@@ -316,18 +314,15 @@
             const balField = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             const { data: allBets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId);
             
-            // A Host alapból visszakapja az eredetileg feltett teljes likviditást (stake)
+            // JAVÍTOTT MATEK: Alapból a teljes stake jár vissza
             let hostRefundAmount = parseFloat(mData.stake);
 
             if (allBets) {
                 allBets.forEach(bet => {
                     if (bet.outcome_name === winName) {
-                        // Ha a fogadó NYERT: a Host tőkéjéből csak a PROFITOT vonjuk le.
-                        // (A fogadó a saját tétjét megkapja az RPC-től, a Host pedig kifizeti a nyereményt).
                         const playerProfit = bet.amount * (bet.odds - 1);
                         hostRefundAmount -= playerProfit;
                     } else {
-                        // Ha a fogadó VESZTETT: a Host megkapja a fogadó TELJES TÉTJÉT a saját tőkéje mellé.
                         hostRefundAmount += parseFloat(bet.amount);
                     }
                 });
@@ -345,7 +340,6 @@
                 note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
             }).eq('id', currentSettleId);
 
-            // RPC hívás a fogadók kifizetéséhez
             await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
             
             location.reload();
@@ -355,7 +349,6 @@
         }
     }
 
-    // Eredeti funkciók megtartása
     function showSection(s) {
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
         document.querySelectorAll('.nav-links span').forEach(link => link.classList.remove('active'));
@@ -366,18 +359,23 @@
     function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); addGroup(); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); if(id==='createModal') document.getElementById('groups-container').innerHTML=""; }
 
+    // --- EREDETI CREATE LOGIKA VISSZAÁLLÍTVA ---
     function addGroup() {
         const container = document.getElementById('groups-container');
         const id = "g-" + Date.now();
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
-        d.innerHTML = `<input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
+        const isFirst = container.children.length === 0;
+        const delBtn = !isFirst ? `<button onclick="this.parentElement.remove()" style="position:absolute;right:10px;top:10px;background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : '';
+        d.innerHTML = `${delBtn}<input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
         container.appendChild(d); addO(id); addO(id);
     }
 
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
-        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">`;
+        const count = cont.children.length;
+        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
+        const delBtn = count >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : '';
+        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${delBtn}`;
         cont.appendChild(d);
     }
 
