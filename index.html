@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -24,7 +23,7 @@
 
         /* Market Cards */
         .market-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
-        .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); }
+        .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
@@ -33,13 +32,15 @@
         .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
 
+        /* Delete Buttons */
+        .btn-del-group { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; opacity: 0.6; }
+        .btn-del-group:hover { opacity: 1; }
+        .btn-del-outcome { background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; padding: 0 5px; }
+
         .settled-badge { position: absolute; top: 20px; right: 20px; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
-        
-        /* History Specifikus stílusok */
         .history-category-box { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px; margin-top: 12px; border-left: 3px solid #334756; }
         .history-item { display: flex; justify-content: space-between; padding: 8px 10px; background: rgba(255,255,255,0.03); margin-top: 4px; border-radius: 6px; font-size: 13px; }
 
-        /* Reward Box */
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 20px; border-radius: 12px; margin-top: 20px; text-align: center; }
         #reward-display { font-size: 24px; font-weight: 900; color: var(--demo); margin: 10px 0; min-height: 32px; }
 
@@ -201,7 +202,6 @@
         }
     }
 
-    // --- REWARD LOGIC ---
     async function claimDailyDemo() {
         const btn = document.getElementById('btn-claim-reward');
         const display = document.getElementById('reward-display');
@@ -282,7 +282,6 @@
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // --- HISTORY SECTION WITH VISUAL CATEGORY SEPARATION ---
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
@@ -377,20 +376,36 @@
         location.reload();
     }
 
+    // --- Creation UI with Delete logic ---
     function addGroup() {
-        const id = Date.now();
-        const d = document.createElement('div'); d.className = 'market-group';
-        d.innerHTML = `<input class="gt" placeholder="Category Name (e.g. Winner)">
-                       <div id="o-${id}"></div>
-                       <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px; border-style:dashed">+ Add Option</button>`;
-        document.getElementById('groups-container').appendChild(d); addO(id);
+        const id = "g-" + Date.now();
+        const d = document.createElement('div'); 
+        d.className = 'market-group';
+        d.id = id;
+        d.innerHTML = `
+            <button class="btn-del-group" onclick="removeEl('${id}')">✕</button>
+            <input class="gt" placeholder="Category Name (e.g. Winner)">
+            <div id="o-cont-${id}"></div>
+            <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px; border-style:dashed">+ Add Option</button>`;
+        document.getElementById('groups-container').appendChild(d); 
+        addO(id);
     }
     
-    function addO(id) {
-        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome (e.g. Team A)" style="margin:0">
-                       <input class="oo" type="number" step="0.1" value="2.0" style="width:80px; margin:0">`;
-        document.getElementById('o-'+id).appendChild(d);
+    function addO(groupId) {
+        const oid = "o-" + Date.now() + Math.random();
+        const d = document.createElement('div'); 
+        d.id = oid;
+        d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
+        d.innerHTML = `
+            <input class="on" placeholder="Outcome" style="margin:0">
+            <input class="oo" type="number" step="0.1" value="2.0" style="width:70px; margin:0">
+            <button class="btn-del-outcome" onclick="removeEl('${oid}')">✕</button>`;
+        document.getElementById('o-cont-' + groupId).appendChild(d);
+    }
+
+    function removeEl(id) {
+        const el = document.getElementById(id);
+        if(el) el.remove();
     }
 
     async function saveMarket() {
@@ -400,7 +415,7 @@
         const type = document.getElementById('m-type').value;
         const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
             title: g.querySelector('.gt').value,
-            outcomes: Array.from(g.querySelectorAll('div[id^="o-"] > div')).map(o => ({ 
+            outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ 
                 n: o.querySelector('.on').value, 
                 o: parseFloat(o.querySelector('.oo').value), 
                 status: 'pending' 
