@@ -49,6 +49,7 @@
     </style>
 </head>
 <body>
+
 <div class="navbar">
     <div class="logo" onclick="location.reload()">STAKEFORGE</div>
     <div class="nav-links">
@@ -247,6 +248,49 @@
         });
     }
 
+    function addGroup() {
+        const container = document.getElementById('groups-container');
+        const id = "g-" + Date.now();
+        const isFirst = container.children.length === 0;
+        
+        const d = document.createElement('div'); 
+        d.className = 'market-group'; 
+        d.id = id;
+        
+        const deleteBtn = !isFirst ? `<button onclick="this.parentElement.remove()" style="position:absolute; right:10px; top:10px; background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">✕</button>` : '';
+        
+        d.innerHTML = `
+            ${deleteBtn}
+            <input class="gt" placeholder="Category Name">
+            <div id="o-cont-${id}"></div>
+            <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px; border-style:dashed">+ Add Option</button>
+        `;
+        
+        container.appendChild(d); 
+        addO(id); 
+        addO(id);
+    }
+
+    function addO(groupId) {
+        const cont = document.getElementById('o-cont-' + groupId);
+        const outcomeCount = cont.children.length;
+        
+        const d = document.createElement('div'); 
+        d.style.display="flex"; 
+        d.style.gap="5px"; 
+        d.style.marginTop="5px";
+        d.style.alignItems="center";
+        
+        const deleteBtn = outcomeCount >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none; border:none; color:var(--danger); cursor:pointer; padding:5px;">✕</button>` : '';
+
+        d.innerHTML = `
+            <input class="on" placeholder="Outcome">
+            <input class="oo" type="number" step="0.1" value="2.0" style="width:70px">
+            ${deleteBtn}
+        `;
+        cont.appendChild(d);
+    }
+
     async function openSettle(mId, title) {
         const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
         currentSettleId = mId;
@@ -282,7 +326,6 @@
 
         if(!winnerName) return alert("Select at least one WINNER!");
 
-        // Piac frissítése: status, winner oszlop és note JSON
         const { error: updErr } = await _supabase.from('markets').update({ 
             note: JSON.stringify(currentSettleGroups), 
             status: 'settled',
@@ -291,7 +334,6 @@
 
         if(updErr) return alert("Error updating market!");
 
-        // Kifizetés hívása
         const { error: payErr } = await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
         if(payErr) alert("Payout error: " + payErr.message);
         else { alert("Market Settled!"); location.reload(); }
@@ -334,20 +376,6 @@
         }, 50);
     }
 
-    function addGroup() {
-        const container = document.getElementById('groups-container');
-        const id = "g-" + Date.now();
-        const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
-        d.innerHTML = `<input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div>
-            <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px; border-style:dashed">+ Add Option</button>`;
-        container.appendChild(d); addO(id); addO(id);
-    }
-    function addO(groupId) {
-        const cont = document.getElementById('o-cont-' + groupId);
-        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">`;
-        cont.appendChild(d);
-    }
     async function saveMarket() {
         const t = document.getElementById('m-name').value;
         const b = parseFloat(document.getElementById('m-budget').value);
