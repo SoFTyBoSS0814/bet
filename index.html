@@ -307,24 +307,19 @@
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         
-        // Matematika: Profit, amit a Poolból kell levonni
         const potentialProfit = amt * (activeBet.o - 1);
 
-        // Lekérjük a piac aktuális Pool állapotát
         const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
         const currentPool = parseFloat(mData.take);
 
         if(amt > userProfile[f]) return alert("Nincs elég egyenleged!");
         if(potentialProfit > currentPool) return alert("A piac likviditása nem fedezi ezt a fogadást!");
 
-        // 1. Levonjuk a pénzt a fogadótól (Tét)
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
 
-        // 2. LIQUIDITY LOGIKA: A Poolból levonjuk a potenciális profitot (Host kockázata)
         const newPool = currentPool - potentialProfit;
         await _supabase.from('markets').update({ take: newPool }).eq('id', activeBet.mId);
 
-        // 3. Rögzítjük a fogadást
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
@@ -358,12 +353,33 @@
         });
         if(!winName) return alert("Válassz egy győztest!");
 
-        await _supabase.from('markets').update({ 
-            note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
-        }).eq('id', currentSettleId);
+        try {
+            // --- HOST REFUND LOGIKA ---
+            const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
+            const remainingPool = parseFloat(mData.take);
+            const hostName = mData.creator_name;
+            const balField = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-        await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
-        location.reload();
+            // Keressük meg a Host profilját a neve alapján a visszautaláshoz
+            const { data: hostProf } = await _supabase.from('profiles').select('*').eq('username', hostName).single();
+
+            if (hostProf && remainingPool > 0) {
+                await _supabase.from('profiles')
+                    .update({ [balField]: hostProf[balField] + remainingPool })
+                    .eq('id', hostProf.id);
+            }
+            // ---------------------------
+
+            await _supabase.from('markets').update({ 
+                note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
+            }).eq('id', currentSettleId);
+
+            await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
+            location.reload();
+        } catch (err) {
+            console.error(err);
+            alert("Hiba a lezárás során!");
+        }
     }
 
     async function claimDailyDemo() {
