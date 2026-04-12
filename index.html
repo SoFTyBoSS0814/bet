@@ -182,8 +182,8 @@
                 
                 // Dátum formázása: YYYY/MM/DD/HH/MM/SS
                 const date = new Date(m.created_at);
-                const fD = date.getFullYear() + '/' + 
-                String(date.getMonth() + 1).padStart(2, '0') + '/' + 
+                const fD = date.getFullYear() + '-' + 
+                String(date.getMonth() + 1).padStart(2, '0') + '-' + 
                 String(date.getDate()).padStart(2, '0') + ' ' + // Ide került a szóköz
                 String(date.getHours()).padStart(2, '0') + ':' + 
                 String(date.getMinutes()).padStart(2, '0') + ':' + 
