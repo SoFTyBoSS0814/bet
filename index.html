@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -8,29 +9,34 @@
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        
         .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); height: 70px; position: sticky; top: 0; z-index: 1000; }
         .logo { font-weight: 900; color: var(--primary); font-size: 22px; cursor: pointer; letter-spacing: 1px; }
         .nav-links { display: flex; gap: 20px; }
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
+
         .container { max-width: 1000px; margin: auto; padding: 30px; }
         .section { display: none; }
         .section.active { display: block; }
+
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+        
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
+
         .settled-badge { position: absolute; top: 20px; left: 20px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; z-index: 1; }
-        .history-category-box { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px; margin-top: 12px; border-left: 3px solid #334756; }
         .history-item { display: flex; justify-content: space-between; padding: 8px 10px; background: rgba(255,255,255,0.03); margin-top: 4px; border-radius: 6px; font-size: 13px; }
+
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
         .hidden { display: none !important; }
-        .btn-del-group, .btn-del-outcome { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -64,24 +70,19 @@
     </div>
 
     <div id="section-wallet" class="section">
-        <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
-            <h2>Balances</h2>
-            <div style="display:flex; gap:10px; margin:20px 0;">
-                <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;"><small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2></div>
-                <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;"><small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2></div>
-            </div>
-            <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()">Daily Mystery Box</button>
-            <div id="reward-display" style="margin-top:10px; font-weight:bold; color:var(--demo)"></div>
+        <div class="market-card">
+            <h2>Wallet</h2>
+            <p>Real Balance: <span id="w-real">0.00</span> €</p>
+            <p>Demo Balance: <span id="w-demo">0.00</span> D</p>
+            <button class="btn-primary" onclick="claimDailyDemo()">Claim Daily Demo</button>
         </div>
     </div>
 
     <div id="section-account" class="section">
-        <div class="market-card" style="max-width:400px; margin:auto; text-align:center;">
-            <h3>Profile Settings</h3>
-            <div style="text-align:left; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px; margin-bottom:20px;">
-                <p><b>Username:</b> <span id="acc-username">...</span></p>
-            </div>
-            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color: var(--danger);">LOGOUT</button>
+        <div class="market-card">
+            <h2>Account</h2>
+            <p>User: <span id="acc-username"></span></p>
+            <button class="btn-bet" onclick="logout()">Logout</button>
         </div>
     </div>
 </div>
@@ -121,7 +122,7 @@
         <input id="m-deadline" type="datetime-local">
         <input id="m-budget" type="number" placeholder="Liquidity Pool">
         <div id="groups-container"></div>
-        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
+        <button class="btn-bet" onclick="addGroup()">+ Add Category</button>
         <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
     </div>
@@ -148,8 +149,8 @@
         userProfile = data;
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
-        document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
-        document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
+        document.getElementById("w-real").innerText = data.real_balance.toFixed(2);
+        document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2);
         document.getElementById("acc-username").innerText = currentUser.username;
     }
 
@@ -181,53 +182,37 @@
                 mList.appendChild(card);
             } else {
                 const card = document.createElement('div'); card.className = 'market-card';
-                card.innerHTML = `<div class="settled-badge">Settled</div>
-                    <div class="market-header" style="margin-top:20px;"><div><h3>${m.title}</h3><small>Host: ${m.creator_name}</small></div></div>
-                    ${groups.map(g => `<div class="history-category-box"><small style="color:var(--primary); font-weight:bold">${g.title}</small>
-                        ${g.outcomes.map(o => `<div class="history-item"><span>${o.n}</span><b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status.toUpperCase()}</b></div>`).join('')}
+                card.innerHTML = `<div class="settled-badge">Settled</div><h3>${m.title}</h3>
+                    ${groups.map(g => `<div><small>${g.title}</small>
+                        ${g.outcomes.map(o => `<div class="history-item"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
                     </div>`).join('')}`;
                 hList.appendChild(card);
             }
         });
     }
 
-    // A JAVÍTOTT KIFIZETÉS, AMI A TE ADATBÁZISODAT HASZNÁLJA
     async function submitSettle() {
         const groups = JSON.parse(currentEditMarket.note);
         let winName = "";
-        
         document.querySelectorAll('.settle-select').forEach(s => { 
-            const val = s.value;
-            const gi = s.dataset.gi;
-            const oi = s.dataset.oi;
-            groups[gi].outcomes[oi].status = val;
-            if(val === 'win') {
-                winName = groups[gi].outcomes[oi].n; // Ez az outcome_name (pl "Csapat A")
-            }
+            const val = s.value; groups[s.dataset.gi].outcomes[s.dataset.oi].status = val;
+            if(val==='win') winName = groups[s.dataset.gi].outcomes[s.dataset.oi].n;
         });
-
         if(!winName) return alert("Válassz egy WINNER-t!");
 
-        // Frissítjük a piacot a te markets táblád oszlopai alapján (status, winner, note)
         const { error: updErr } = await _supabase.from('markets').update({ 
             note: JSON.stringify(groups), 
             status: 'settled',
             winner: winName 
         }).eq('id', currentEditMarket.id);
 
-        if(updErr) return alert("Szerver hiba!");
+        if(updErr) return alert("Hiba a mentésnél!");
 
-        // RPC hívás a kifizetéshez
         const { error: payErr } = await _supabase.rpc('settle_market_payouts', { m_id: currentEditMarket.id });
-        if(payErr) {
-            alert("Hiba a kifizetésnél: " + payErr.message);
-        } else {
-            alert("Sikeres kifizetés!");
-            location.reload();
-        }
+        if(payErr) alert("Kifizetési hiba: " + payErr.message);
+        else { alert("Sikeres lezárás!"); location.reload(); }
     }
 
-    // TÖBBI FUNKCIÓ (EDIT, CREATE, MODAL)
     function addGroup() {
         const container = document.getElementById('groups-container');
         const id = "g-" + Date.now();
@@ -298,7 +283,7 @@
     async function claimDailyDemo() {
         const final = Math.floor(Math.random() * 5000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + final }).eq('id', currentUser.id);
-        alert("Mystery Box: +" + final + " D");
+        alert("Received: " + final + " D");
         location.reload();
     }
     function showSection(id) {
