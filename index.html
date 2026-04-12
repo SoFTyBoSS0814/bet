@@ -1,1 +1,357 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        
+        .navbar { background: #1a2a33; padding: 0 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); height: 70px; position: sticky; top: 0; z-index: 1000; }
+        .logo { font-weight: 900; color: var(--primary); font-size: 22px; cursor: pointer; letter-spacing: 1px; }
+        .nav-links { display: flex; gap: 20px; }
+        .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
+        .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+        .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
 
+        .container { max-width: 1000px; margin: auto; padding: 30px; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
+        .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        
+        .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
+        .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+        
+        .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
+        .market-bet-btn:disabled { opacity: 0.15 !important; cursor: not-allowed !important; filter: grayscale(1); }
+
+        .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
+
+        .btn-del-group { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; opacity: 0.6; }
+        .btn-del-outcome { background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; padding: 0 5px; width: 25px; font-size: 14px; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+        .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
+        .hidden { display: none !important; }
+
+        .history-item { display: flex; justify-content: space-between; padding: 14px; background: rgba(0,0,0,0.2); margin-top: 10px; border-radius: 8px; border-left: 4px solid var(--border); }
+        .status-won { color: var(--success); font-weight: bold; }
+        .status-lost { color: var(--danger); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="navbar">
+    <div class="logo" onclick="location.reload()">STAKEFORGE</div>
+    <div class="nav-links">
+        <span id="link-markets" class="active" onclick="showSection('markets')">Markets</span>
+        <span id="link-history" onclick="showSection('history')">History</span>
+        <span id="link-wallet" onclick="showSection('wallet')">Wallet</span>
+        <span id="link-account" onclick="showSection('account')">Account</span>
+    </div>
+    <div class="wallet-display">
+        <span id="nav-real" style="color:var(--primary)">0.00 €</span>
+        <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
+    </div>
+</div>
+
+<div class="container">
+    <div id="section-markets" class="section active">
+        <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
+            <h2>Live Markets</h2>
+            <button class="btn-create" onclick="openCreateModal()">+ Create</button>
+        </div>
+        <div id="market-list">Loading...</div>
+    </div>
+
+    <div id="section-history" class="section">
+        <h2>Settled Markets</h2>
+        <div id="history-list"></div>
+        <h2 style="margin-top:40px;">My Bets</h2>
+        <div id="my-bets-list"></div>
+    </div>
+
+    <div id="section-wallet" class="section">
+        <div class="market-card">
+            <h2>Your Wallet</h2>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:20px;">
+                <div style="background:#0b1218; padding:20px; border-radius:12px; border:1px solid var(--border);">
+                    <small style="color:#aaa;">REAL BALANCE</small>
+                    <h1 id="w-real" style="color:var(--primary); margin:10px 0;">0.00 €</h1>
+                </div>
+                <div style="background:#0b1218; padding:20px; border-radius:12px; border:1px solid var(--border);">
+                    <small style="color:#aaa;">DEMO BALANCE</small>
+                    <h1 id="w-demo" style="color:var(--demo); margin:10px 0;">0.00 D</h1>
+                </div>
+            </div>
+            <button class="btn-primary" style="margin-top:20px; background:#222; color:#fff;" onclick="resetDemo()">Reset Demo to 1000 D</button>
+        </div>
+    </div>
+
+    <div id="section-account" class="section">
+        <div class="market-card" style="text-align:center">
+            <div id="u-avatar" style="width:80px; height:80px; background:var(--primary); border-radius:50%; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; color:#000; font-size:32px; font-weight:bold;">?</div>
+            <h2 id="u-name">User</h2>
+            <p id="u-email" style="color:#aaa;">email@example.com</p>
+            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); max-width:200px; margin:20px auto 0;">Logout</button>
+        </div>
+    </div>
+</div>
+
+<div id="betModal" class="modal hidden">
+    <div class="modal-box" style="width:320px; text-align:center">
+        <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
+        <input type="number" id="bet-amount" value="10" oninput="calcWin()">
+        <p id="bet-win-text">Payout: 0.00</p>
+        <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
+    </div>
+</div>
+
+<div id="createModal" class="modal hidden">
+    <div class="modal-box">
+        <h3>New Market</h3>
+        <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
+        <input id="m-name" placeholder="Event Name">
+        <input id="m-deadline" type="datetime-local">
+        <input id="m-budget" type="number" placeholder="Market Balance">
+        <div id="groups-container"></div>
+        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
+        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
+    </div>
+</div>
+
+<div id="settleModal" class="modal hidden">
+    <div class="modal-box">
+        <h3 id="settle-title">Settle Market</h3>
+        <div id="settle-area"></div>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
+    </div>
+</div>
+
+<script>
+    const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
+    const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
+    const _supabase = supabase.createClient(SB_URL, SB_KEY);
+
+    let currentUser = JSON.parse(localStorage.getItem("user"));
+    let userProfile = null;
+    let activeBet = null;
+    let currentSettleData = { mId: null, groups: [] };
+
+    window.onload = async () => {
+        if(!currentUser) { window.location.href="login.html"; return; }
+        await fetchProfile();
+        loadMarkets();
+        loadMyBets();
+        setInterval(refreshTimers, 1000);
+    };
+
+    async function fetchProfile() {
+        const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        userProfile = data;
+        const rb = data.real_balance.toFixed(2);
+        const db = data.demo_balance.toFixed(2);
+        
+        document.getElementById("nav-real").innerText = rb + " €";
+        document.getElementById("nav-demo").innerText = db + " D";
+        
+        if(document.getElementById("w-real")) {
+            document.getElementById("w-real").innerText = rb + " €";
+            document.getElementById("w-demo").innerText = db + " D";
+            document.getElementById("u-name").innerText = data.username;
+            document.getElementById("u-email").innerText = currentUser.email;
+            document.getElementById("u-avatar").innerText = data.username[0].toUpperCase();
+        }
+    }
+
+    function isExpired(dl) { return new Date().getTime() >= new Date(dl).getTime(); }
+
+    async function loadMarkets() {
+        const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const mList = document.getElementById('market-list');
+        const hList = document.getElementById('history-list');
+        mList.innerHTML = ""; hList.innerHTML = "";
+
+        markets.forEach(m => {
+            const groups = JSON.parse(m.note || "[]");
+            const isHost = m.creator_name === currentUser.username;
+            const currency = m.type === 'DEMO' ? 'D' : '€';
+            const color = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
+
+            if(m.status === 'active') {
+                const card = document.createElement('div');
+                card.className = 'market-card';
+                card.innerHTML = `
+                    <div class="market-header">
+                        <div>
+                            <h2 style="margin:0;">${m.title}</h2>
+                            <small>Host: <b style="color:var(--primary)">${m.creator_name}</b> | Pool: <b style="color:${color}">${m.take.toFixed(0)} ${currency}</b></small>
+                        </div>
+                        <div style="text-align:right">
+                            <span style="color:${color}; font-weight:bold;">${m.type}</span>
+                            ${isHost ? `<br><button onclick="openSettle('${m.id}','${m.title}')" class="btn-create" style="margin-top:10px">SETTLE</button>` : ''}
+                        </div>
+                    </div>
+                    ${groups.map(g => `
+                        <div class="market-group">
+                            <small style="color:var(--primary); font-weight:bold; font-size:10px;">${g.title.toUpperCase()}</small>
+                            <div class="outcomes-grid">
+                                ${g.outcomes.map(o => `<button class="btn-bet market-bet-btn" data-dl="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')">${o.n}<br><b>${o.o}</b></button>`).join('')}
+                            </div>
+                        </div>`).join('')}`;
+                mList.appendChild(card);
+            } else {
+                hList.innerHTML += `<div class="history-item"><span>${m.title}</span><span style="color:var(--primary)">SETTLED</span></div>`;
+            }
+        });
+    }
+
+    async function loadMyBets() {
+        const { data: bets } = await _supabase.from('bets').select('*, markets(title)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+        const bList = document.getElementById('my-bets-list');
+        bList.innerHTML = bets.map(b => `
+            <div class="history-item">
+                <span>${b.markets?.title} (<b>${b.outcome_name}</b>)</span>
+                <span class="status-${b.status}">${b.status.toUpperCase()}</span>
+            </div>`).join('') || "No bets yet.";
+    }
+
+    function addGroup() {
+        const container = document.getElementById('groups-container');
+        const id = "g-" + Date.now();
+        const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
+        d.innerHTML = `<button class="btn-del-group" onclick="removeEl('${id}')">✕</button>
+            <input class="gt" placeholder="Category Name">
+            <div id="o-cont-${id}"></div>
+            <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px; margin-top:5px; border-style:dashed">+ Add Option</button>`;
+        container.appendChild(d); addO(id); addO(id);
+    }
+    
+    function addO(groupId) {
+        const cont = document.getElementById('o-cont-' + groupId);
+        const oid = "o-" + Date.now() + Math.random();
+        const d = document.createElement('div'); d.id = oid; d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
+        
+        const count = cont.querySelectorAll('div[id^="o-"]').length;
+        // CSAK A 3. OPCIÓTÓL TÖRÖLHETŐ
+        const delBtn = count >= 2 ? `<button class="btn-del-outcome" onclick="removeEl('${oid}')">✕</button>` : `<div style="width:25px"></div>`;
+
+        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${delBtn}`;
+        cont.appendChild(d);
+    }
+
+    async function saveMarket() {
+        const t = document.getElementById('m-name').value;
+        const b = parseFloat(document.getElementById('m-budget').value);
+        const dl = document.getElementById('m-deadline').value;
+        const type = document.getElementById('m-type').value;
+        const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
+            title: g.querySelector('.gt').value,
+            outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
+        }));
+        await _supabase.from('markets').insert([{ title: t, type, take: b, deadline: dl, note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
+        location.reload();
+    }
+
+    function openSettle(mId, title) {
+        currentSettleData.mId = mId;
+        _supabase.from('markets').select('note').eq('id', mId).single().then(({data}) => {
+            currentSettleData.groups = JSON.parse(data.note);
+            document.getElementById('settle-title').innerText = "Settle: " + title;
+            renderSettleUI();
+            document.getElementById('settleModal').classList.remove('hidden');
+        });
+    }
+
+    function renderSettleUI() {
+        const cont = document.getElementById('settle-area'); cont.innerHTML = "";
+        currentSettleData.groups.forEach((g, gi) => {
+            cont.innerHTML += `<p style="color:var(--primary); font-size:12px; margin: 15px 0 5px;">${g.title.toUpperCase()}</p>`;
+            g.outcomes.forEach((o, oi) => {
+                const isWin = o.status === 'win';
+                const isLoss = o.status === 'loss';
+                cont.innerHTML += `
+                    <div style="display:flex; gap:10px; margin-bottom:5px; align-items:center;">
+                        <span style="flex:1">${o.n}</span>
+                        <button class="btn-bet" onclick="setResult(${gi},${oi},'win')" style="width:60px; background:${isWin?'var(--success)':'#222'}">WIN</button>
+                        <button class="btn-bet" onclick="setResult(${gi},${oi},'loss')" style="width:60px; background:${isLoss?'var(--danger)':'#222'}">LOSS</button>
+                    </div>`;
+            });
+        });
+    }
+
+    function setResult(gi, oi, res) { currentSettleData.groups[gi].outcomes[oi].status = res; renderSettleUI(); }
+
+    async function finalSubmitSettle() {
+        const { mId, groups } = currentSettleData;
+        let valid = true;
+        groups.forEach(g => {
+            if(!g.outcomes.some(o => o.status === 'win') || !g.outcomes.some(o => o.status === 'loss')) valid = false;
+        });
+        if(!valid) return alert("Incomplete! Every category needs at least one WIN and one LOSS.");
+        if(!confirm("ARE YOU SURE?\n\nThis is irreversible.")) return;
+
+        const { data: mData } = await _supabase.from('markets').select('*').eq('id', mId).single();
+        const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mId).eq('status', 'pending');
+        const f = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+        for (let b of (bets || [])) {
+            let win = false;
+            groups.forEach(g => g.outcomes.forEach(o => { if(o.n === b.outcome_name && o.status === 'win') win = true; }));
+            if(win) {
+                const { data: up } = await _supabase.from('profiles').select(f).eq('id', b.user_id).single();
+                await _supabase.from('profiles').update({ [f]: up[f] + (b.amount * b.odds) }).eq('id', b.user_id);
+                await _supabase.from('bets').update({ status: 'won' }).eq('id', b.id);
+            } else { await _supabase.from('bets').update({ status: 'lost' }).eq('id', b.id); }
+        }
+        await _supabase.from('markets').update({ status: 'closed', note: JSON.stringify(groups) }).eq('id', mId);
+        location.reload();
+    }
+
+    // További Segédfüggvények
+    function openBet(mId, n, o, t, dl) {
+        if(isExpired(dl)) return;
+        activeBet = { mId, n, o, t, dl };
+        document.getElementById('bet-on').innerText = n;
+        document.getElementById('bet-odds').innerText = "x" + o;
+        document.getElementById('betModal').classList.remove('hidden');
+        calcWin();
+    }
+
+    async function placeBet() {
+        const amt = parseFloat(document.getElementById('bet-amount').value);
+        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(amt > userProfile[f]) return alert("Low balance!");
+        const { error: liqErr } = await _supabase.rpc('decrease_market_liq', { m_id: activeBet.mId, amount: (amt * (activeBet.o - 1)) });
+        if(liqErr) return alert("Pool reached!");
+        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
+        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
+        location.reload();
+    }
+
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        document.getElementById('link-' + id).classList.add('active');
+    }
+
+    function resetDemo() { _supabase.from('profiles').update({ demo_balance: 1000 }).eq('id', currentUser.id).then(() => location.reload()); }
+    function removeEl(id) { document.getElementById(id).remove(); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
+    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
+    function refreshTimers() { document.querySelectorAll('.market-bet-btn').forEach(btn => { if(isExpired(btn.getAttribute('data-dl'))) btn.disabled = true; }); }
+    function logout() { localStorage.clear(); window.location.href="login.html"; }
+</script>
+</body>
+</html>
