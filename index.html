@@ -230,7 +230,6 @@
         document.getElementById('bet-win-text').innerText = "Payout: " + (amt * activeBet.odds).toFixed(2);
     }
 
-    // FRISSÍTETT PLACEBET A KÉRT FORMÁTUMMAL
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
         if(amt <= 0 || isNaN(amt)) return;
@@ -242,11 +241,10 @@
             const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
             if(mData.take < profit) return alert("Market liquidity exceeded!");
 
-            // BESZÚRÁS A BETS TÁBLÁBA ARRAY FORMÁTUMBAN
+            // JAVÍTVA: Csak létező oszlopokba küldjük az adatot! (user_name törölve)
             const { error: betError } = await _supabase.from('bets').insert([
                 { 
                     user_id: currentUser.id, 
-                    user_name: currentUser.username, 
                     market_id: activeBet.mId, 
                     outcome_name: activeBet.oName, 
                     amount: amt, 
