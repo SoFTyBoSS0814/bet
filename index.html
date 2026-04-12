@@ -34,7 +34,10 @@
         .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
         .history-type { position: absolute; top: 15px; right: 15px; font-weight: 900; font-size: 14px; }
         .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
-        .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.1); }
+        
+        /* SZÍNEZETT SOROK A HISTORY-BAN */
+        .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
+        .history-item.loss-row { border-left-color: var(--danger); background: rgba(255, 68, 68, 0.1); }
 
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
         #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
@@ -264,10 +267,17 @@
                         <p style="margin:5px 0; font-size:12px; color:#aaa;">Host: ${m.creator_name} | Final Pool: ${m.take} | <b>Settled - ${formattedSettledDate}</b></p>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
-                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win' ? 'winner-row' : ''}">
+                        ${g.outcomes.map(o => {
+                            // Meghatározzuk a sor osztályát a státusz alapján
+                            let rowClass = "";
+                            if(o.status === 'win') rowClass = "winner-row";
+                            if(o.status === 'loss') rowClass = "loss-row";
+
+                            return `<div class="history-item ${rowClass}">
                                 <span>${o.n}</span>
                                 <b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status.toUpperCase()}</b>
-                            </div>`).join('')}
+                            </div>`;
+                        }).join('')}
                     </div>`).join('')}`;
                 hList.appendChild(card);
             }
