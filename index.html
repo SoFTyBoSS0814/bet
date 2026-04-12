@@ -28,15 +28,17 @@
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-bet:hover:not(:disabled) { border-color: var(--primary); background: rgba(0, 212, 255, 0.05); }
         
+        /* SZIGORÚ TILTÁS STÍLUS */
         .market-bet-btn:disabled, .market-bet-btn.disabled-state { 
-            opacity: 0.15 !important; 
+            opacity: 0.2 !important; 
             cursor: not-allowed !important; 
             pointer-events: none !important;
             filter: grayscale(1) !important;
+            border-color: #222 !important;
         }
 
-        .selected-win { background: var(--success) !important; color: #000 !important; font-weight: bold; border: none; }
-        .selected-loss { background: var(--danger) !important; color: #fff !important; font-weight: bold; border: none; }
+        .selected-win { background: var(--success) !important; color: #000 !important; font-weight: bold; }
+        .selected-loss { background: var(--danger) !important; color: #fff !important; font-weight: bold; }
 
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
         .btn-danger { background: var(--danger); color: #fff; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
@@ -152,17 +154,18 @@
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
-        setInterval(checkAllDeadlines, 1000);
+        setInterval(checkAllDeadlines, 1000); // 1 másodpercenként kényszerített frissítés
     };
 
-    // BIZTONSÁGOS UTC IDŐ KEZELÉS
+    // IDŐZÓNA-BIZTOS DÁTUM KONVERTÁLÓ
     function getCorrectedTime(dlStr) {
         if (!dlStr) return 0;
-        let isoDl = dlStr.replace(" ", "T");
-        if (!isoDl.includes('+') && !isoDl.includes('Z')) {
-            isoDl += "Z"; // Kényszerített UTC értelmezés
+        // Ha a string végén nincs zónajelzés, de van benne szóköz (Supabase formátum), UTC-vé alakítjuk
+        let formatted = dlStr.replace(" ", "T");
+        if (!formatted.includes('Z') && !formatted.includes('+')) {
+            formatted += "Z";
         }
-        return new Date(isoDl).getTime();
+        return new Date(formatted).getTime();
     }
 
     async function fetchProfile() {
@@ -216,14 +219,13 @@
                                     <button class="btn-bet market-bet-btn" 
                                         data-deadline="${m.deadline}"
                                         ${isExpired ? 'disabled' : ''} 
-                                        onclick="${isExpired ? 'return false;' : `openBet('${m.id}', '${o.n}', ${o.o}, '${m.type}', '${m.deadline}', ${m.take})`}">
+                                        onclick="${isExpired ? 'return false' : `openBet('${m.id}', '${o.n}', ${o.o}, '${m.type}', '${m.deadline}', ${m.take})`}">
                                         ${o.n}<br><b>${o.o}</b>
                                     </button>`).join('')}
                             </div>
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // HISTORY RECONSTRUCTION (Settle utáni kártyák)
                 const card = document.createElement('div');
                 card.className = 'market-card'; card.style.borderLeft = "4px solid var(--border)";
                 card.innerHTML = `
@@ -288,7 +290,13 @@
     }
 
     async function placeBet() {
-        if(new Date().getTime() >= getCorrectedTime(activeBet.dl)) return alert("Closed!");
+        // VÉGSŐ IDŐELLENŐRZÉS BEKÜLDÉSKOR
+        if(new Date().getTime() >= getCorrectedTime(activeBet.dl)) {
+            alert("Closed! A határidő lejárt.");
+            location.reload();
+            return;
+        }
+
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const win = amt * activeBet.o;
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
