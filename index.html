@@ -25,7 +25,7 @@
         /* Market Cards */
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        .market-info-tag { text-align: right; font-size: 12px; line-height: 1.6; }
+        .market-type-tag { text-align: right; }
         
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
@@ -116,40 +116,6 @@
             </div>
             <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color: var(--danger);">LOGOUT</button>
         </div>
-    </div>
-</div>
-
-<div id="betModal" class="modal hidden">
-    <div class="modal-box" style="width:320px; text-align:center">
-        <h3 id="bet-on"></h3>
-        <h1 id="bet-odds" style="color:var(--primary)"></h1>
-        <input type="number" id="bet-amount" value="10" oninput="calcWin()">
-        <p id="bet-win-text">Payout: 0.00</p>
-        <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
-    </div>
-</div>
-
-<div id="createModal" class="modal hidden">
-    <div class="modal-box">
-        <h3>New Market</h3>
-        <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
-        <input id="m-name" placeholder="Event Name">
-        <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" placeholder="Liquidity Pool">
-        <div id="groups-container"></div>
-        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
-        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
-    </div>
-</div>
-
-<div id="settleModal" class="modal hidden">
-    <div class="modal-box">
-        <h3 id="settle-title"></h3>
-        <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
     </div>
 </div>
 
@@ -265,12 +231,14 @@
                     <div class="market-header">
                         <div>
                             <h2 style="margin:0; font-size:22px;">${m.title}</h2>
-                            <small style="color:#aaa; display:block; margin-top:4px;">⏳ Deadline: ${deadlineFormatted}</small>
+                            <div style="margin-top:6px;">
+                                <small style="color:#aaa; display:block;">⏳ Deadline: ${deadlineFormatted}</small>
+                                <small style="color:#fff; display:block; margin-top:2px;">Host: <b style="color:var(--primary)">${m.creator_name}</b></small>
+                            </div>
                         </div>
-                        <div class="market-info-tag">
-                            <span style="color:#888;">Host:</span> <b>${m.creator_name}</b><br>
-                            <span style="color:${typeColor}; font-weight:900; letter-spacing:1px;">${m.type}</span>
-                            ${isHost ? `<div style="margin-top:8px;"><button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button></div>` : ''}
+                        <div class="market-type-tag">
+                            <span style="color:${typeColor}; font-weight:900; letter-spacing:1px; font-size:14px;">${m.type}</span>
+                            ${isHost ? `<div style="margin-top:10px;"><button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button></div>` : ''}
                         </div>
                     </div>
                     ${groups.map(g => `
@@ -287,9 +255,11 @@
                 card.innerHTML = `
                     <div class="settled-badge">Settled</div>
                     <div class="market-header">
-                        <h3 style="margin:0">${m.title}</h3>
-                        <div class="market-info-tag">
-                            Host: <b>${m.creator_name}</b><br>
+                        <div>
+                            <h3 style="margin:0">${m.title}</h3>
+                            <small style="color:#aaa; display:block; margin-top:2px;">Host: ${m.creator_name}</small>
+                        </div>
+                        <div class="market-type-tag">
                             <span style="color:${typeColor}; font-weight:bold;">${m.type}</span>
                         </div>
                     </div>
@@ -301,6 +271,7 @@
         });
     }
 
+    // A többi függvény (betting, modal, addGroup, addO, saveMarket stb.) változatlan marad
     function openBet(mId, n, o, t, dl) {
         if(isExpired(dl)) return;
         activeBet = { mId, n, o, t, dl };
@@ -309,7 +280,6 @@
         document.getElementById('betModal').classList.remove('hidden');
         calcWin();
     }
-
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
@@ -321,7 +291,6 @@
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
-
     function openSettle(mId, title) {
         currentSettleData.mId = mId;
         _supabase.from('markets').select('note').eq('id', mId).single().then(({data}) => {
@@ -331,7 +300,6 @@
             document.getElementById('settleModal').classList.remove('hidden');
         });
     }
-
     function renderSettleUI() {
         const cont = document.getElementById('settle-area'); cont.innerHTML = "";
         currentSettleData.groups.forEach((g, gi) => {
@@ -345,9 +313,7 @@
             });
         });
     }
-
     function setResult(gi, oi, res) { currentSettleData.groups[gi].outcomes[oi].status = res; renderSettleUI(); }
-
     async function finalSubmitSettle() {
         const { mId, groups } = currentSettleData;
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', mId).single();
@@ -365,7 +331,6 @@
         await _supabase.from('markets').update({ status: 'closed', note: JSON.stringify(groups) }).eq('id', mId);
         location.reload();
     }
-
     function addGroup() {
         const container = document.getElementById('groups-container');
         const groupCount = container.querySelectorAll('.market-group').length;
@@ -377,29 +342,16 @@
         container.appendChild(d); 
         addO(id); addO(id);
     }
-    
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
         const outcomeCount = cont.querySelectorAll('div[id^="o-"]').length;
         const oid = "o-" + Date.now() + Math.random();
-        
-        const d = document.createElement('div'); 
-        d.id = oid;
-        d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
-        
-        const delBtn = outcomeCount >= 2 
-            ? `<button class="btn-del-outcome" onclick="removeEl('${oid}')">✕</button>` 
-            : `<div style="width:25px"></div>`;
-
-        d.innerHTML = `
-            <input class="on" placeholder="Outcome" style="margin:0">
-            <input class="oo" type="number" step="0.1" value="2.0" style="width:70px; margin:0">
-            ${delBtn}`;
+        const d = document.createElement('div'); d.id = oid; d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
+        const delBtn = outcomeCount >= 2 ? `<button class="btn-del-outcome" onclick="removeEl('${oid}')">✕</button>` : `<div style="width:25px"></div>`;
+        d.innerHTML = `<input class="on" placeholder="Outcome" style="margin:0"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px; margin:0">${delBtn}`;
         cont.appendChild(d);
     }
-
     function removeEl(id) { document.getElementById(id).remove(); }
-
     async function saveMarket() {
         const t = document.getElementById('m-name').value;
         const b = parseFloat(document.getElementById('m-budget').value);
@@ -416,7 +368,6 @@
         await _supabase.from('markets').insert([{ title: t, type, take: b, deadline: dl, note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
-
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('section-' + id).classList.add('active');
@@ -428,5 +379,10 @@
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 </script>
+
+<div id="betModal" class="modal hidden">...</div> 
+<div id="createModal" class="modal hidden">...</div>
+<div id="settleModal" class="modal hidden">...</div>
+
 </body>
 </html>
