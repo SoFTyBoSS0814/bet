@@ -202,9 +202,22 @@
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
+                // VISSZAÁLLÍTOTT HISTORY DIZÁJN
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                card.innerHTML = `<h3>${m.title}</h3><p style="color:var(--primary)">Winner: ${m.winner} | Final: ${m.take}</p>`;
+                const unit = m.type === 'REAL' ? '€' : 'D';
+                card.innerHTML = `
+                    <div class="market-header">
+                        <div>
+                            <h2 style="margin:0; opacity:0.8;">${m.title}</h2>
+                            <small style="color:#aaa">Type: ${m.type} | Host: ${m.creator_name}</small>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; padding:10px; background:rgba(0,0,0,0.2); border-radius:8px; border: 1px solid var(--border);">
+                        <span style="color:var(--primary); font-weight:bold;">Winner: ${m.winner}</span>
+                        <div style="float:right; font-weight:bold;">Final: ${parseFloat(m.take).toFixed(2)} ${unit}</div>
+                    </div>
+                `;
                 hList.appendChild(card);
             }
         });
@@ -241,7 +254,6 @@
             const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
             if(mData.take < profit) return alert("Market liquidity exceeded!");
 
-            // JAVÍTVA: Csak létező oszlopokba küldjük az adatot! (user_name törölve)
             const { error: betError } = await _supabase.from('bets').insert([
                 { 
                     user_id: currentUser.id, 
