@@ -23,7 +23,10 @@
         .section.active { display: block; }
 
         /* Market Cards */
-        .market-card { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
+        .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
+        .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .market-info-tag { text-align: right; font-size: 12px; line-height: 1.6; }
+        
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
@@ -37,7 +40,7 @@
         .btn-del-group { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; opacity: 0.6; }
         .btn-del-outcome { background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; padding: 0 5px; width: 25px; font-size: 14px; }
 
-        .settled-badge { position: absolute; top: 20px; right: 20px; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; }
+        .settled-badge { position: absolute; top: 20px; left: 20px; background: var(--primary); color: #000; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; z-index: 1; }
         .history-category-box { background: rgba(0,0,0,0.25); border-radius: 10px; padding: 12px; margin-top: 12px; border-left: 3px solid #334756; }
         .history-item { display: flex; justify-content: space-between; padding: 8px 10px; background: rgba(255,255,255,0.03); margin-top: 4px; border-radius: 6px; font-size: 13px; }
 
@@ -250,18 +253,29 @@
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const isHost = m.creator_name === currentUser.username;
+            const isDemo = m.type === 'DEMO';
+            const typeColor = isDemo ? 'var(--demo)' : 'var(--primary)';
+            const deadlineFormatted = m.deadline.replace('T', ' ').split('+')[0];
+
             if(m.status === 'active') {
                 const expired = isExpired(m.deadline);
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:start">
-                        <div><h3 style="margin:0">${m.title}</h3><small>Host: ${m.creator_name} | <b>${m.type}</b></small></div>
-                        ${isHost ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                    <div class="market-header">
+                        <div>
+                            <h2 style="margin:0; font-size:22px;">${m.title}</h2>
+                            <small style="color:#aaa; display:block; margin-top:4px;">⏳ Deadline: ${deadlineFormatted}</small>
+                        </div>
+                        <div class="market-info-tag">
+                            <span style="color:#888;">Host:</span> <b>${m.creator_name}</b><br>
+                            <span style="color:${typeColor}; font-weight:900; letter-spacing:1px;">${m.type}</span>
+                            ${isHost ? `<div style="margin-top:8px;"><button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button></div>` : ''}
+                        </div>
                     </div>
                     ${groups.map(g => `
                         <div class="market-group">
-                            <small style="color:var(--primary); font-weight:bold">${g.title}</small>
+                            <small style="color:var(--primary); font-weight:bold; text-transform:uppercase; font-size:10px;">${g.title}</small>
                             <div class="outcomes-grid">
                                 ${g.outcomes.map(o => `<button class="btn-bet market-bet-btn" data-dl="${m.deadline}" ${expired?'disabled':''} onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')">${o.n}<br><b>${o.o}</b></button>`).join('')}
                             </div>
@@ -270,8 +284,15 @@
             } else {
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                card.innerHTML = `<div class="settled-badge">Settled</div><h3>${m.title}</h3>
-                    <small>Type: ${m.type} | Host: ${m.creator_name}</small>
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <div class="market-header">
+                        <h3 style="margin:0">${m.title}</h3>
+                        <div class="market-info-tag">
+                            Host: <b>${m.creator_name}</b><br>
+                            <span style="color:${typeColor}; font-weight:bold;">${m.type}</span>
+                        </div>
+                    </div>
                     ${groups.map(g => `<div class="history-category-box"><small style="color:var(--primary); font-weight:bold">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item"><span>${o.n}</span><b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b></div>`).join('')}
                     </div>`).join('')}`;
@@ -345,7 +366,6 @@
         location.reload();
     }
 
-    // --- MARKET CREATION LOGIC ---
     function addGroup() {
         const container = document.getElementById('groups-container');
         const groupCount = container.querySelectorAll('.market-group').length;
@@ -367,7 +387,6 @@
         d.id = oid;
         d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
         
-        // CSAK A 3. KIMENETELTŐL LEHET TÖRÖLNI (outcomeCount >= 2)
         const delBtn = outcomeCount >= 2 
             ? `<button class="btn-del-outcome" onclick="removeEl('${oid}')">✕</button>` 
             : `<div style="width:25px"></div>`;
