@@ -31,7 +31,7 @@
         .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
 
-        .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+        .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 4px; text-transform: uppercase; }
         .history-type { position: absolute; top: 15px; right: 15px; font-weight: 900; font-size: 14px; }
         .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
         .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.1); }
@@ -110,44 +110,9 @@
     </div>
 </div>
 
-<div id="betModal" class="modal hidden">
-    <div class="modal-box" style="width:320px; text-align:center">
-        <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
-        <input type="number" id="bet-amount" value="10" oninput="calcWin()">
-        <p id="bet-win-text">Payout: 0.00</p>
-        <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
-    </div>
-</div>
-
-<div id="createModal" class="modal hidden">
-    <div class="modal-box">
-        <div style="display:flex; justify-content:space-between; align-items:center">
-            <h3>New Market</h3>
-            <span id="create-balance-display" style="font-size:12px; font-weight:bold; color:var(--primary)">Balance: 0.00</span>
-        </div>
-        <select id="m-type" onchange="updateCreateBalanceDisplay()">
-            <option value="DEMO">DEMO</option>
-            <option value="REAL">REAL</option>
-        </select>
-        <input id="m-name" placeholder="Event Name">
-        <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" placeholder="Initial Liquidity Pool">
-        <div id="groups-container"></div>
-        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
-        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
-    </div>
-</div>
-
-<div id="settleModal" class="modal hidden">
-    <div class="modal-box">
-        <h3 id="settle-title"></h3>
-        <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
-    </div>
-</div>
+<div id="betModal" class="modal hidden"><div class="modal-box" style="width:320px; text-align:center"><h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1><input type="number" id="bet-amount" value="10" oninput="calcWin()"><p id="bet-win-text">Payout: 0.00</p><button class="btn-primary" onclick="placeBet()">PLACE BET</button><button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button></div></div>
+<div id="createModal" class="modal hidden"><div class="modal-box"><div style="display:flex; justify-content:space-between; align-items:center"><h3>New Market</h3><span id="create-balance-display" style="font-size:12px; font-weight:bold; color:var(--primary)">Balance: 0.00</span></div><select id="m-type" onchange="updateCreateBalanceDisplay()"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select><input id="m-name" placeholder="Event Name"><input id="m-deadline" type="datetime-local"><input id="m-budget" type="number" placeholder="Initial Liquidity Pool"><div id="groups-container"></div><button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button><button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button><button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button></div></div>
+<div id="settleModal" class="modal hidden"><div class="modal-box"><h3 id="settle-title"></h3><div id="settle-area"></div><button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button><button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button></div></div>
 
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
@@ -215,6 +180,15 @@
                 card.className = 'market-card';
                 const typeColor = m.type === 'REAL' ? 'var(--primary)' : 'var(--demo)';
                 
+                // Dátum formázása: YYYY/MM/DD/HH/MM/SS
+                const date = new Date(m.created_at);
+                const fD = date.getFullYear() + '/' + 
+                         String(date.getMonth() + 1).padStart(2, '0') + '/' + 
+                         String(date.getDate()).padStart(2, '0') + '/' + 
+                         String(date.getHours()).padStart(2, '0') + '/' + 
+                         String(date.getMinutes()).padStart(2, '0') + '/' + 
+                         String(date.getSeconds()).padStart(2, '0');
+
                 let rowsHtml = "";
                 groups.forEach(g => {
                     g.outcomes.forEach(o => {
@@ -224,9 +198,9 @@
                 });
 
                 card.innerHTML = `
-                    <div class="settled-badge">Settled</div>
+                    <div class="settled-badge">SETTLED: ${fD}</div>
                     <div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <div style="text-align:center; margin-top:20px; margin-bottom:15px;">
+                    <div style="text-align:center; margin-top:25px; margin-bottom:15px;">
                         <h2 style="margin:0; opacity:0.8;">${m.title}</h2>
                         <small style="color:#aaa">Host: ${m.creator_name} | Final Pool: ${parseFloat(m.take).toFixed(2)}</small>
                     </div>
