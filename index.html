@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Liquidity Dashboard</title>
+    <title>StakeForge | Liquidity Master</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --demo: #ffcc00; --danger: #ff4444; --success: #28a745; --border: #2c4f60; }
@@ -144,7 +144,7 @@
     <div class="modal-box">
         <h3 id="settle-title"></h3>
         <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE & REFUND HOST</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
     </div>
 </div>
@@ -205,7 +205,7 @@
                     <div class="market-header">
                         <div>
                             <h2 style="margin:0;">${m.title}</h2>
-                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Available Pool: ${parseFloat(m.take).toFixed(2)} ${m.type}</b> | Deadline: ${new Date(m.deadline).toLocaleString()}</small>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Available Pool: ${parseFloat(m.take).toFixed(2)} ${m.type}</b></small>
                         </div>
                         ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
@@ -219,16 +219,10 @@
             } else {
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                const formattedSettledDate = `${sDate.getFullYear()}/${String(sDate.getMonth() + 1).padStart(2, '0')}/${String(sDate.getDate()).padStart(2, '0')} ${String(sDate.getHours()).padStart(2, '0')}:${String(sDate.getMinutes()).padStart(2, '0')}`;
-
                 card.innerHTML = `
                     <div class="settled-badge">Settled</div>
                     <div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <div style="margin-top:15px;">
-                        <h3 style="margin:0;">${m.title}</h3>
-                        <p style="margin:5px 0; font-size:12px; color:#aaa;">Host: ${m.creator_name} | Final Pool: ${m.take} | <b>Settled - ${formattedSettledDate}</b></p>
-                    </div>
+                    <div style="margin-top:15px;"><h3 style="margin:0;">${m.title}</h3></div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win' ? 'winner-row' : ''}">
                                 <span>${o.n}</span>
@@ -242,8 +236,7 @@
 
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => {
-            const dl = new Date(btn.dataset.deadline);
-            if(dl < new Date()) btn.disabled = true;
+            if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true;
         });
     }
 
@@ -259,9 +252,8 @@
 
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
-        const count = cont.children.length;
         const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px"; d.style.alignItems="center";
-        const delBtn = count >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : '';
+        const delBtn = cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : '';
         d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${delBtn}`;
         cont.appendChild(d);
     }
@@ -277,8 +269,7 @@
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
         if(b > userProfile[balField]) return alert("Nincs elég fedezeted!");
 
-        const { error: balErr } = await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        if(balErr) return alert("Hiba az egyenleg levonásakor!");
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
 
         const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
             title: g.querySelector('.gt').value,
@@ -287,7 +278,7 @@
 
         await _supabase.from('markets').insert([{ 
             title: t, type, take: b, stake: b, deadline: deadlineISO, 
-            note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' 
+            note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active', creator_id: currentUser.id
         }]);
 
         location.reload();
@@ -306,25 +297,16 @@
         if(new Date(activeBet.dl) < new Date()) { alert("Lejárt az idő!"); location.reload(); return; }
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-        
-        // Matematika: Profit, amit a Poolból kell levonni
         const potentialProfit = amt * (activeBet.o - 1);
 
-        // Lekérjük a piac aktuális Pool állapotát
         const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
         const currentPool = parseFloat(mData.take);
 
         if(amt > userProfile[f]) return alert("Nincs elég egyenleged!");
-        if(potentialProfit > currentPool) return alert("A piac likviditása nem fedezi ezt a fogadást!");
+        if(potentialProfit > currentPool) return alert("A likviditás nem fedezi!");
 
-        // 1. Levonjuk a pénzt a fogadótól (Tét)
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
-
-        // 2. LIQUIDITY LOGIKA: A Poolból levonjuk a potenciális profitot (Host kockázata)
-        const newPool = currentPool - potentialProfit;
-        await _supabase.from('markets').update({ take: newPool }).eq('id', activeBet.mId);
-
-        // 3. Rögzítjük a fogadást
+        await _supabase.from('markets').update({ take: currentPool - potentialProfit }).eq('id', activeBet.mId);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
@@ -358,11 +340,26 @@
         });
         if(!winName) return alert("Válassz egy győztest!");
 
+        // 1. LEKÉRJÜK A PIAC ADATAIT A REFUNDHOZ
+        const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
+        const hostId = mData.creator_id;
+        const remainingPool = parseFloat(mData.take);
+        const type = mData.type;
+        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+        // 2. REFUND: Visszaadjuk a Hostnak a maradék poolt + a vesztes tétek bekerülnek a poolba (logikailag a RPC-ben kezelve)
+        // Itt most a maradék poolt adjuk vissza a Host profiljába
+        const { data: hProf } = await _supabase.from('profiles').select(balField).eq('id', hostId).single();
+        await _supabase.from('profiles').update({ [balField]: hProf[balField] + remainingPool }).eq('id', hostId);
+
+        // 3. PIAC LEZÁRÁSA
         await _supabase.from('markets').update({ 
             note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
         }).eq('id', currentSettleId);
 
+        // 4. NYERTESEK KIFIZETÉSE (SQL RPC)
         await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
+        
         location.reload();
     }
 
