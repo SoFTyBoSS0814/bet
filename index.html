@@ -165,7 +165,7 @@
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
-        setInterval(updateRewardUI, 1000); // ÚJ: Reward UI frissítő
+        setInterval(updateRewardUI, 1000);
     };
 
     async function fetchProfile() {
@@ -179,10 +179,9 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         updateCreateBalanceDisplay();
-        updateRewardUI(); // ÚJ: Profil töltésekor UI frissítés
+        updateRewardUI();
     }
 
-    // ÚJ: 24 órás visszaszámláló és UI logika
     function updateRewardUI() {
         const msg = document.getElementById('reward-msg');
         const btn = document.getElementById('btn-claim-reward');
@@ -380,13 +379,32 @@
     }
 
     async function finalSubmitSettle() {
-        let winName = "";
-        document.querySelectorAll('.settle-select').forEach(s => {
-            const gi = s.dataset.gi; const oi = s.dataset.oi;
-            currentSettleGroups[gi].outcomes[oi].status = s.value;
-            if(s.value === 'win') winName = currentSettleGroups[gi].outcomes[oi].n;
+        let allValid = true;
+        let errorMsg = "";
+        let winnerNames = [];
+
+        currentSettleGroups.forEach((g, gi) => {
+            let winCount = 0;
+            const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
+            selects.forEach(s => {
+                const oi = s.dataset.oi;
+                currentSettleGroups[gi].outcomes[oi].status = s.value;
+                if(s.value === 'win') {
+                    winCount++;
+                    winnerNames.push(currentSettleGroups[gi].outcomes[oi].n);
+                }
+            });
+
+            if(winCount === 0) {
+                allValid = false;
+                errorMsg = `Nincs győztes jelölve a(z) "${g.title}" kategóriában!`;
+            } else if(winCount > 1) {
+                allValid = false;
+                errorMsg = `Több győztes van jelölve a(z) "${g.title}" kategóriában!`;
+            }
         });
-        if(!winName) return alert("Válassz egy győztest!");
+
+        if(!allValid) return alert(errorMsg);
 
         try {
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
@@ -403,7 +421,10 @@
             }
 
             await _supabase.from('markets').update({ 
-                note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winName, start_time: new Date().toISOString()
+                note: JSON.stringify(currentSettleGroups), 
+                status: 'settled', 
+                winner: winnerNames.join(", "), 
+                start_time: new Date().toISOString()
             }).eq('id', currentSettleId);
 
             await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
@@ -414,7 +435,6 @@
         }
     }
 
-    // JAVÍTOTT: Daily Demo Claim 24 órás logikával
     async function claimDailyDemo() {
         if (userProfile.last_claim) {
             const last = new Date(userProfile.last_claim).getTime();
@@ -431,7 +451,7 @@
         }).eq('id', currentUser.id);
 
         document.getElementById('reward-msg').innerText = "WON " + final + " D!";
-        await fetchProfile(); // Azonnali frissítés
+        await fetchProfile();
     }
 
     function showSection(id) {
