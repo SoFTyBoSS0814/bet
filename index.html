@@ -109,8 +109,11 @@
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
-        <h3>New Market</h3>
-        <select id="m-type">
+        <div style="display:flex; justify-content:space-between; align-items:center">
+            <h3>New Market</h3>
+            <span id="create-balance-display" style="font-size:12px; font-weight:bold; color:var(--primary)">Balance: 0.00</span>
+        </div>
+        <select id="m-type" onchange="updateCreateBalanceDisplay()">
             <option value="DEMO">DEMO</option>
             <option value="REAL">REAL</option>
         </select>
@@ -161,6 +164,14 @@
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
+        updateCreateBalanceDisplay();
+    }
+
+    function updateCreateBalanceDisplay() {
+        if(!userProfile) return;
+        const type = document.getElementById('m-type').value;
+        const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
+        document.getElementById('create-balance-display').innerText = "Balance: " + bal;
     }
 
     async function loadMarkets() {
@@ -230,6 +241,7 @@
             const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
             if(mData.take < profit) return alert("Market liquidity exceeded!");
 
+            // BESZÚRÁS A BETS TÁBLÁBA - user_name mezővel
             const { error: betError } = await _supabase.from('bets').insert({
                 market_id: activeBet.mId,
                 user_id: currentUser.id,
