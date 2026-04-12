@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -279,16 +278,31 @@
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
+                // --- HISTORY SECTION RE-ADDED ---
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                card.innerHTML = `<div class="settled-badge">Settled</div><h3>${m.title}</h3>
-                ${groups.map(g => `<div style="margin-top:5px">${g.outcomes.map(o => `<div class="history-item"><span>${g.title}: ${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}</div>`).join('')}`;
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <h3 style="margin:0 0 5px 0">${m.title}</h3>
+                    <div style="margin-bottom:15px">
+                        <small style="display:block"><b>Type:</b> <span style="color:var(--demo)">${m.type} Event</span></small>
+                        <small style="display:block"><b>Host:</b> ${m.creator_name}</small>
+                    </div>
+                    ${groups.map(g => `
+                        <div style="margin-top:10px">
+                            ${g.outcomes.map(o => `
+                                <div class="history-item" style="border-left: 3px solid ${o.status==='win'?'var(--success)':'#444'}">
+                                    <span><b>${g.title}:</b> ${o.n}</span>
+                                    <b style="color:${o.status==='win'?'var(--success)':'var(--danger)'}">${o.status==='win'?'WINNER':'LOSS'}</b>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `).join('')}`;
                 hList.appendChild(card);
             }
         });
     }
 
-    // Modal helpers
     function openBet(mId, n, o, t, dl) {
         if(isExpired(dl)) return;
         activeBet = { mId, n, o, t, dl };
@@ -355,7 +369,6 @@
         location.reload();
     }
 
-    // Market Creation Logic (Styled Buttons)
     function addGroup() {
         const id = Date.now();
         const d = document.createElement('div'); d.className = 'market-group';
