@@ -14,36 +14,38 @@
         .nav-links { display: flex; gap: 20px; }
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-
-        /* DROPDOWN NYELVVÁLASZTÓ */
-        .dropdown { position: relative; display: inline-block; margin-left: 15px; }
-        .dropbtn { background: #0b1218; border: 1px solid #334756; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; }
-        .dropdown-content { display: none; position: absolute; right: 0; background-color: #1a2a33; min-width: 160px; box-shadow: 0px 8px 16px rgba(0,0,0,0.5); border-radius: 8px; z-index: 1001; border: 1px solid var(--border); overflow: hidden; }
-        .dropdown-content button { color: white; padding: 12px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none; text-align: left; cursor: pointer; transition: 0.2s; font-size: 13px; }
-        .dropdown-content button:hover { background-color: var(--primary); color: #000; }
-        .dropdown:hover .dropdown-content { display: block; }
-
         .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
+
         .container { max-width: 1000px; margin: auto; padding: 30px; }
         .section { display: none; }
         .section.active { display: block; }
+
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
-        .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 13px; transition: 0.2s; }
-        .btn-bet:hover:not(:disabled) { border-color: var(--primary); }
-        .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
+        .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; border-color: #222; }
         .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
+
+        .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+        .history-type { position: absolute; top: 15px; right: 15px; font-weight: 900; font-size: 14px; }
+        .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
         
+        .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
+        .history-item.loss-row { border-left-color: var(--danger); background: rgba(255, 68, 68, 0.1); }
+
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
         #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
 
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
         .hidden { display: none !important; }
+
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
     </style>
 </head>
@@ -52,23 +54,11 @@
 <div class="navbar">
     <div class="logo" onclick="location.reload()">STAKEFORGE</div>
     <div class="nav-links">
-        <span id="link-markets" class="active" onclick="showSection('markets')" data-i18n="nav_markets">Markets</span>
-        <span id="link-history" onclick="showSection('history')" data-i18n="nav_history">History</span>
-        <span id="link-wallet" onclick="showSection('wallet')" data-i18n="nav_wallet">Wallet</span>
-        <span id="link-account" onclick="showSection('account')" data-i18n="nav_account">Account</span>
+        <span id="link-markets" class="active" onclick="showSection('markets')">Markets</span>
+        <span id="link-history" onclick="showSection('history')">History</span>
+        <span id="link-wallet" onclick="showSection('wallet')">Wallet</span>
+        <span id="link-account" onclick="showSection('account')">Account</span>
     </div>
-
-    <div class="dropdown">
-        <button class="dropbtn"><span id="active-flag">🇬🇧</span> <span id="active-lang">EN</span></button>
-        <div class="dropdown-content">
-            <button onclick="changeLang('en', '🇬🇧')">🇬🇧 EN</button>
-            <button onclick="changeLang('hu', '🇭🇺')">🇭🇺 HU</button>
-            <button onclick="changeLang('de', '🇩🇪')">🇩🇪 DE</button>
-            <button onclick="changeLang('ru', '🇷🇺')">🇷🇺 RU</button>
-            <button onclick="changeLang('zh', '🇨🇳')">🇨🇳 CN</button>
-        </div>
-    </div>
-
     <div class="wallet-display">
         <span id="nav-real" style="color:var(--primary)">0.00 €</span>
         <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
@@ -78,21 +68,21 @@
 <div class="container">
     <div id="section-markets" class="section active">
         <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
-            <h2 data-i18n="live_markets">Live Markets</h2>
-            <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
+            <h2>Live Markets</h2>
+            <button class="btn-create" onclick="openCreateModal()">+ Create</button>
         </div>
         <div id="market-list">Loading...</div>
     </div>
 
     <div id="section-history" class="section">
-        <h2 data-i18n="settled_markets">Settled Markets</h2>
+        <h2>Settled Markets</h2>
         <div id="history-list"></div>
     </div>
 
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
-            <h2 data-i18n="nav_wallet">Wallet</h2>
-            <div id="geo-restriction" data-i18n="hu_restriction">⚠️ Crypto services restricted in your region.</div>
+            <h2>Balances</h2>
+            <div id="geo-restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
                     <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
@@ -112,14 +102,16 @@
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:450px; margin:auto;">
-            <h2 style="text-align:center" data-i18n="nav_account">Account</h2>
+            <h2 style="text-align:center">Account Profile</h2>
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
-                <p style="margin:5px 0; color:#aaa" data-i18n="acc_user">Username</p>
+                <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                <p style="margin:5px 0; color:#aaa">Email</p>
+                <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
+                <p style="margin:5px 0; color:#aaa">Account ID</p>
+                <p id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">-</p>
             </div>
-            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold;" data-i18n="logout">LOG OUT</button>
+            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold;">LOG OUT</button>
         </div>
     </div>
 </div>
@@ -136,61 +128,63 @@
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
-        <h3>New Market</h3>
-        <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
+        <div style="display:flex; justify-content:space-between; align-items:center">
+            <h3>New Market</h3>
+            <span id="create-balance-display" style="font-size:12px; font-weight:bold; color:var(--primary)">Balance: 0.00</span>
+        </div>
+        <select id="m-type" onchange="updateCreateBalanceDisplay()">
+            <option value="DEMO">DEMO</option>
+            <option value="REAL">REAL</option>
+        </select>
         <input id="m-name" placeholder="Event Name">
         <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" placeholder="Initial Pool">
+        <input id="m-budget" type="number" placeholder="Initial Liquidity Pool">
         <div id="groups-container"></div>
-        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px">+ Add Category</button>
+        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
         <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
     </div>
 </div>
+
+<div id="settleModal" class="modal hidden">
+    <div class="modal-box">
+        <h3 id="settle-title"></h3>
+        <div id="settle-area"></div>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
+    </div>
+</div>
+
+<script src="bitcoin.js"></script>
 
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-    // SZÓTÁR
-    const translations = {
-        en: { nav_markets: "Markets", nav_history: "History", nav_wallet: "Wallet", nav_account: "Account", live_markets: "Live Markets", btn_create: "+ Create", settled_markets: "Settled Markets", acc_user: "Username", logout: "LOG OUT", hu_restriction: "⚠️ Crypto services restricted in your region." },
-        hu: { nav_markets: "Piacok", nav_history: "Előzmények", nav_wallet: "Tárca", nav_account: "Fiók", live_markets: "Élő Piacok", btn_create: "+ Létrehozás", settled_markets: "Lezárt Piacok", acc_user: "Felhasználónév", logout: "KIJELENTKEZÉS", hu_restriction: "⚠️ Magyarország területéről a funkció korlátozott." },
-        de: { nav_markets: "Märkte", nav_history: "Verlauf", nav_wallet: "Brieftasche", nav_account: "Konto", live_markets: "Live-Märkte", btn_create: "+ Erstellen", settled_markets: "Abgeschlossen", acc_user: "Nutzername", logout: "AUSLOGGEN", hu_restriction: "⚠️ Kryptodienste eingeschränkt." },
-        ru: { nav_markets: "Рынки", nav_history: "История", nav_wallet: "Кошелек", nav_account: "Аккаунт", live_markets: "Живые рынки", btn_create: "+ Создать", settled_markets: "Завершенные", acc_user: "Имя пользователя", logout: "ВЫЙТИ", hu_restriction: "⚠️ Ограничено в вашем регионе." },
-        zh: { nav_markets: "市场", nav_history: "历史", nav_wallet: "钱包", nav_account: "账户", live_markets: "进行中", btn_create: "+ 创建", settled_markets: "已结束", acc_user: "用户名", logout: "登出", hu_restriction: "⚠️ 您所在的地区受限。" }
-    };
-
     let currentUser = JSON.parse(localStorage.getItem("user"));
     let userProfile = null;
     let activeBet = null;
+    let currentSettleId = null;
+    let currentSettleGroups = null;
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        updatePageText();
         await fetchProfile();
         loadMarkets();
         checkIP();
+        setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
     };
 
-    function updatePageText() {
-        const lang = localStorage.getItem('selectedLang') || 'en';
-        const flag = localStorage.getItem('selectedFlag') || '🇬🇧';
-        document.getElementById('active-lang').innerText = lang.toUpperCase();
-        document.getElementById('active-flag').innerText = flag;
-        const t = translations[lang];
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) el.innerText = t[key];
-        });
-    }
-
-    function changeLang(lang, flag) {
-        localStorage.setItem('selectedLang', lang);
-        localStorage.setItem('selectedFlag', flag);
-        updatePageText();
+    async function checkIP() {
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if(data.country_code === 'HU') {
+                document.getElementById('geo-restriction').style.display = 'block';
+            }
+        } catch(e) { console.error("Geo-check error", e); }
     }
 
     async function fetchProfile() {
@@ -202,61 +196,123 @@
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
+        document.getElementById("acc-id").innerText = currentUser.id;
+        
+        updateCreateBalanceDisplay();
+        updateRewardUI();
+
+        if(typeof loadSavedBTC === 'function') {
+            loadSavedBTC(data.btc_address);
+        }
+    }
+
+    function updateRewardUI() {
+        const msg = document.getElementById('reward-msg');
+        const btn = document.getElementById('btn-claim-reward');
+        if (!userProfile) return;
+        if (!userProfile.last_claim) {
+            msg.innerText = "Ready to roll!";
+            btn.disabled = false; btn.style.opacity = "1";
+            return;
+        }
+        const last = new Date(userProfile.last_claim).getTime();
+        const now = new Date().getTime();
+        const diff = 24 * 60 * 60 * 1000 - (now - last);
+        if (diff > 0) {
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
+            msg.style.color = "var(--danger)";
+            btn.disabled = true; btn.style.opacity = "0.5";
+        } else {
+            msg.innerText = "Ready to roll!";
+            msg.style.color = "var(--success)";
+            btn.disabled = false; btn.style.opacity = "1";
+        }
+    }
+
+    function updateCreateBalanceDisplay() {
+        if(!userProfile) return;
+        const type = document.getElementById('m-type').value;
+        const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
+        document.getElementById('create-balance-display').innerText = "Balance: " + bal;
     }
 
     async function loadMarkets() {
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const mList = document.getElementById('market-list');
-        mList.innerHTML = "";
+        const hList = document.getElementById('history-list');
+        mList.innerHTML = ""; hList.innerHTML = "";
+        
         markets.forEach(m => {
+            const groups = JSON.parse(m.note || "[]");
+            const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
+            const symbol = m.type === 'REAL' ? '€' : 'D';
+            const isExpired = new Date(m.deadline) < new Date();
+            const dlString = new Date(m.deadline).toLocaleString('hu-HU');
+
             if(m.status === 'active') {
-                const groups = JSON.parse(m.note || "[]");
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
                     <div class="market-header">
                         <div>
                             <h2 style="margin:0;">${m.title}</h2>
-                            <small>Host: ${m.creator_name} | Pool: ${m.take} ${m.type==='REAL'?'€':'D'}</small>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small><br>
+                            <small style="color:var(--danger); font-weight:bold;">Deadline: ${dlString}</small>
                         </div>
+                        ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
                     ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
-                        ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}')">${o.n}<br><b>${o.o}</b></button>`).join('')}
+                        ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
+            } else {
+                const card = document.createElement('div'); 
+                card.className = 'market-card';
+                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
+                
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <div class="history-type" style="color:${typeColor}">${m.type}</div>
+                    <div class="market-header" style="margin-top:15px;">
+                        <div>
+                            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+                                <h2 style="margin:0;">${m.title}</h2>
+                                <span style="color:var(--success); font-weight:bold; font-size:14px;">• Settled at: ${sDate.toLocaleString()}</span>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small> | 
+                                <small style="color:#888;">Deadline: ${dlString}</small>
+                            </div>
+                        </div>
+                    </div>
+                    ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
+                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
+                    </div>`).join('')}`;
+                hList.appendChild(card);
             }
         });
     }
 
-    function openBet(mId, n, o, t) {
-        activeBet = { mId, n, o, t };
-        document.getElementById('bet-on').innerText = n;
-        document.getElementById('bet-odds').innerText = "x" + o;
-        document.getElementById('betModal').classList.remove('hidden');
-        calcWin();
-    }
-
-    async function placeBet() {
-        const amt = parseFloat(document.getElementById('bet-amount').value);
-        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(userProfile[f] < amt) return alert("Insufficient balance!");
-        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
-        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
-        location.reload();
+    function checkDeadlines() {
+        document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
     }
 
     function addGroup() {
         const id = "g-" + Date.now();
-        const d = document.createElement('div'); d.className = 'market-group';
-        d.innerHTML = `<input class="gt" placeholder="Category"><div id="o-cont-${id}"></div><button onclick="addO('${id}')" style="font-size:10px">+ Outcome</button>`;
-        document.getElementById('groups-container').appendChild(d);
-        addO(id); addO(id);
+        const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
+        const isFirst = document.getElementById('groups-container').children.length === 0;
+        d.innerHTML = `${!isFirst ? `<button onclick="this.parentElement.remove()" style="position:absolute;right:10px;top:10px;background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : ''}
+            <input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
+        document.getElementById('groups-container').appendChild(d); addO(id); addO(id);
     }
 
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
-        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px";
-        d.innerHTML = `<input class="on" placeholder="Name"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">`;
+        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
+        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
         cont.appendChild(d);
     }
 
@@ -265,6 +321,10 @@
         const b = parseFloat(document.getElementById('m-budget').value);
         const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
+        if(!dl || isNaN(b) || b <= 0) return alert("Helytelen adatok!");
+        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+        if(b > userProfile[balField]) return alert("Nincs elég fedezet!");
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
         const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
             title: g.querySelector('.gt').value,
             outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
@@ -273,23 +333,69 @@
         location.reload();
     }
 
-    async function claimDailyDemo() {
-        const win = Math.floor(Math.random() * 8000 + 1000);
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
+    function openBet(mId, n, o, t, dl) {
+        if(new Date(dl) < new Date()) return alert("Lezárult!");
+        activeBet = { mId, n, o, t, dl };
+        document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
+        document.getElementById('betModal').classList.remove('hidden'); calcWin();
+    }
+
+    async function placeBet() {
+        const amt = parseFloat(document.getElementById('bet-amount').value);
+        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        const profit = amt * (activeBet.o - 1);
+        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+        if(amt > userProfile[f]) return alert("Nincs elég egyenleg!");
+        if(profit > mData.take) return alert("Nincs elég likviditás!");
+        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
+        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
+        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
 
-    function updateRewardUI() {
-        const btn = document.getElementById('btn-claim-reward');
-        if(!userProfile || !userProfile.last_claim) return;
-        const diff = 86400000 - (Date.now() - new Date(userProfile.last_claim).getTime());
-        if(diff > 0) { btn.disabled = true; btn.style.opacity = "0.5"; }
+    async function openSettle(mId, title) {
+        const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
+        currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
+        document.getElementById('settle-title').innerText = "Settle: " + title;
+        let h = '';
+        currentSettleGroups.forEach((g, gi) => {
+            h += `<div style="margin-top:15px"><small>${g.title}</small>`;
+            g.outcomes.forEach((o, oi) => {
+                h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
+                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0"><option value="pending">Pending</option><option value="win">WINNER</option><option value="loss">LOSS</option></select></div>`;
+            });
+            h += `</div>`;
+        });
+        document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-    async function checkIP() {
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        if(data.country_code === 'HU') document.getElementById('geo-restriction').style.display = 'block';
+    async function finalSubmitSettle() {
+        let winners = [];
+        currentSettleGroups.forEach((g, gi) => {
+            const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
+            selects.forEach(s => { 
+                currentSettleGroups[gi].outcomes[s.dataset.oi].status = s.value;
+                if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
+            });
+        });
+
+        const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
+        const pool = parseFloat(mData.take);
+        const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+        const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
+        
+        if (host && pool > 0) await _supabase.from('profiles').update({ [field]: host[field] + pool }).eq('id', host.id);
+        
+        await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winners.join(", "), start_time: new Date().toISOString() }).eq('id', currentSettleId);
+        await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
+        location.reload();
+    }
+
+    async function claimDailyDemo() {
+        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("Várj 24 órát!");
+        const win = Math.floor(Math.random() * 8000 + 1000);
+        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
+        document.getElementById('reward-msg').innerText = "WON " + win + " D!"; fetchProfile();
     }
 
     function showSection(id) {
@@ -298,7 +404,7 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
     }
-    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet?.o || 0)).toFixed(2); }
+    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
