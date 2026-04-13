@@ -38,9 +38,6 @@
         .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
         .history-item.loss-row { border-left-color: var(--danger); background: rgba(255, 68, 68, 0.1); }
 
-        .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
-        #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
-
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
@@ -91,12 +88,10 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-
             <div id="btc-wallet-area"></div>
-
-            <div class="reward-box">
+            <div class="reward-box" style="border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4));">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
-                <div id="reward-msg"></div>
+                <div id="reward-msg" style="font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px;"></div>
                 <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()">TRY MY LUCK</button>
             </div>
         </div>
@@ -108,7 +103,6 @@
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
                 <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                
                 <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
                 <p style="margin:5px 0; color:#aaa">Account ID</p>
@@ -293,12 +287,38 @@
     }
 
     async function viewAllBets(mId, mTitle) {
-        const { data: bets, error } = await _supabase.from('bets').select('*, profiles(username)').eq('market_id', mId);
+        const { data: bets, error } = await _supabase.from('bets').select('*, profiles(username)').eq('market_id', mId).order('created_at', { ascending: false });
         if (error) return alert("Hiba a lekérésnél!");
-        let listHtml = bets.map(b => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #334756; padding:8px 0; font-size:13px;"><span><b>${b.profiles?.username || 'Unknown'}</b><br><small style="color:#aaa">${b.outcome_name}</small></span><span style="text-align:right"><b>${b.amount.toFixed(2)} ${b.type === 'REAL' ? '€' : 'D'}</b><br><small>x${b.odds}</small></span></div>`).join('');
+        
+        let listHtml = bets.map(b => {
+            const betDate = new Date(b.created_at).toLocaleString('hu-HU', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit'
+            });
+            return `
+                <div style="border-bottom:1px solid #334756; padding:10px 0; font-size:13px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span><b>${b.profiles?.username || 'Unknown'}</b></span>
+                        <span style="color:var(--primary)"><b>${b.amount.toFixed(2)} ${b.type === 'REAL' ? '€' : 'D'}</b></span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                        <small style="color:#aaa">${b.outcome_name} (x${b.odds})</small>
+                        <small style="color:#888; font-family:monospace;">${betDate}</small>
+                    </div>
+                </div>`;
+        }).join('');
+
         const modal = document.createElement('div');
         modal.className = 'modal'; modal.id = 'tempViewModal';
-        modal.innerHTML = `<div class="modal-box" style="width:350px;"><h3 style="margin-top:0">${mTitle}</h3><h4 style="color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:10px;">All Placed Bets</h4><div style="max-height:300px; overflow-y:auto; margin-bottom:15px;">${listHtml || '<p style="text-align:center; color:#aaa;">No bets found.</p>'}</div><button class="btn-primary" onclick="this.parentElement.parentElement.remove()">CLOSE</button></div>`;
+        modal.innerHTML = `
+            <div class="modal-box" style="width:400px;">
+                <h3 style="margin-top:0">${mTitle}</h3>
+                <h4 style="color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:10px;">Market Bets (Detailed)</h4>
+                <div style="max-height:400px; overflow-y:auto; margin-bottom:15px; padding-right:5px;">
+                    ${listHtml || '<p style="text-align:center; color:#aaa;">No bets found.</p>'}
+                </div>
+                <button class="btn-primary" onclick="this.parentElement.parentElement.remove()">CLOSE</button>
+            </div>`;
         document.body.appendChild(modal);
     }
 
@@ -378,43 +398,33 @@
     async function finalSubmitSettle() {
         let winners = [];
         let isValid = true;
-
-        // Végigmegyünk az összes kategórián (group)
         currentSettleGroups.forEach((g, gi) => {
             const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
             let winCount = 0;
             let pendingCount = 0;
-
             selects.forEach(s => { 
                 const val = s.value;
                 currentSettleGroups[gi].outcomes[s.dataset.oi].status = val;
-                
                 if(val === 'win') {
                     winCount++;
                     winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
                 }
                 if(val === 'pending') pendingCount++;
             });
-
-            // Ellenőrzés: Pontosan 1 győztes kell, és semmi nem maradhat Pending
             if (winCount !== 1) {
-                alert(`Hiba a(z) "${g.title}" kategóriában: Pontosan EGY győztest kell választani! (Jelenleg: ${winCount})`);
+                alert(`Hiba a(z) "${g.title}" kategóriában: Pontosan EGY győztest kell választani!`);
                 isValid = false;
             } else if (pendingCount > 0) {
-                alert(`Hiba a(z) "${g.title}" kategóriában: Minden kimenetelt le kell zárni (WIN vagy LOSS)!`);
+                alert(`Hiba a(z) "${g.title}" kategóriában: Minden kimenetelt le kell zárni!`);
                 isValid = false;
             }
         });
-
-        if (!isValid) return; // Ha nem valid, megállítjuk a folyamatot
-
+        if (!isValid) return;
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
         const pool = parseFloat(mData.take);
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
         const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-        
         if (host && pool > 0) await _supabase.from('profiles').update({ [field]: host[field] + pool }).eq('id', host.id);
-        
         await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winners.join(", "), start_time: new Date().toISOString() }).eq('id', currentSettleId);
         await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
         location.reload();
