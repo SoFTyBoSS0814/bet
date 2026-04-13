@@ -204,7 +204,6 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        // Meghívjuk a bitcoin.js ellenőrzőjét
         if(typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
         }
@@ -248,18 +247,30 @@
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
+        
+        const isAdmin = userProfile && userProfile.role === 'admin';
+
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
-            const isExpired = new Date(m.deadline) < new Date();
+            const dlDate = new Date(m.deadline);
+            const isExpired = dlDate < new Date();
+
             if(m.status === 'active') {
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
                     <div class="market-header">
-                        <div><h2 style="margin:0;">${m.title}</h2><small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small></div>
-                        ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                        <div>
+                            <h2 style="margin:0;">${m.title}</h2>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small><br>
+                            <small style="color:var(--danger); font-weight:bold;">Ends: ${dlDate.toLocaleString()}</small>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            ${isAdmin ? `<button onclick="viewAllBets('${m.id}','${m.title}')" class="btn-bet" style="width:auto; border-color:var(--primary); color:var(--primary)">🔍 BETS</button>` : ''}
+                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                        </div>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
                         ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
@@ -269,7 +280,10 @@
                 const card = document.createElement('div'); card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:15px;">
+                        <h2>${m.title} - ${sDate.toLocaleString()}</h2>
+                        <button onclick="viewAllBets('${m.id}','${m.title}')" class="btn-bet" style="width:auto; border-color:var(--success); color:var(--success)">🔍 VIEW ALL BETS</button>
+                    </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
                     </div>`).join('')}`;
@@ -278,8 +292,18 @@
         });
     }
 
+    async function viewAllBets(mId, mTitle) {
+        const { data: bets, error } = await _supabase.from('bets').select('*, profiles(username)').eq('market_id', mId);
+        if (error) return alert("Hiba a lekérésnél!");
+        let listHtml = bets.map(b => `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #334756; padding:8px 0; font-size:13px;"><span><b>${b.profiles?.username || 'Unknown'}</b><br><small style="color:#aaa">${b.outcome_name}</small></span><span style="text-align:right"><b>${b.amount.toFixed(2)} ${b.type === 'REAL' ? '€' : 'D'}</b><br><small>x${b.odds}</small></span></div>`).join('');
+        const modal = document.createElement('div');
+        modal.className = 'modal'; modal.id = 'tempViewModal';
+        modal.innerHTML = `<div class="modal-box" style="width:350px;"><h3 style="margin-top:0">${mTitle}</h3><h4 style="color:var(--primary); border-bottom:1px solid var(--border); padding-bottom:10px;">All Placed Bets</h4><div style="max-height:300px; overflow-y:auto; margin-bottom:15px;">${listHtml || '<p style="text-align:center; color:#aaa;">No bets found.</p>'}</div><button class="btn-primary" onclick="this.parentElement.parentElement.remove()">CLOSE</button></div>`;
+        document.body.appendChild(modal);
+    }
+
     function checkDeadlines() {
-        document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
+        document.querySelectorAll('.btn-bet').forEach(btn => { if(btn.dataset.deadline && new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
     }
 
     function addGroup() {
