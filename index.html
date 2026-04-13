@@ -278,11 +278,13 @@
                     <div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <div class="market-header" style="margin-top:15px;">
                         <div>
-                            <h2 style="margin:0;">${m.title}</h2>
-                            <small style="color:var(--success); font-weight:bold; display:block; margin-top:2px;">Settled at: ${sDate.toLocaleString()}</small>
+                            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+                                <h2 style="margin:0;">${m.title}</h2>
+                                <span style="color:var(--success); font-weight:bold; font-size:14px;">• Settled at: ${sDate.toLocaleString()}</span>
+                            </div>
                             <div style="margin-top:8px;">
-                                <small style="color:#aaa">Host: ${m.creator_name} | <b>Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small><br>
-                                <small style="color:#888;">Orig. Deadline: ${dlString}</small>
+                                <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small> | 
+                                <small style="color:#888;">Deadline: ${dlString}</small>
                             </div>
                         </div>
                     </div>
