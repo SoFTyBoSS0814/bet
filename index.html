@@ -242,6 +242,7 @@
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
         
+        // Fontos: Itt kinyerjük az admin státuszt
         const isAdmin = userProfile && userProfile.role === 'admin';
 
         markets.forEach(m => {
