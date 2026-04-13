@@ -397,6 +397,7 @@
         let errorMsg = "";
         let winnerNames = [];
 
+        // Átfutunk a kategóriákon és begyűjtjük a kiválasztott státuszokat
         currentSettleGroups.forEach((g, gi) => {
             let winCount = 0;
             const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
@@ -409,6 +410,7 @@
                 }
             });
 
+            // Ellenőrizzük, hogy minden kategóriában pontosan egy győztes van-e
             if(winCount === 0) {
                 allValid = false;
                 errorMsg = `Nincs győztes jelölve a(z) "${g.title}" kategóriában!`;
@@ -421,19 +423,21 @@
         if(!allValid) return alert(errorMsg);
 
         try {
+            // 1. Piac adatainak lekérése a likviditás visszatérítéshez
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
             const remainingPool = parseFloat(mData.take);
             const hostName = mData.creator_name;
             const balField = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
+            // 2. Likviditás visszatérítése a Hostnak
             const { data: hostProf } = await _supabase.from('profiles').select('*').eq('username', hostName).single();
-
             if (hostProf && remainingPool > 0) {
                 await _supabase.from('profiles')
                     .update({ [balField]: hostProf[balField] + remainingPool })
                     .eq('id', hostProf.id);
             }
 
+            // 3. Piac frissítése SETTLED státuszra
             await _supabase.from('markets').update({ 
                 note: JSON.stringify(currentSettleGroups), 
                 status: 'settled', 
@@ -441,7 +445,14 @@
                 start_time: new Date().toISOString()
             }).eq('id', currentSettleId);
 
-            await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
+            // 4. KIFIZETÉS: Meghívjuk az SQL függvényt, amit a Supabase-ben frissítettél
+            const { error: rpcErr } = await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
+            
+            if(rpcErr) {
+                console.error("RPC Error:", rpcErr);
+                alert("Hiba a kifizetések során, de a piac lezárult.");
+            }
+
             location.reload();
         } catch (err) {
             console.error(err);
