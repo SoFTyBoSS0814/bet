@@ -204,7 +204,6 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        // Meghívjuk a bitcoin.js ellenőrzőjét
         if(typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
         }
@@ -248,17 +247,24 @@
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
+        
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
             const isExpired = new Date(m.deadline) < new Date();
+            const dlString = new Date(m.deadline).toLocaleString('hu-HU');
+
             if(m.status === 'active') {
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
                     <div class="market-header">
-                        <div><h2 style="margin:0;">${m.title}</h2><small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small></div>
+                        <div>
+                            <h2 style="margin:0;">${m.title}</h2>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small><br>
+                            <small style="color:var(--danger); font-weight:bold;">Deadline: ${dlString}</small>
+                        </div>
                         ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
                     ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
@@ -268,8 +274,18 @@
             } else {
                 const card = document.createElement('div'); card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
+                
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <div class="history-type" style="color:${typeColor}">${m.type}</div>
+                    <div class="market-header" style="margin-top:15px;">
+                        <div>
+                            <h2 style="margin:0;">${m.title}</h2>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small><br>
+                            <small style="color:#888;">Deadline: ${dlString}</small><br>
+                            <small style="color:var(--success); font-weight:bold;">Settled at: ${sDate.toLocaleString()}</small>
+                        </div>
+                    </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
                     </div>`).join('')}`;
