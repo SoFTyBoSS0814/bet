@@ -1,14 +1,16 @@
 /**
- * STAKEFORGE - Bitcoin Address Grabber & Secure Withdrawal
+ * STAKEFORGE - Secure BTC Module (CSP Friendly)
  */
 
 async function checkIPAndRenderWallet() {
     const walletContainer = document.getElementById('btc-wallet-area');
     if (!walletContainer) return;
 
-    // Biztonsági várakozás a profiladatokra
+    // JAVÍTÁS: Függvényt adunk át, nem stringet, így a CSP nem blokkolja
     if (typeof userProfile === 'undefined' || !userProfile) {
-        setTimeout(checkIPAndRenderWallet, 500);
+        setTimeout(() => {
+            checkIPAndRenderWallet();
+        }, 500);
         return;
     }
 
@@ -16,23 +18,21 @@ async function checkIPAndRenderWallet() {
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
         
-        // 1. IP ELLENŐRZÉS
+        // Szigorú IP ellenőrzés
         if (data.country_code === 'HU') {
-            walletContainer.innerHTML = `<p style="color:var(--danger); font-size:13px; margin-top:15px; font-weight:bold;">⚠️ Funkciók korlátozva: Magyarország területéről a crypto tranzakciók nem elérhetőek.</p>`;
+            walletContainer.innerHTML = `<p style="color:var(--danger); font-size:13px; margin-top:15px; font-weight:bold;">⚠️ Funkciók korlátozva (HU).</p>`;
             return;
         }
 
-        // 2. CÍM KIOSZTÁSA (Ha még nincs)
-        if (!userProfile.btc_address || userProfile.btc_address === "") {
+        // Cím kiosztás
+        if (!userProfile.btc_address) {
             await grabAddressFromPool();
         }
 
-        // 3. MEGJELENÍTÉS (Csak ha átment a szűrőn)
         renderCryptoCard(walletContainer);
         
     } catch (e) {
-        console.error("Wallet Error:", e);
-        walletContainer.innerHTML = `<p style="color:#aaa;">Szerver hiba az ellenőrzés során. Próbáld VPN-nel.</p>`;
+        console.error("Wallet Load Error:", e);
     }
 }
 
@@ -48,26 +48,24 @@ async function grabAddressFromPool() {
 
         const selectedRecord = freeAddrs[0];
 
-        // Pool foglalás
         await _supabase.from('btc_pool').update({ 
             is_assigned: true, 
             assigned_to: currentUser.id,
             assigned_at: new Date().toISOString()
         }).eq('id', selectedRecord.id);
 
-        // Profil frissítés
         await _supabase.from('profiles').update({ 
             btc_address: selectedRecord.address 
         }).eq('id', currentUser.id);
 
         userProfile.btc_address = selectedRecord.address;
     } catch (err) {
-        console.error("Grabber Error:", err);
+        console.error("Pool Error:", err);
     }
 }
 
 function renderCryptoCard(container) {
-    const btcAddr = userProfile.btc_address || "Nincs elérhető cím a poolban.";
+    const btcAddr = userProfile.btc_address || "No address found.";
     
     container.innerHTML = `
         <div class="market-card" style="border: 1px solid var(--primary); background: rgba(0,212,255,0.05); margin-top:20px; text-align:left;">
@@ -85,12 +83,15 @@ function renderCryptoCard(container) {
             <input type="number" id="withdraw-amount" placeholder="0.00" style="margin-bottom:10px;">
             
             <small style="color:#aaa">Destination BTC Wallet</small>
-            <input type="text" id="withdraw-dest" placeholder="bc1q..." value="${userProfile.btc_address || ''}">
+            <input type="text" id="withdraw-dest" placeholder="bc1q..." value="">
             
-            <button class="btn-primary" onclick="handleWithdrawRequest()" style="margin-top:10px;">REQUEST WITHDRAWAL</button>
+            <button class="btn-primary" id="btn-withdraw">REQUEST WITHDRAWAL</button>
             <p id="withdraw-status" style="font-size:12px; margin-top:10px;"></p>
         </div>
     `;
+
+    // Eseménykezelő hozzáadása (szintén CSP barát megoldás)
+    document.getElementById('btn-withdraw').onclick = handleWithdrawRequest;
 }
 
 async function handleWithdrawRequest() {
@@ -107,9 +108,8 @@ async function handleWithdrawRequest() {
 
     try {
         status.innerText = "Processing...";
-        status.style.color = "var(--primary)";
-
-        // 1. Mentés a withdrawals táblába
+        
+        // 1. Mentés a withdrawals-ba
         const { error: reqErr } = await _supabase
             .from('withdrawals')
             .insert([{
@@ -120,9 +120,9 @@ async function handleWithdrawRequest() {
                 status: 'pending'
             }]);
 
-        if (reqErr) throw new Error("Database error: " + reqErr.message);
+        if (reqErr) throw reqErr;
 
-        // 2. Levonás
+        // 2. Levonás a profilból
         const newBalance = userProfile.real_balance - amount;
         const { error: profErr } = await _supabase
             .from('profiles')
@@ -131,23 +131,20 @@ async function handleWithdrawRequest() {
 
         if (profErr) throw profErr;
 
-        // UI Frissítés
         userProfile.real_balance = newBalance;
         document.getElementById("nav-real").innerText = newBalance.toFixed(2) + " €";
         document.getElementById("w-real").innerText = newBalance.toFixed(2) + " €";
 
-        status.innerText = "✅ Request sent! Admin will review it.";
+        status.innerText = "✅ Request sent!";
         status.style.color = "var(--success)";
         amountInput.value = ""; 
 
     } catch (err) {
-        console.error("Withdraw Error:", err);
+        console.error("Hiba:", err);
         status.innerText = "❌ Error: " + err.message;
-        status.style.color = "var(--danger)";
     }
 }
 
-// Inicializálás
 function loadSavedBTC() {
     checkIPAndRenderWallet();
 }
