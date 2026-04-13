@@ -1,38 +1,53 @@
-async function checkIPAndRenderWallet() {
-    const walletContainer = document.getElementById('btc-wallet-area');
-    if (!walletContainer) return;
+async function handleWithdrawRequest() {
+    const amountInput = document.getElementById('withdraw-amount');
+    const destInput = document.getElementById('withdraw-dest');
+    const status = document.getElementById('withdraw-status');
+    
+    const amount = parseFloat(amountInput.value);
+    const dest = destInput.value.trim();
 
-    if (!userProfile) {
-        setTimeout(checkIPAndRenderWallet, 500);
-        return;
-    }
+    if (isNaN(amount) || amount <= 0) return alert("Érvénytelen összeg!");
+    if (amount > userProfile.real_balance) return alert("Nincs elég Real egyenleged!");
+    if (!dest) return alert("Hova küldjük? Adj meg egy BTC címet!");
 
     try {
-        // Kérdezzük le egy másik megbízható forrásból is
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        
-        console.log("Észlelt ország:", data.country_code);
+        status.innerText = "Processing...";
+        status.style.color = "var(--primary)";
 
-        // EXTRA BIZTONSÁG: Kényszerített ellenőrzés
-        // Ha a válaszban 'HU' szerepel, azonnal töröljük a tartalmat és kilépünk
-        if (data.country_code === 'HU' || data.country === 'Hungary') {
-            walletContainer.innerHTML = `<p style="color:var(--danger); font-size:12px; margin-top:10px; font-weight:bold;">⚠️ Tiltott terület (HU). Funkciók korlátozva.</p>`;
-            
-            // Ha véletlenül már kiírta volna a címet, töröljük a profilból is a biztonság kedvéért (csak a memóriából)
-            userProfile.btc_address = null; 
-            return;
-        }
+        // 1. LÉPÉS: Beküldjük a kérelmet a withdrawals táblába
+        const { error: requestError } = await _supabase
+            .from('withdrawals')
+            .insert([{
+                user_id: currentUser.id,
+                username: currentUser.username,
+                amount: amount,
+                btc_address: dest,
+                status: 'pending'
+            }]);
 
-        if (!userProfile.btc_address || userProfile.btc_address === "") {
-            await grabAddressFromPool();
-        }
+        if (requestError) throw requestError;
 
-        renderCryptoCard(walletContainer);
-        
-    } catch (e) {
-        console.error("IP Check hiba:", e);
-        // Hiba esetén alapból tiltsunk, az a biztos
-        walletContainer.innerHTML = "IP ellenőrzési hiba. Próbáld újra később.";
+        // 2. LÉPÉS: Levonjuk az egyenleget a profilból
+        const newBalance = userProfile.real_balance - amount;
+        const { error: profileError } = await _supabase
+            .from('profiles')
+            .update({ real_balance: newBalance })
+            .eq('id', currentUser.id);
+
+        if (profileError) throw profileError;
+
+        // UI Frissítés
+        userProfile.real_balance = newBalance;
+        if(document.getElementById("nav-real")) document.getElementById("nav-real").innerText = newBalance.toFixed(2) + " €";
+        if(document.getElementById("w-real")) document.getElementById("w-real").innerText = newBalance.toFixed(2) + " €";
+
+        status.innerText = "✅ Request sent! Admin will review it.";
+        status.style.color = "var(--success)";
+        amountInput.value = ""; // Mező ürítése
+
+    } catch (err) {
+        console.error("Hiba:", err);
+        status.innerText = "❌ Error during request.";
+        status.style.color = "var(--danger)";
     }
 }
