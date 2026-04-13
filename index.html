@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -16,7 +15,6 @@
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         
-        /* DROPDOWN NYELVVÁLASZTÓ STÍLUS */
         .dropdown { position: relative; display: inline-block; margin-left: 15px; }
         .dropbtn { background: #0b1218; border: 1px solid #334756; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; }
         .dropdown-content { display: none; position: absolute; right: 0; background-color: #1a2a33; min-width: 160px; box-shadow: 0px 8px 16px rgba(0,0,0,0.5); border-radius: 8px; z-index: 1001; border: 1px solid var(--border); overflow: hidden; }
@@ -104,7 +102,7 @@
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2 data-i18n="nav_wallet">Wallet</h2>
-            <div id="geo-restriction" data-i18n="hu_restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
+            <div id="geo-restriction" data-i18n="hu_restriction">⚠️ Crypto services restricted.</div>
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
                     <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
@@ -115,22 +113,22 @@
             </div>
             <div id="btc-wallet-area"></div>
             <div class="reward-box">
-                <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
+                <h3 style="margin:0; color:var(--demo)" data-i18n="daily_box">Daily Mystery Box</h3>
                 <div id="reward-msg"></div>
-                <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()">TRY MY LUCK</button>
+                <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()" data-i18n="btn_luck">TRY MY LUCK</button>
             </div>
         </div>
     </div>
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:450px; margin:auto;">
-            <h2 style="text-align:center" data-i18n="nav_account">Account Profile</h2>
+            <h2 style="text-align:center" data-i18n="acc_profile">Account Profile</h2>
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
                 <p style="margin:5px 0; color:#aaa" data-i18n="acc_user">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                <p style="margin:5px 0; color:#aaa">Email Address</p>
+                <p style="margin:5px 0; color:#aaa" data-i18n="acc_email">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
-                <p style="margin:5px 0; color:#aaa">Account ID</p>
+                <p style="margin:5px 0; color:#aaa" data-i18n="acc_id">Account ID</p>
                 <p id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">-</p>
             </div>
             <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold;" data-i18n="logout">LOG OUT</button>
@@ -143,28 +141,28 @@
         <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
         <p id="bet-win-text">Payout: 0.00</p>
-        <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
+        <button class="btn-primary" onclick="placeBet()" data-i18n="btn_place_bet">PLACE BET</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')" data-i18n="btn_cancel">Cancel</button>
     </div>
 </div>
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
         <div style="display:flex; justify-content:space-between; align-items:center">
-            <h3>New Market</h3>
+            <h3 data-i18n="modal_new_market">New Market</h3>
             <span id="create-balance-display" style="font-size:12px; font-weight:bold; color:var(--primary)">Balance: 0.00</span>
         </div>
         <select id="m-type" onchange="updateCreateBalanceDisplay()">
             <option value="DEMO">DEMO</option>
             <option value="REAL">REAL</option>
         </select>
-        <input id="m-name" placeholder="Event Name">
+        <input id="m-name" placeholder="Event Name" data-i18n-ph="ph_event_name">
         <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" placeholder="Initial Liquidity Pool">
+        <input id="m-budget" type="number" placeholder="Initial Liquidity Pool" data-i18n-ph="ph_pool">
         <div id="groups-container"></div>
-        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
-        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
+        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed" data-i18n="btn_add_cat">+ Add Category</button>
+        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()" data-i18n="btn_publish">PUBLISH</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')" data-i18n="btn_cancel">Cancel</button>
     </div>
 </div>
 
@@ -172,8 +170,8 @@
     <div class="modal-box">
         <h3 id="settle-title"></h3>
         <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()" data-i18n="btn_finalize">FINALIZE</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')" data-i18n="btn_cancel">Cancel</button>
     </div>
 </div>
 
@@ -184,13 +182,62 @@
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-    // SZÓTÁR DEFINÍCIÓ
     const translations = {
-        en: { nav_markets: "Markets", nav_history: "History", nav_wallet: "Wallet", nav_account: "Account", live_markets: "Live Markets", btn_create: "+ Create", settled_markets: "Settled Markets", acc_user: "Username", logout: "LOG OUT", hu_restriction: "⚠️ Crypto services restricted in your region." },
-        hu: { nav_markets: "Piacok", nav_history: "Előzmények", nav_wallet: "Tárca", nav_account: "Fiók", live_markets: "Élő Piacok", btn_create: "+ Létrehozás", settled_markets: "Lezárt Piacok", acc_user: "Felhasználónév", logout: "KIJELENTKEZÉS", hu_restriction: "⚠️ Magyarország területéről a funkció korlátozott." },
-        de: { nav_markets: "Märkte", nav_history: "Verlauf", nav_wallet: "Brieftasche", nav_account: "Konto", live_markets: "Live-Märkte", btn_create: "+ Erstellen", settled_markets: "Abgeschlossen", acc_user: "Nutzername", logout: "AUSLOGGEN", hu_restriction: "⚠️ Kryptodienste eingeschränkt." },
-        ru: { nav_markets: "Рынки", nav_history: "История", nav_wallet: "Кошелек", nav_account: "Аккаунт", live_markets: "Живые рынки", btn_create: "+ Создать", settled_markets: "Завершенные", acc_user: "Имя пользователя", logout: "ВЫЙТИ", hu_restriction: "⚠️ Ограничено в вашем регионе." },
-        zh: { nav_markets: "市场", nav_history: "历史", nav_wallet: "钱包", nav_account: "账户", live_markets: "进行中", btn_create: "+ 创建", settled_markets: "已结束", acc_user: "用户名", logout: "登出", hu_restriction: "⚠️ 您所在的地区受限。" }
+        en: { 
+            nav_markets: "Markets", nav_history: "History", nav_wallet: "Wallet", nav_account: "Account", 
+            live_markets: "Live Markets", btn_create: "+ Create", settled_markets: "Settled Markets", 
+            acc_profile: "Account Profile", acc_user: "Username", acc_email: "Email Address", acc_id: "Account ID", 
+            logout: "LOG OUT", hu_restriction: "⚠️ Crypto services restricted in your region.",
+            daily_box: "Daily Mystery Box", btn_luck: "TRY MY LUCK", btn_cancel: "Cancel",
+            modal_new_market: "New Market", btn_publish: "PUBLISH", btn_add_cat: "+ Add Category",
+            btn_add_opt: "+ Add Option", ph_event_name: "Event Name", ph_pool: "Initial Liquidity Pool",
+            ph_cat_name: "Category Name", ph_outcome: "Outcome", btn_place_bet: "PLACE BET",
+            btn_finalize: "FINALIZE", ready_roll: "Ready to roll!", avail_in: "Available in: "
+        },
+        hu: { 
+            nav_markets: "Piacok", nav_history: "Előzmények", nav_wallet: "Tárca", nav_account: "Fiók", 
+            live_markets: "Élő Piacok", btn_create: "+ Létrehozás", settled_markets: "Lezárt Piacok", 
+            acc_profile: "Fiók adatok", acc_user: "Felhasználónév", acc_email: "Email cím", acc_id: "Fiók azonosító", 
+            logout: "KIJELENTKEZÉS", hu_restriction: "⚠️ Magyarország területéről a funkció korlátozott.",
+            daily_box: "Napi Szerencsedoboz", btn_luck: "SZERENCSE PRÓBA", btn_cancel: "Mégse",
+            modal_new_market: "Új Piac", btn_publish: "KÖZZÉTÉTEL", btn_add_cat: "+ Kategória",
+            btn_add_opt: "+ Opció", ph_event_name: "Esemény neve", ph_pool: "Kezdő likviditás",
+            ph_cat_name: "Kategória neve", ph_outcome: "Kimenetel", btn_place_bet: "FOGADÁS",
+            btn_finalize: "VÉGLEGESÍTÉS", ready_roll: "Pörgetésre kész!", avail_in: "Elérhető: "
+        },
+        de: { 
+            nav_markets: "Märkte", nav_history: "Verlauf", nav_wallet: "Brieftasche", nav_account: "Konto", 
+            live_markets: "Live-Märkte", btn_create: "+ Erstellen", settled_markets: "Abgeschlossen", 
+            acc_profile: "Kontoprofil", acc_user: "Nutzername", acc_email: "E-Mail-Adresse", acc_id: "Konto-ID", 
+            logout: "AUSLOGGEN", hu_restriction: "⚠️ Kryptodienste eingeschränkt.",
+            daily_box: "Tägliche Mystery Box", btn_luck: "GLÜCK VERSUCHEN", btn_cancel: "Abbrechen",
+            modal_new_market: "Neuer Markt", btn_publish: "VERÖFFENTLICHEN", btn_add_cat: "+ Kategorie",
+            btn_add_opt: "+ Option", ph_event_name: "Ereignisname", ph_pool: "Initialer Pool",
+            ph_cat_name: "Kategoriename", ph_outcome: "Ergebnis", btn_place_bet: "WETTE PLATZIEREN",
+            btn_finalize: "ABSCHLIESSEN", ready_roll: "Bereit!", avail_in: "Verfügbar in: "
+        },
+        ru: { 
+            nav_markets: "Рынки", nav_history: "История", nav_wallet: "Кошелек", nav_account: "Аккаунт", 
+            live_markets: "Живые рынки", btn_create: "+ Создать", settled_markets: "Завершенные", 
+            acc_profile: "Профиль", acc_user: "Имя пользователя", acc_email: "Email", acc_id: "ID Аккаунта", 
+            logout: "ВЫЙТИ", hu_restriction: "⚠️ Ограничено в вашем регионе.",
+            daily_box: "Ежедневный бокс", btn_luck: "УДАЧИ", btn_cancel: "Отмена",
+            modal_new_market: "Новый рынок", btn_publish: "ОПУБЛИКОВАТЬ", btn_add_cat: "+ Категория",
+            btn_add_opt: "+ Опция", ph_event_name: "Название", ph_pool: "Ликвидность",
+            ph_cat_name: "Название категории", ph_outcome: "Результат", btn_place_bet: "СТАВКА",
+            btn_finalize: "ЗАВЕРШИТЬ", ready_roll: "Готов!", avail_in: "Доступно через: "
+        },
+        zh: { 
+            nav_markets: "市场", nav_history: "历史", nav_wallet: "钱包", nav_account: "账户", 
+            live_markets: "进行中", btn_create: "+ 创建", settled_markets: "已结束", 
+            acc_profile: "账户详情", acc_user: "用户名", acc_email: "电子邮箱", acc_id: "账户ID", 
+            logout: "登出", hu_restriction: "⚠️ 您所在的地区受限。",
+            daily_box: "每日神秘宝箱", btn_luck: "试试手气", btn_cancel: "取消",
+            modal_new_market: "新建市场", btn_publish: "发布", btn_add_cat: "+ 添加类别",
+            btn_add_opt: "+ 添加选项", ph_event_name: "活动名称", ph_pool: "初始流动池",
+            ph_cat_name: "类别名称", ph_outcome: "选项内容", btn_place_bet: "确认下注",
+            btn_finalize: "结算完成", ready_roll: "可以开启！", avail_in: "剩余时间: "
+        }
     };
 
     let currentUser = JSON.parse(localStorage.getItem("user"));
@@ -201,24 +248,31 @@
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        updatePageText(); // Kezdéskor nyelv betöltése
         await fetchProfile();
+        updatePageText(); 
         loadMarkets();
         checkIP();
         setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
     };
 
-    // NYELV KEZELŐ FÜGGVÉNYEK
     function updatePageText() {
         const lang = localStorage.getItem('selectedLang') || 'en';
         const flag = localStorage.getItem('selectedFlag') || '🇬🇧';
         document.getElementById('active-lang').innerText = lang.toUpperCase();
         document.getElementById('active-flag').innerText = flag;
         const t = translations[lang];
+        
+        // Szövegek cseréje
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (t[key]) el.innerText = t[key];
+        });
+
+        // Placeholder-ek cseréje
+        document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+            const key = el.getAttribute('data-i18n-ph');
+            if (t[key]) el.placeholder = t[key];
         });
     }
 
@@ -226,10 +280,19 @@
         localStorage.setItem('selectedLang', lang);
         localStorage.setItem('selectedFlag', flag);
         updatePageText();
+        // Ha nyitva van a létrehozás modal, frissítsük az ottani elemeket is
+        if (!document.getElementById('createModal').classList.contains('hidden')) {
+             document.querySelectorAll('#groups-container input').forEach(input => {
+                if (input.classList.contains('gt')) input.placeholder = translations[lang].ph_cat_name;
+                if (input.classList.contains('on')) input.placeholder = translations[lang].ph_outcome;
+             });
+             document.querySelectorAll('#groups-container button').forEach(btn => {
+                if (btn.innerText.includes('+')) btn.innerText = translations[lang].btn_add_opt;
+             });
+        }
     }
 
-    // --- AZ EREDETI LOGIKA INNENTŐL VÁLTOZATLAN ---
-
+    // IP ellenőrzés
     async function checkIP() {
         try {
             const res = await fetch('https://ipapi.co/json/');
@@ -250,21 +313,20 @@
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
-        
         updateCreateBalanceDisplay();
         updateRewardUI();
-
-        if(typeof loadSavedBTC === 'function') {
-            loadSavedBTC(data.btc_address);
-        }
+        if(typeof loadSavedBTC === 'function') { loadSavedBTC(data.btc_address); }
     }
 
     function updateRewardUI() {
         const msg = document.getElementById('reward-msg');
         const btn = document.getElementById('btn-claim-reward');
         if (!userProfile) return;
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        const t = translations[lang];
+
         if (!userProfile.last_claim) {
-            msg.innerText = "Ready to roll!";
+            msg.innerText = t.ready_roll;
             btn.disabled = false; btn.style.opacity = "1";
             return;
         }
@@ -275,11 +337,11 @@
             const h = Math.floor(diff / (1000 * 60 * 60));
             const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const s = Math.floor((diff % (1000 * 60)) / 1000);
-            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
+            msg.innerText = `${t.avail_in}${h}h ${m}m ${s}s`;
             msg.style.color = "var(--danger)";
             btn.disabled = true; btn.style.opacity = "0.5";
         } else {
-            msg.innerText = "Ready to roll!";
+            msg.innerText = t.ready_roll;
             msg.style.color = "var(--success)";
             btn.disabled = false; btn.style.opacity = "1";
         }
@@ -303,7 +365,7 @@
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
             const isExpired = new Date(m.deadline) < new Date();
-            const dlString = new Date(m.deadline).toLocaleString('hu-HU');
+            const dlString = new Date(m.deadline).toLocaleString();
 
             if(m.status === 'active') {
                 const card = document.createElement('div');
@@ -325,7 +387,6 @@
                 const card = document.createElement('div'); 
                 card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                
                 card.innerHTML = `
                     <div class="settled-badge">Settled</div>
                     <div class="history-type" style="color:${typeColor}">${m.type}</div>
@@ -333,11 +394,7 @@
                         <div>
                             <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
                                 <h2 style="margin:0;">${m.title}</h2>
-                                <span style="color:var(--success); font-weight:bold; font-size:14px;">• Settled at: ${sDate.toLocaleString()}</span>
-                            </div>
-                            <div style="margin-top:8px;">
-                                <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small> | 
-                                <small style="color:#888;">Deadline: ${dlString}</small>
+                                <span style="color:var(--success); font-weight:bold; font-size:14px;">• ${sDate.toLocaleString()}</span>
                             </div>
                         </div>
                     </div>
@@ -354,18 +411,23 @@
     }
 
     function addGroup() {
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        const t = translations[lang];
         const id = "g-" + Date.now();
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
         const isFirst = document.getElementById('groups-container').children.length === 0;
         d.innerHTML = `${!isFirst ? `<button onclick="this.parentElement.remove()" style="position:absolute;right:10px;top:10px;background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : ''}
-            <input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
-        document.getElementById('groups-container').appendChild(d); addO(id); addO(id);
+            <input class="gt" placeholder="${t.ph_cat_name}"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">${t.btn_add_opt}</button>`;
+        document.getElementById('groups-container').appendChild(d); 
+        addO(id); addO(id);
     }
 
     function addO(groupId) {
+        const lang = localStorage.getItem('selectedLang') || 'en';
+        const t = translations[lang];
         const cont = document.getElementById('o-cont-' + groupId);
         const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
+        d.innerHTML = `<input class="on" placeholder="${t.ph_outcome}"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
         cont.appendChild(d);
     }
 
@@ -431,21 +493,18 @@
                 if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
             });
         });
-
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
         const pool = parseFloat(mData.take);
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
         const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-        
         if (host && pool > 0) await _supabase.from('profiles').update({ [field]: host[field] + pool }).eq('id', host.id);
-        
         await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winners.join(", "), start_time: new Date().toISOString() }).eq('id', currentSettleId);
         await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
         location.reload();
     }
 
     async function claimDailyDemo() {
-        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("Várj 24 órát!");
+        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("24h wait!");
         const win = Math.floor(Math.random() * 8000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
         document.getElementById('reward-msg').innerText = "WON " + win + " D!"; fetchProfile();
@@ -459,7 +518,7 @@
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
+    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); updatePageText(); }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 </script>
 </body>
