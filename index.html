@@ -41,6 +41,8 @@
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
         .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
+        input.invalid { border-color: var(--danger) !important; background: rgba(255, 68, 68, 0.05); }
+        .error-hint { color: var(--danger); font-size: 11px; font-weight: bold; margin-bottom: 10px; display: none; }
         .hidden { display: none !important; }
 
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
@@ -129,6 +131,7 @@
             <h3>New Market</h3>
             <span id="create-balance-display" style="font-size:12px; font-weight:bold; color:var(--primary)">Balance: 0.00</span>
         </div>
+        <div id="create-error-msg" class="error-hint">Please fill all fields or remove empty rows!</div>
         <select id="m-type" onchange="updateCreateBalanceDisplay()">
             <option value="DEMO">DEMO</option>
             <option value="REAL">REAL</option>
@@ -242,7 +245,6 @@
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
         
-        // Fontos: Itt kinyerjük az admin státuszt
         const isAdmin = userProfile && userProfile.role === 'admin';
 
         markets.forEach(m => {
@@ -250,6 +252,7 @@
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
             const dlDate = new Date(m.deadline);
+            const dlString = dlDate.toLocaleString('hu-HU', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
             const isExpired = dlDate < new Date();
 
             if(m.status === 'active') {
@@ -260,7 +263,7 @@
                         <div>
                             <h2 style="margin:0;">${m.title}</h2>
                             <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small><br>
-                            <small style="color:var(--danger); font-weight:bold;">Ends: ${dlDate.toLocaleString()}</small>
+                            <small style="color:var(--danger); font-weight:bold;">Ends: ${dlString}</small>
                         </div>
                         <div style="display:flex; gap:10px;">
                             ${isAdmin ? `<button onclick="viewAllBets('${m.id}','${m.title}')" class="btn-bet" style="width:auto; border-color:var(--primary); color:var(--primary)">🔍 BETS</button>` : ''}
@@ -272,12 +275,23 @@
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                const card = document.createElement('div'); card.className = 'market-card';
-                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-top:15px;">
-                        <h2>${m.title} - ${sDate.toLocaleString()}</h2>
-                        <button onclick="viewAllBets('${m.id}','${m.title}')" class="btn-bet" style="width:auto; border-color:var(--success); color:var(--success)">🔍 VIEW ALL BETS</button>
+                const card = document.createElement('div'); 
+                card.className = 'market-card';
+                const sDate = m.start_time ? new Date(m.start_time).toLocaleString('hu-HU') : "N/A";
+                
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <div class="history-type" style="color:${typeColor}">${m.type}</div>
+                    <div class="market-header" style="margin-top:15px;">
+                        <div>
+                            <h2 style="margin:0;">${m.title}</h2>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.stake).toFixed(2)} ${symbol}</b></small><br>
+                            <small style="color:var(--success); font-weight:bold;">Closed at: ${sDate}</small><br>
+                            <small style="color:#888;">Original Deadline: ${dlString}</small>
+                        </div>
+                        <div>
+                            <button onclick="viewAllBets('${m.id}','${m.title}')" class="btn-bet" style="width:auto; border-color:var(--success); color:var(--success)">🔍 VIEW ALL BETS</button>
+                        </div>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
@@ -332,31 +346,86 @@
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
         const isFirst = document.getElementById('groups-container').children.length === 0;
         d.innerHTML = `${!isFirst ? `<button onclick="this.parentElement.remove()" style="position:absolute;right:10px;top:10px;background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : ''}
-            <input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
+            <input class="gt" placeholder="Category Name" oninput="this.classList.remove('invalid')">
+            <div id="o-cont-${id}"></div>
+            <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
         document.getElementById('groups-container').appendChild(d); addO(id); addO(id);
     }
 
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
         const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
+        d.innerHTML = `<input class="on" placeholder="Outcome" oninput="this.classList.remove('invalid')">
+                       <input class="oo" type="number" step="0.1" value="2.0" style="width:70px">
+                       ${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
         cont.appendChild(d);
     }
 
     async function saveMarket() {
-        const t = document.getElementById('m-name').value;
-        const b = parseFloat(document.getElementById('m-budget').value);
-        const dl = document.getElementById('m-deadline').value;
+        // Reset vizuális hibák
+        document.querySelectorAll('#createModal input').forEach(i => i.classList.remove('invalid'));
+        document.getElementById('create-error-msg').style.display = 'none';
+
+        const t = document.getElementById('m-name');
+        const b = document.getElementById('m-budget');
+        const dl = document.getElementById('m-deadline');
         const type = document.getElementById('m-type').value;
-        if(!dl || isNaN(b) || b <= 0) return alert("Helytelen adatok!");
+
+        let hasError = false;
+
+        // Alapadatok validálása
+        if(!t.value) { t.classList.add('invalid'); hasError = true; }
+        if(!dl.value) { dl.classList.add('invalid'); hasError = true; }
+        if(!b.value || parseFloat(b.value) <= 0) { b.classList.add('invalid'); hasError = true; }
+
+        // Kategóriák és kimenetelek validálása
+        const groups = [];
+        const groupElements = document.querySelectorAll('#groups-container .market-group');
+        
+        if(groupElements.length === 0) {
+            hasError = true;
+        }
+
+        groupElements.forEach(g => {
+            const titleInput = g.querySelector('.gt');
+            if(!titleInput.value) { titleInput.classList.add('invalid'); hasError = true; }
+
+            const outcomes = [];
+            const outcomeRows = g.querySelectorAll('div[id^="o-cont-"] > div');
+            outcomeRows.forEach(row => {
+                const nameInput = row.querySelector('.on');
+                const oddsInput = row.querySelector('.oo');
+                if(!nameInput.value) { nameInput.classList.add('invalid'); hasError = true; }
+                outcomes.push({ n: nameInput.value, o: parseFloat(oddsInput.value), status: 'pending' });
+            });
+
+            groups.push({ title: titleInput.value, outcomes });
+        });
+
+        if(hasError) {
+            document.getElementById('create-error-msg').style.display = 'block';
+            return;
+        }
+
+        const budVal = parseFloat(b.value);
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return alert("Nincs elég fedezet!");
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
-            title: g.querySelector('.gt').value,
-            outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
-        }));
-        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
+        if(budVal > userProfile[balField]) {
+            alert("Nincs elég fedezet!");
+            return;
+        }
+
+        // Mentés
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - budVal }).eq('id', currentUser.id);
+        await _supabase.from('markets').insert([{ 
+            title: t.value, 
+            type, 
+            take: budVal, 
+            stake: budVal, 
+            deadline: new Date(dl.value).toISOString(), 
+            note: JSON.stringify(groups), 
+            creator_name: currentUser.username, 
+            status: 'active' 
+        }]);
         location.reload();
     }
 
@@ -446,7 +515,11 @@
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
+    function openCreateModal() { 
+        document.getElementById('createModal').classList.remove('hidden'); 
+        if(!document.getElementById('groups-container').innerHTML) addGroup(); 
+        document.getElementById('create-error-msg').style.display = 'none';
+    }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 </script>
 </body>
