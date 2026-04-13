@@ -91,6 +91,9 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
+
+            <div id="btc-wallet-area"></div>
+
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
                 <div id="reward-msg"></div>
@@ -106,14 +109,7 @@
                 <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
                 
-                <p style="margin:5px 0; color:#aaa">Bitcoin Address (Withdrawal)</p>
-                <div style="display:flex; gap:10px;">
-                    <input id="acc-btc" placeholder="bc1q..." style="margin:0; font-size:12px;">
-                    <button class="btn-create" onclick="saveBTCAddress()">SAVE</button>
-                </div>
-                <p id="btc-status" style="font-size:10px; margin-top:5px; min-height:12px;"></p>
-
-                <p style="margin:5px 0; color:#aaa; margin-top:15px;">Email Address</p>
+                <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
                 <p style="margin:5px 0; color:#aaa">Account ID</p>
                 <p id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">-</p>
@@ -208,8 +204,8 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        // Bitcoin cím betöltése, ha létezik
-        if(data.btc_address && typeof loadSavedBTC === 'function') {
+        // Meghívjuk a bitcoin.js ellenőrzőjét
+        if(typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
         }
     }
