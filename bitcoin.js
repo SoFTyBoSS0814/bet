@@ -1,79 +1,44 @@
 /**
- * STAKEFORGE - BTC Module (Emergency Fix)
+ * STAKEFORGE - BTC Module (Fix: Balance Check & Original Style)
  */
 
 async function checkIPAndRenderWallet() {
     const walletContainer = document.getElementById('btc-wallet-area');
     if (!walletContainer) return;
 
-    console.log("BTC Modul: Kényszerített indítás...");
-
-    // 1. Megvárjuk a user adatokat, de max 5 másodpercig
-    let attempts = 0;
-    const waitForData = setInterval(async () => {
-        attempts++;
-        const dataReady = typeof currentUser !== 'undefined' && currentUser !== null;
-        
-        if (dataReady) {
-            clearInterval(waitForData);
-            await startBtcProcess(walletContainer);
-        } else if (attempts > 10) { 
-            clearInterval(waitForData);
-            // Ha nincs adat, megpróbáljuk beolvasni a tárolt session-ből
-            const session = JSON.parse(localStorage.getItem('sb-token') || '{}');
-            if (session.user) {
-                window.currentUser = session.user;
-                await startBtcProcess(walletContainer);
-            } else {
-                walletContainer.innerHTML = "<p style='color:orange;'>Kérlek jelentkezz be!</p>";
-            }
-        }
-    }, 500);
-}
-
-async function startBtcProcess(walletContainer) {
-    // Először renderelünk egy "Betöltés" állapotot, hogy ne legyen üres a helye
-    walletContainer.innerHTML = "<p style='color:var(--primary);'>Wallet inicializálása...</p>";
-
-    let country = "ALLOW"; // Alapértelmezett: engedélyezve
-
-    try {
-        // Gyors IP csekk, ha 2 mp alatt nem válaszol, átugorjuk
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-        const res = await fetch('https://ipapi.co/json/', { signal: controller.signal }).catch(() => null);
-        if (res) {
-            const ipData = await res.json();
-            country = ipData.country_code;
-        }
-        clearTimeout(timeoutId);
-    } catch (e) {
-        console.log("IP ellenőrzés kihagyva (VPN/Timeout).");
-    }
-
-    // Csak akkor blokkolunk, ha fixen HU-t kaptunk vissza
-    if (country === 'HU') {
-        walletContainer.innerHTML = `
-            <div style="padding:15px; border:1px solid #ff4646; background:rgba(255,70,70,0.1); border-radius:8px; text-align:center;">
-                <p style="color:#ff4646; font-size:12px; font-weight:bold; margin:0;">⚠️ Szolgáltatás HU területén korlátozva.</p>
-            </div>`;
+    // Várunk a profil adatokra
+    if (typeof userProfile === 'undefined' || !userProfile || typeof currentUser === 'undefined') {
+        setTimeout(() => checkIPAndRenderWallet(), 500);
         return;
     }
 
-    // Cím biztosítása
-    await forceGetAddress();
-    
-    // Panel megjelenítése
-    renderCryptoCard(walletContainer);
+    try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        
+        // IP Ellenőrzés
+        if (data.country_code === 'HU') {
+            walletContainer.innerHTML = `<p style="color:var(--danger); font-size:13px; margin-top:15px; font-weight:bold;">⚠️ Funkciók korlátozva (HU).</p>`;
+            return;
+        }
+
+        // Ha nincs címe, kérünk egyet a poolból
+        if (!userProfile.btc_address) {
+            await grabAddressFromPool();
+        }
+
+        renderCryptoCard(walletContainer);
+        
+    } catch (e) {
+        // Ha az IP API elszáll (VPN miatt), akkor is próbáljuk megmutatni a kártyát
+        if (typeof currentUser !== 'undefined') renderCryptoCard(walletContainer);
+        console.error("Hiba a betöltéskor:", e);
+    }
 }
 
-async function forceGetAddress() {
+async function grabAddressFromPool() {
     try {
-        // Ellenőrizzük a profilban
-        if (typeof userProfile !== 'undefined' && userProfile.btc_address) return;
-
-        // Ellenőrizzük a btc_pool táblában
+        // Megnézzük, van-e már címe
         const { data: entry } = await _supabase
             .from('btc_pool')
             .select('address')
@@ -81,12 +46,12 @@ async function forceGetAddress() {
             .maybeSingle();
 
         if (entry) {
-            if (typeof userProfile !== 'undefined') userProfile.btc_address = entry.address;
+            userProfile.btc_address = entry.address;
             return;
         }
 
-        // Ha nincs, foglalunk egyet
-        const { data: assigned } = await _supabase
+        // Ha nincs, foglalunk újat
+        const { data: target } = await _supabase
             .from('btc_pool')
             .update({ is_allocated: true, user_id: currentUser.id })
             .eq('is_allocated', false)
@@ -95,50 +60,98 @@ async function forceGetAddress() {
             .limit(1)
             .maybeSingle();
 
-        if (assigned && typeof userProfile !== 'undefined') {
-            userProfile.btc_address = assigned.address;
-            await _supabase.from('profiles').update({ btc_address: assigned.address }).eq('id', currentUser.id);
+        if (target) {
+            userProfile.btc_address = target.address;
+            await _supabase.from('profiles').update({ btc_address: target.address }).eq('id', currentUser.id);
         }
     } catch (err) {
-        console.error("Cím hiba:", err);
+        console.error("Pool hiba:", err);
     }
 }
 
 function renderCryptoCard(container) {
-    const btcAddr = (typeof userProfile !== 'undefined' && userProfile.btc_address) ? userProfile.btc_address : "Cím nem található.";
+    const btcAddr = userProfile.btc_address || "Nincs elérhető cím.";
     
     container.innerHTML = `
-        <div class="market-card" style="border: 1px solid var(--primary); background: rgba(0,212,255,0.05); padding:15px; border-radius:10px;">
-            <h4 style="color:var(--primary); margin:0 0 10px 0;">Bitcoin Deposit</h4>
-            <div onclick="navigator.clipboard.writeText('${btcAddr}'); alert('Másolva!');" style="cursor:pointer; background:#000; padding:12px; border-radius:5px; border: 1px dashed var(--primary); word-break:break-all; font-family:monospace; font-size:11px; color:var(--primary);">
+        <div class="market-card" style="border: 1px solid var(--primary); background: rgba(0,212,255,0.05); margin-top:20px; text-align:left;">
+            <h4 style="color:var(--primary); margin-top:0;">BTC Deposit/Withdraw Panel</h4>
+            
+            <p style="font-size:13px; margin-bottom:5px; color:#aaa;">Your Personal BTC Deposit Address:</p>
+            <code style="display:block; background:#000; padding:10px; border-radius:5px; word-break:break-all; font-size:11px; color:var(--primary); border: 1px dashed var(--primary)">
                 ${btcAddr}
-            </div>
-            <p style="font-size:10px; color:#aaa; margin-top:5px; text-align:center;">Kattints a másoláshoz</p>
+            </code>
             
-            <hr style="border:0; border-top:1px solid #333; margin:15px 0;">
+            <hr style="border:0; border-top:1px solid var(--border); margin:20px 0;">
             
-            <input type="number" id="w-amt" placeholder="Összeg (€)" style="width:100%; margin-bottom:8px; padding:8px; background:#111; border:1px solid #333; color:#fff; font-size:13px;">
-            <input type="text" id="w-adr" placeholder="Saját BTC címed" style="width:100%; margin-bottom:12px; padding:8px; background:#111; border:1px solid #333; color:#fff; font-size:13px;">
-            <button class="btn-primary" onclick="processWithdraw()" style="width:100%; font-size:13px; padding:10px;">WITHDRAW</button>
+            <h4 style="margin-bottom:10px;">Withdraw Funds</h4>
+            <small style="color:#aaa">Amount (€)</small>
+            <input type="number" id="withdraw-amount" placeholder="0.00" style="margin-bottom:10px;">
+            
+            <small style="color:#aaa">Target BTC Wallet Address</small>
+            <input type="text" id="withdraw-dest" placeholder="bc1q..." style="margin-bottom:10px;">
+            
+            <button class="btn-primary" id="withdraw-btn">REQUEST WITHDRAWAL</button>
+            <p id="withdraw-status" style="font-size:12px; margin-top:10px;"></p>
         </div>
     `;
+
+    const btn = document.getElementById('withdraw-btn');
+    if (btn) btn.onclick = handleWithdrawRequest;
 }
 
-async function processWithdraw() {
-    const amt = parseFloat(document.getElementById('w-amt').value);
-    const adr = document.getElementById('w-adr').value.trim();
-    if(!amt || !adr) return alert("Hiányzó adatok!");
-    
-    const { error } = await _supabase.from('withdrawals').insert([{
-        user_id: currentUser.id,
-        amount: amt,
-        btc_address: adr,
-        status: 'pending'
-    }]);
+async function handleWithdrawRequest() {
+    const amountInput = document.getElementById('withdraw-amount');
+    const destInput = document.getElementById('withdraw-dest');
+    const status = document.getElementById('withdraw-status');
 
-    if(error) alert("Hiba: " + error.message);
-    else { alert("Kérelem rögzítve!"); location.reload(); }
+    const amount = parseFloat(amountInput.value);
+    const dest = destInput.value.trim();
+
+    // 1. Üres mezők ellenőrzése
+    if (isNaN(amount) || amount <= 0 || !dest) {
+        return alert("Kérlek adj meg minden adatot!");
+    }
+
+    // 2. EGYENLEG ELLENŐRZÉSE (Ez hiányzott!)
+    if (amount > userProfile.real_balance) {
+        status.innerText = "❌ Nincs elég egyenleged! (Elérhető: " + userProfile.real_balance.toFixed(2) + " €)";
+        status.style.color = "var(--danger)";
+        return; // Itt megáll a kód, nem küldi el a kérelmet!
+    }
+
+    try {
+        status.innerText = "Processing...";
+        status.style.color = "var(--primary)";
+
+        // 3. Kérelem rögzítése
+        const { error: insErr } = await _supabase.from('withdrawals').insert([{
+            user_id: currentUser.id,
+            username: userProfile.username || 'user',
+            amount: amount,
+            btc_address: dest,
+            status: 'pending'
+        }]);
+
+        if (insErr) throw insErr;
+
+        // 4. Egyenleg levonása a profilból
+        const newBal = userProfile.real_balance - amount;
+        await _supabase.from('profiles').update({ real_balance: newBal }).eq('id', currentUser.id);
+
+        // UI frissítés
+        userProfile.real_balance = newBal;
+        if (document.getElementById("nav-real")) document.getElementById("nav-real").innerText = newBal.toFixed(2) + " €";
+
+        status.innerText = "✅ Withdrawal request sent!";
+        status.style.color = "var(--success)";
+        amountInput.value = "";
+        destInput.value = "";
+
+    } catch (err) {
+        status.innerText = "❌ Error: " + err.message;
+        status.style.color = "var(--danger)";
+    }
 }
 
-// Futás!
+// Inicializálás
 checkIPAndRenderWallet();
