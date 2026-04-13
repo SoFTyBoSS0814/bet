@@ -74,7 +74,7 @@ function renderCryptoCard(container) {
     
     container.innerHTML = `
         <div class="market-card" style="border: 1px solid var(--primary); background: rgba(0,212,255,0.05); margin-top:20px; text-align:left;">
-            <h4 style="color:var(--primary); margin-top:0;">Secure Crypto Gateway</h4>
+            <h4 style="color:var(--primary); margin-top:0;">BTC Deposit/Withdraw Panel</h4>
             
             <p style="font-size:13px; margin-bottom:5px; color:#aaa;">Your Personal BTC Deposit Address:</p>
             <code style="display:block; background:#000; padding:10px; border-radius:5px; word-break:break-all; font-size:11px; color:var(--primary); border: 1px dashed var(--primary)">
@@ -131,7 +131,7 @@ async function handleWithdrawRequest() {
         document.getElementById("nav-real").innerText = newBal.toFixed(2) + " €";
         document.getElementById("w-real").innerText = newBal.toFixed(2) + " €";
 
-        status.innerText = "✅ Withdrawal request sent!";
+        status.innerText = "✅ Withdrawal request sent! ";
         status.style.color = "var(--success)";
         document.getElementById('withdraw-amount').value = "";
     } catch (err) {
