@@ -232,7 +232,7 @@
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
-            const currency = m.type === 'REAL' ? '€' : 'D';
+            const currencySymbol = m.type === 'REAL' ? '€' : 'D';
             const isExpired = new Date(m.deadline) < new Date();
 
             if(m.status === 'active') {
@@ -242,7 +242,7 @@
                     <div class="market-header">
                         <div>
                             <h2 style="margin:0;">${m.title}</h2>
-                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Available Pool: ${parseFloat(m.take).toFixed(2)} ${currency}</b> | Deadline: ${new Date(m.deadline).toLocaleString()}</small>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Available Pool: ${parseFloat(m.take).toFixed(2)} ${currencySymbol}</b> | Deadline: ${new Date(m.deadline).toLocaleString()}</small>
                         </div>
                         ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
@@ -258,16 +258,16 @@
                 card.className = 'market-card';
                 
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                const formattedSettledDate = `${sDate.getFullYear()}/${String(sDate.getMonth() + 1).padStart(2, '0')}/${String(sDate.getDate()).padStart(2, '0')} ${String(sDate.getHours()).padStart(2, '0')}:${String(sDate.getMinutes()).padStart(2, '0')}:${String(sDate.getSeconds()).padStart(2, '0')}`;
+                const formattedDate = `${sDate.getFullYear()}/${String(sDate.getMonth() + 1).padStart(2, '0')}/${String(sDate.getDate()).padStart(2, '0')} ${String(sDate.getHours()).padStart(2, '0')}:${String(sDate.getMinutes()).padStart(2, '0')}:${String(sDate.getSeconds()).padStart(2, '0')}`;
 
                 card.innerHTML = `
                     <div class="settled-badge">Settled</div>
                     <div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <div style="margin-top:15px;">
-                        <h2 style="margin:0;">${m.title} <span style="color:#666; font-size:14px; font-weight:normal; margin-left:10px;">- Settled - ${formattedSettledDate}</span></h2>
+                        <h2 style="margin:0;">${m.title} - Settled - ${formattedDate}</h2>
                         <div style="margin-top:8px; font-size:12px; color:#aaa; line-height: 1.6;">
                             <div>Host: <b>${m.creator_name}</b></div>
-                            <div>Final Pool: <b>${parseFloat(m.take).toFixed(2)} ${currency}</b></div>
+                            <div>Final Pool: <b>${parseFloat(m.take).toFixed(2)} ${currencySymbol}</b></div>
                         </div>
                     </div>
                     ${groups.map(g => `<div class="market-group">
