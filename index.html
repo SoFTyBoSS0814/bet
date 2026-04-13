@@ -24,18 +24,23 @@
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
         
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
+        /* ÚJ: Lezárt kategória stílusa */
         .market-group.settled-group { border-left-color: var(--success); opacity: 0.8; }
+        
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
-        .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; border-color: #222; }
         .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
 
-        .admin-view-btn { position: absolute; top: 15px; right: 15px; background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; z-index: 10; }
-        
+        .admin-view-btn { position: absolute; top: 15px; right: 15px; background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; z-index: 10; }
+        .admin-view-btn:hover { background: #ff1a1a; transform: scale(1.05); }
+
         .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+        .history-type { position: absolute; top: 15px; right: 15px; font-weight: 900; font-size: 14px; }
         .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
+        
         .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
         .history-item.loss-row { border-left-color: var(--danger); background: rgba(255, 68, 68, 0.1); }
 
@@ -44,6 +49,8 @@
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
         .error-hint { color: var(--danger); font-size: 12px; font-weight: bold; margin-bottom: 10px; display: none; }
         .hidden { display: none !important; }
+        
+        /* ÚJ: Wallet BTC figyelmeztetés */
         .depo-warning { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 12px; border-radius: 8px; font-size: 13px; margin: 15px 0; font-weight: bold; }
     </style>
 </head>
@@ -88,25 +95,35 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-            <div class="depo-warning">Min. deposit: 0.00025 BTC (~15€). Az ez alatti összegek nem kerülnek jóváírásra a hálózati költségek miatt!</div>
-            <button class="btn-primary" onclick="claimDailyDemo()" style="background:var(--demo); color:#000;">CLAIM DAILY REWARD</button>
+            <div class="depo-warning">Min. deposit: 0.00025 BTC (~15€). Az ez alatti összegekért nem vállalunk felelősséget!</div>
+            <button class="btn-primary" onclick="claimDailyDemo()">Daily Demo Reward</button>
         </div>
     </div>
 
     <div id="section-account" class="section">
         <div class="market-card" style="max-width:450px; margin:auto; text-align:center;">
-            <h2>Account Profile</h2>
-            <p id="acc-username" style="font-weight:bold; font-size:20px; margin-bottom:5px;"></p>
-            <p id="acc-id" style="color:#888; font-size:12px; font-family:monospace;"></p>
-            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); margin-top:20px; font-weight:bold;">LOG OUT</button>
+            <h2>Account</h2>
+            <p id="acc-username" style="font-weight:bold; font-size:20px;"></p>
+            <p id="acc-id" style="color:#888; font-size:12px;"></p>
+            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); margin-top:20px;">LOG OUT</button>
         </div>
+    </div>
+</div>
+
+<div id="betModal" class="modal hidden">
+    <div class="modal-box" style="width:320px; text-align:center">
+        <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
+        <input type="number" id="bet-amount" value="10" oninput="calcWin()">
+        <p id="bet-win-text">Payout: 0.00</p>
+        <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
     </div>
 </div>
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
         <h3>New Market</h3>
-        <p id="create-error-msg" class="error-hint">⚠️ Minden mezőt tölts ki!</p>
+        <p id="create-error-msg" class="error-hint">⚠️ Minden mezőt tölts ki! Az üres kategóriákat töröld ki!</p>
         <select id="m-type">
             <option value="DEMO">DEMO</option>
             <option value="REAL">REAL</option>
@@ -123,10 +140,10 @@
 
 <div id="settleModal" class="modal hidden">
     <div class="modal-box">
-        <h3 id="settle-title">Manage Settle</h3>
+        <h3 id="settle-title"></h3>
         <p id="settle-error-msg" class="error-hint"></p>
         <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="saveSettleState()">SAVE & UPDATE PAYOUTS</button>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">SAVE & SETTLE</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
     </div>
 </div>
@@ -138,6 +155,7 @@
 
     let currentUser = JSON.parse(localStorage.getItem("user"));
     let userProfile = null;
+    let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
 
@@ -177,41 +195,71 @@
                     <div class="market-header">
                         <div>
                             <h2 style="margin:0;">${m.title}</h2>
-                            <small style="color:#aaa">Host: ${m.creator_name} | Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            <small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
                         </div>
-                        ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">MANAGE SETTLE</button>` : ''}
+                        ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
                     ${groups.map(g => `
                         <div class="market-group ${g.isSettled ? 'settled-group' : ''}">
                             <small>${g.title} ${g.isSettled ? '✅ (Settled)' : ''}</small>
                             <div class="outcomes-grid">
                                 ${g.outcomes.map(o => `
-                                    <button class="btn-bet" ${g.isSettled ? 'disabled' : ''}>
+                                    <button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${g.isSettled ? 'disabled' : ''}>
                                         ${o.n}<br><b>${o.status === 'win' ? 'WINNER' : (o.status === 'loss' ? 'LOSS' : o.o)}</b>
                                     </button>`).join('')}
                             </div>
                         </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                const sDate = m.start_time ? new Date(m.start_time).toLocaleString('hu-HU', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : "N/A";
                 const hCard = document.createElement('div');
                 hCard.className = 'market-card';
+                // MÓDOSÍTVA: Másodpercre pontos lezárási idő
+                const sDate = m.start_time ? new Date(m.start_time).toLocaleString('hu-HU', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit'}) : "N/A";
+                const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
+
                 hCard.innerHTML = `
                     <div class="settled-badge">Settled</div>
+                    <div class="history-type" style="color:${typeColor}">${m.type}</div>
                     ${isAdmin ? `<button class="admin-view-btn" onclick="viewAllBets('${m.id}','${m.title}')">🔍 VIEW ALL BETS</button>` : ''}
                     <div class="market-header" style="margin-top:15px;">
                         <h2 style="margin:0;">${m.title} - <span style="color:var(--success);">${sDate}</span></h2>
                     </div>
-                    ${groups.map(g => `
-                        <div class="market-group settled-group"><small>${g.title}</small>
-                            ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':'loss-row'}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
-                        </div>`).join('')}`;
+                    ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
+                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
+                    </div>`).join('')}`;
                 hList.appendChild(hCard);
             }
         });
     }
 
-    async function saveSettleState() {
+    async function openSettle(mId, title) {
+        const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
+        currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
+        document.getElementById('settle-title').innerText = "Manage: " + title;
+        document.getElementById('settle-error-msg').style.display = 'none';
+        let h = '';
+        currentSettleGroups.forEach((g, gi) => {
+            h += `<div style="margin-top:15px; border-bottom:1px solid #334756; padding-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>${g.title}</strong>
+                        ${g.isSettled ? '<span style="color:var(--success)">LOCKED</span>' : '<span style="color:var(--demo)">OPEN</span>'}
+                    </div>`;
+            g.outcomes.forEach((o, oi) => {
+                h += `<div style="display:flex; justify-content:space-between; margin-top:5px; align-items:center;">
+                        <span>${o.n}</span>
+                        <select class="settle-select" data-gi="${gi}" data-oi="${oi}" ${g.isSettled ? 'disabled' : ''} style="width:120px; margin:0">
+                            <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
+                            <option value="win" ${o.status==='win'?'selected':''}>WINNER</option>
+                            <option value="loss" ${o.status==='loss'?'selected':''}>LOSS</option>
+                        </select>
+                      </div>`;
+            });
+            h += `</div>`;
+        });
+        document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
+    }
+
+    async function finalSubmitSettle() {
         const err = document.getElementById('settle-error-msg');
         err.style.display = 'none';
         
@@ -223,34 +271,41 @@
             }
         });
 
+        // ÚJ LOGIKA: Kategóriánkénti validálás
         for (let g of currentSettleGroups) {
             if (g.isSettled) continue;
-            const statuses = g.outcomes.map(o => o.status);
-            if (statuses.includes('win') || statuses.includes('loss')) {
-                if (statuses.includes('pending')) {
+            const stats = g.outcomes.map(o => o.status);
+            
+            // Ha valami meg lett változtatva a kategóriában:
+            if (stats.includes('win') || stats.includes('loss')) {
+                if (stats.includes('pending')) {
                     err.innerText = `Hiba: "${g.title}" kategóriában nem maradhat PENDING!`;
                     err.style.display = 'block'; return;
                 }
-                if (statuses.filter(s => s === 'win').length !== 1) {
-                    err.innerText = `Hiba: "${g.title}" kategóriában pontosan 1 WIN kell!`;
+                if (stats.filter(s => s === 'win').length !== 1) {
+                    err.innerText = `Hiba: "${g.title}" kategóriában pontosan 1 WINNER kell!`;
                     err.style.display = 'block'; return;
                 }
-                g.isSettled = true;
+                g.isSettled = true; // Kategória lezárása
             }
         }
 
-        const allDone = currentSettleGroups.every(g => g.isSettled);
+        const allSettled = currentSettleGroups.every(g => g.isSettled);
         const updateData = { note: JSON.stringify(currentSettleGroups) };
-        if (allDone) {
+        
+        if (allSettled) {
             updateData.status = 'settled';
             updateData.start_time = new Date().toISOString();
         }
 
         await _supabase.from('markets').update(updateData).eq('id', currentSettleId);
+        // Kifizetés meghívása a lezárt kategóriákra
         await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
+        
         location.reload();
     }
 
+    // --- TOVÁBBI FÜGGVÉNYEK (VÁLTOZATLANOK) ---
     function addGroup() {
         const id = "g-" + Date.now();
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
@@ -260,14 +315,12 @@
             <button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
         document.getElementById('groups-container').appendChild(d); addO(id); addO(id);
     }
-
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
         const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">`;
+        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px"><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>`;
         cont.appendChild(d);
     }
-
     async function saveMarket() {
         const t = document.getElementById('m-name'), b = document.getElementById('m-budget'), dl = document.getElementById('m-deadline'), type = document.getElementById('m-type').value;
         const groups = [];
@@ -282,44 +335,14 @@
         await _supabase.from('markets').insert([{ title: t.value, type, take: b.value, stake: b.value, deadline: new Date(dl.value).toISOString(), note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
-
-    async function openSettle(mId, title) {
-        const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
-        currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
-        document.getElementById('settle-title').innerText = title;
-        let html = '';
-        currentSettleGroups.forEach((g, gi) => {
-            html += `<div style="margin-top:15px"><strong>${g.title}</strong>${g.isSettled ? ' ✅' : ''}`;
-            g.outcomes.forEach((o, oi) => {
-                html += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
-                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" ${g.isSettled ? 'disabled' : ''}>
-                    <option value="pending" ${o.status==='pending'?'selected':''}>Pending</option>
-                    <option value="win" ${o.status==='win'?'selected':''}>WIN</option>
-                    <option value="loss" ${o.status==='loss'?'selected':''}>LOSS</option>
-                </select></div>`;
-            });
-            html += `</div>`;
-        });
-        document.getElementById('settle-area').innerHTML = html; document.getElementById('settleModal').classList.remove('hidden');
-    }
-
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-' + id).classList.add('active');
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById('link-' + id).classList.add('active');
-    }
+    function openBet(mId, n, o, t, dl) { activeBet = { mId, n, o, t }; document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o; document.getElementById('betModal').classList.remove('hidden'); }
+    async function placeBet() { const amt = parseFloat(document.getElementById('bet-amount').value); await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]); location.reload(); }
+    function showSection(id) { document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); document.getElementById('section-' + id).classList.add('active'); document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active')); document.getElementById('link-' + id).classList.add('active'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
-    async function viewAllBets(mId, title) {
-        const { data: bets } = await _supabase.from('bets').select('*, profiles(username)').eq('market_id', mId);
-        alert(title + " bets: \n" + bets.map(b => `${b.profiles.username}: ${b.amount} -> ${b.outcome_name}`).join("\n"));
-    }
-    async function claimDailyDemo() {
-        const win = Math.floor(Math.random() * 500) + 100;
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win }).eq('id', currentUser.id);
-        alert("Nyereményed: " + win + " D"); fetchProfile();
-    }
+    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
+    async function claimDailyDemo() { const win = 500; await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win }).eq('id', currentUser.id); alert("Kapott: 500 D"); fetchProfile(); }
 </script>
 </body>
 </html>
