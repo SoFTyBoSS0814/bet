@@ -377,13 +377,36 @@
 
     async function finalSubmitSettle() {
         let winners = [];
+        let isValid = true;
+
+        // Végigmegyünk az összes kategórián (group)
         currentSettleGroups.forEach((g, gi) => {
             const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
+            let winCount = 0;
+            let pendingCount = 0;
+
             selects.forEach(s => { 
-                currentSettleGroups[gi].outcomes[s.dataset.oi].status = s.value;
-                if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
+                const val = s.value;
+                currentSettleGroups[gi].outcomes[s.dataset.oi].status = val;
+                
+                if(val === 'win') {
+                    winCount++;
+                    winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
+                }
+                if(val === 'pending') pendingCount++;
             });
+
+            // Ellenőrzés: Pontosan 1 győztes kell, és semmi nem maradhat Pending
+            if (winCount !== 1) {
+                alert(`Hiba a(z) "${g.title}" kategóriában: Pontosan EGY győztest kell választani! (Jelenleg: ${winCount})`);
+                isValid = false;
+            } else if (pendingCount > 0) {
+                alert(`Hiba a(z) "${g.title}" kategóriában: Minden kimenetelt le kell zárni (WIN vagy LOSS)!`);
+                isValid = false;
+            }
         });
+
+        if (!isValid) return; // Ha nem valid, megállítjuk a folyamatot
 
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
         const pool = parseFloat(mData.take);
