@@ -1,149 +1,144 @@
 /**
- * STAKEFORGE - BTC Module (Fix: RLS Compatible)
+ * STAKEFORGE - BTC Module (Final Production Fix)
  */
 
 async function checkIPAndRenderWallet() {
     const walletContainer = document.getElementById('btc-wallet-area');
     if (!walletContainer) return;
 
-    // Bevárjuk a user adatokat
     if (typeof currentUser === 'undefined' || !currentUser) {
         setTimeout(() => checkIPAndRenderWallet(), 500);
         return;
     }
 
     try {
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        
-        if (data.country_code === 'HU') {
-            walletContainer.innerHTML = `<p style="color:var(--danger); font-size:13px; font-weight:bold; text-align:center;">⚠️ Szolgáltatás korlátozva (HU).</p>`;
-            return;
+        // IP Ellenőrzés
+        const res = await fetch('https://ipapi.co/json/').catch(() => null);
+        if (res) {
+            const data = await res.json();
+            if (data.country_code === 'HU') {
+                walletContainer.innerHTML = `<p style="color:red; text-align:center; padding:20px;">⚠️ Region restricted (HU).</p>`;
+                return;
+            }
         }
 
-        // Cím lekérése: Először a btc_pool-ból nézzük meg közvetlenül
-        const { data: btcRow, error: btcErr } = await _supabase
+        // 1. Megnézzük, van-e már a felhasználónak címe
+        const { data: btcRow, error: fetchError } = await _supabase
             .from('btc_pool')
             .select('address')
             .eq('user_id', currentUser.id)
             .maybeSingle();
 
-        if (btcErr) console.error("Hiba a btc_pool lekérésekor:", btcErr);
-
         if (btcRow) {
             userProfile.btc_address = btcRow.address;
         } else {
-            // Ha nincs azonosítóhoz rendelt cím, megpróbálunk egyet foglalni
-            console.log("Nincs cím rendelve, foglalás indítása...");
+            // 2. Ha nincs, megpróbálunk egyet szerezni
             await grabAddressFromPool();
         }
 
         renderCryptoCard(walletContainer);
-        
+
     } catch (e) {
-        console.error("Váratlan hiba:", e);
+        console.error("Fő hiba:", e);
         renderCryptoCard(walletContainer);
     }
 }
 
 async function grabAddressFromPool() {
+    console.log("Cím keresése folyamatban...");
+    
     try {
-        // Keressük meg a legkisebb ID-jú szabad címet
-        const { data: freeAddrs } = await _supabase
+        // Keressük meg a legelső szabad sort. 
+        // Fontos: Az 'is_allocated' oszlopnevet és a 'false' értéket ellenőrizd a Supabase-ben!
+        const { data: freeRows, error: findError } = await _supabase
             .from('btc_pool')
             .select('id, address')
-            .is('user_id', null)
-            .order('id', { ascending: true })
+            .eq('is_allocated', false) // Itt szállt el 400-as hibával a képeden
             .limit(1);
 
-        if (!freeAddrs || freeAddrs.length === 0) {
-            console.error("Nincs több szabad cím a poolban!");
+        if (findError || !freeRows || freeRows.length === 0) {
+            console.warn("Hiba vagy üres pool:", findError);
             return;
         }
 
-        const target = freeAddrs[0];
+        const target = freeRows[0];
 
-        // Foglaljuk le a címet a user UUID-jával
-        const { data: updated, error: upErr } = await _supabase
+        // Frissítés: Lefoglaljuk a címet
+        const { data: updated, error: updateError } = await _supabase
             .from('btc_pool')
             .update({ 
-                is_allocated: true, 
-                user_id: currentUser.id 
+                user_id: currentUser.id,
+                is_allocated: true 
             })
             .eq('id', target.id)
             .select();
 
-        if (upErr) {
-            console.error("Nem sikerült a foglalás (RLS hiba?):", upErr);
+        if (updateError) {
+            console.error("Update hiba:", updateError);
             return;
         }
 
-        if (updated) {
+        if (updated && updated.length > 0) {
             userProfile.btc_address = target.address;
-            // Profil szinkronizálása
+            // Profil szinkronizálás
             await _supabase.from('profiles').update({ btc_address: target.address }).eq('id', currentUser.id);
+            console.log("Cím sikeresen kiosztva!");
         }
     } catch (err) {
-        console.error("Kritikus hiba a grabAddress folyamatban:", err);
+        console.error("Váratlan hiba a pool kezelésekor:", err);
     }
 }
 
 function renderCryptoCard(container) {
-    const btcAddr = userProfile.btc_address || "Nincs elérhető cím. Ellenőrizd az RLS szabályokat!";
+    const addr = userProfile.btc_address || "Nincs elérhető cím (Pool Error)";
     
     container.innerHTML = `
-        <div class="market-card" style="border: 1px solid var(--primary); background: rgba(0,212,255,0.05); margin-top:20px; padding: 15px; border-radius: 8px;">
-            <h4 style="color:var(--primary); margin: 0 0 10px 0;">BTC Deposit Panel</h4>
-            <p style="font-size:12px; color:#aaa; margin-bottom:5px;">Your Unique Deposit Address:</p>
-            <code id="btc-copy" style="display:block; background:#000; padding:12px; border-radius:5px; word-break:break-all; font-size:11px; color:var(--primary); border: 1px dashed var(--primary); cursor:pointer;">
-                ${btcAddr}
+        <div class="market-card" style="border: 1px solid var(--primary); background: rgba(0,212,255,0.05); padding: 15px; border-radius: 8px;">
+            <h4 style="color:var(--primary); margin: 0 0 10px 0;">Secure Crypto Gateway</h4>
+            <p style="font-size:11px; color:#aaa;">Personal BTC Deposit Address:</p>
+            <code id="btc-copy" style="display:block; background:#000; padding:12px; border-radius:5px; border: 1px dashed var(--primary); word-break:break-all; font-family:monospace; font-size:11px; color:var(--primary); cursor:pointer;">
+                ${addr}
             </code>
+            <p style="font-size:10px; color:#555; margin-top:5px;">Click address to copy</p>
             
-            <hr style="border:0; border-top:1px solid var(--border); margin:15px 0;">
+            <hr style="border:0; border-top:1px solid #222; margin:15px 0;">
             
-            <h4 style="margin-bottom:10px; font-size:14px;">Withdrawal</h4>
-            <input type="number" id="withdraw-amount" placeholder="Amount (€)" style="width:100%; margin-bottom:8px;">
-            <input type="text" id="withdraw-dest" placeholder="Destination BTC Address" style="width:100%; margin-bottom:12px;">
-            <button class="btn-primary" id="withdraw-btn" style="width:100%;">REQUEST WITHDRAWAL</button>
-            <p id="withdraw-status" style="font-size:12px; margin-top:10px; font-weight:bold;"></p>
+            <input type="number" id="w-amt" placeholder="Amount (€)" style="width:100%; margin-bottom:8px; background:#111; border:1px solid #333; color:white; padding:8px;">
+            <input type="text" id="w-adr" placeholder="Destination BTC Address" style="width:100%; margin-bottom:12px; background:#111; border:1px solid #333; color:white; padding:8px;">
+            <button class="btn-primary" onclick="handleWithdraw()" style="width:100%; font-weight:bold;">REQUEST WITHDRAWAL</button>
         </div>
     `;
 
-    document.getElementById('btc-copy').onclick = () => {
-        if(userProfile.btc_address) {
-            navigator.clipboard.writeText(userProfile.btc_address);
-            alert("Cím másolva!");
-        }
-    };
-
-    document.getElementById('withdraw-btn').onclick = handleWithdrawRequest;
+    const copyBtn = document.getElementById('btc-copy');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(addr);
+            alert("BTC Address copied!");
+        };
+    }
 }
 
-async function handleWithdrawRequest() {
-    const amount = parseFloat(document.getElementById('withdraw-amount').value);
-    const dest = document.getElementById('withdraw-dest').value.trim();
-    const status = document.getElementById('withdraw-status');
+async function handleWithdraw() {
+    const amt = parseFloat(document.getElementById('w-amt').value);
+    const adr = document.getElementById('w-adr').value.trim();
 
-    if (isNaN(amount) || amount <= 0 || !dest) return alert("Hibás adatok!");
-
-    if (amount > userProfile.real_balance) {
-        status.innerText = "❌ Nincs elég egyenleged!";
-        status.style.color = "var(--danger)";
-        return;
-    }
+    if (!amt || !adr) return alert("Please fill all fields!");
+    if (amt > userProfile.real_balance) return alert("Insufficient funds!");
 
     const { error } = await _supabase.from('withdrawals').insert([{
         user_id: currentUser.id,
         username: userProfile.username,
-        amount: amount,
-        btc_address: dest,
+        amount: amt,
+        btc_address: adr,
         status: 'pending'
     }]);
 
     if (!error) {
-        await _supabase.from('profiles').update({ real_balance: userProfile.real_balance - amount }).eq('id', currentUser.id);
-        alert("Sikeres kérelem!");
+        await _supabase.from('profiles').update({ real_balance: userProfile.real_balance - amt }).eq('id', currentUser.id);
+        alert("Success! Request sent.");
         location.reload();
+    } else {
+        alert("Error: " + error.message);
     }
 }
 
