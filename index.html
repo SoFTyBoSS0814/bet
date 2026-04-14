@@ -48,6 +48,9 @@
 
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
         
+        /* ÚJ STÍLUS AZ ÜZENETNEK */
+        #create-error-msg { color: var(--danger); background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); padding: 10px; border-radius: 8px; margin-top: 15px; display: none; text-align: center; font-weight: bold; font-size: 13px; }
+
         .btc-box { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
         .btc-address { background: #0b1218; padding: 10px; border: 1px dashed var(--primary); border-radius: 6px; font-size: 11px; word-break: break-all; color: var(--primary); cursor: pointer; text-align: center; margin: 10px 0; }
         #wit-error { color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold; display: none; text-align: center; }
@@ -145,6 +148,9 @@
         <input id="m-budget" type="number" placeholder="Initial Liquidity Pool">
         <div id="groups-container"></div>
         <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed">+ Add Category</button>
+        
+        <div id="create-error-msg"></div>
+
         <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')">Cancel</button>
     </div>
@@ -363,25 +369,34 @@
         cont.appendChild(d);
     }
 
+    /* ÚJ FÜGGVÉNY A HIBA MEGJELENÍTÉSÉHEZ */
+    function showCreateError(msg) {
+        const errDiv = document.getElementById('create-error-msg');
+        errDiv.innerText = msg;
+        errDiv.style.display = 'block';
+        // 5 másodperc múlva eltűnik
+        setTimeout(() => { errDiv.style.display = 'none'; }, 5000);
+    }
+
     async function saveMarket() {
         const t = document.getElementById('m-name').value.trim();
         const b = parseFloat(document.getElementById('m-budget').value);
         const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
 
-        // Alapmezők ellenőrzése
-        if(!t || isNaN(b) || b <= 0 || !dl) return alert("Kérlek töltsd ki az összes alapvető mezőt (Név, Budget, Határidő)!");
+        // Validáció ALERT helyett az új megoldással
+        if(!t || isNaN(b) || b <= 0 || !dl) return showCreateError("Kérlek töltsd ki az összes alapvető mezőt (Név, Budget, Határidő)!");
 
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return alert("Nincs elég fedezet!");
+        if(b > userProfile[balField]) return showCreateError("Nincs elég fedezet!");
 
         const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
-        if(groupDivs.length === 0) return alert("Legalább egy kategóriát meg kell adnod!");
+        if(groupDivs.length === 0) return showCreateError("Legalább egy kategóriát meg kell adnod!");
 
         const grp = [];
         for(let g of groupDivs) {
             const categoryTitle = g.querySelector('.gt').value.trim();
-            if(!categoryTitle) return alert("Minden kategóriának kell nevet adnod!");
+            if(!categoryTitle) return showCreateError("Minden kategóriának kell nevet adnod!");
 
             const outcomes = [];
             const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
@@ -389,8 +404,8 @@
                 const name = o.querySelector('.on').value.trim();
                 const odds = parseFloat(o.querySelector('.oo').value);
 
-                if(!name) return alert("Minden kimenetelnek (Outcome) nevet kell adnod!");
-                if(isNaN(odds) || odds < 1.01 || odds > 1000) return alert("Az odds értéke 1.01 és 1000 között kell legyen!");
+                if(!name) return showCreateError("Minden kimenetelnek (Outcome) nevet kell adnod!");
+                if(isNaN(odds) || odds < 1.01 || odds > 1000) return showCreateError("Az odds értéke 1.01 és 1000 között kell legyen!");
 
                 outcomes.push({ n: name, o: odds, status: 'pending' });
             }
