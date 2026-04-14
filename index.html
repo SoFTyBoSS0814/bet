@@ -48,7 +48,6 @@
 
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
         
-        /* BTC AREA STYLES */
         .btc-box { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
         .btc-address { background: #0b1218; padding: 10px; border: 1px dashed var(--primary); border-radius: 6px; font-size: 11px; word-break: break-all; color: var(--primary); cursor: pointer; text-align: center; margin: 10px 0; }
         #wit-error { color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold; display: none; text-align: center; }
@@ -217,7 +216,6 @@
         if(!isHungarian) {
             renderBTCPanel(data.btc_address);
         }
-
         updateCreateBalanceDisplay();
         updateRewardUI();
     }
@@ -235,7 +233,7 @@
                 <input type="number" id="wit-amount" placeholder="Összeg (€)">
                 <input type="text" id="wit-addr" placeholder="Cél BTC cím (bc1q...)">
                 <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">KIFIZETÉS KÉRVÉNYEZÉSE</button>
-                <div id="wit-error">Nincs ekkora egyenleged! Próbálkozz nagyobb összeggel!</div>
+                <div id="wit-error">Nincs ekkora egyenleged!</div>
             </div>
         `;
     }
@@ -245,27 +243,12 @@
         const address = document.getElementById('wit-addr').value;
         const errorDiv = document.getElementById('wit-error');
         errorDiv.style.display = 'none';
-        if(isNaN(amount) || amount <= 0 || !address) {
-            alert("Kérlek adj meg egy érvényes összeget és címet!");
-            return;
-        }
-        if(amount > userProfile.real_balance) {
-            errorDiv.style.display = 'block';
-            return;
-        }
+        if(isNaN(amount) || amount <= 0 || !address) return alert("Helytelen adatok!");
+        if(amount > userProfile.real_balance) { errorDiv.style.display = 'block'; return; }
         const { error } = await _supabase.from('withdrawals').insert([{
-            user_id: currentUser.id,
-            username: currentUser.username,
-            amount: amount,
-            btc_address: address,
-            status: 'pending'
+            user_id: currentUser.id, username: currentUser.username, amount: amount, btc_address: address, status: 'pending'
         }]);
-        if(!error) {
-            alert("Kifizetési kérelem sikeresen elküldve!");
-            location.reload();
-        } else {
-            alert("Hiba történt a kérés küldésekor.");
-        }
+        if(!error) { alert("Sikeres kérés!"); location.reload(); }
     }
 
     function copyBTCAddress() {
@@ -278,26 +261,23 @@
     function updateRewardUI() {
         const msg = document.getElementById('reward-msg');
         const btn = document.getElementById('btn-claim-reward');
-        if (!userProfile) return;
+        if (!userProfile || !msg) return;
         if (!userProfile.last_claim) {
-            msg.innerText = "Ready to roll!";
-            btn.disabled = false; btn.style.opacity = "1";
+            msg.innerText = "Ready to roll!"; btn.disabled = false; btn.style.opacity = "1";
             return;
         }
         const last = new Date(userProfile.last_claim).getTime();
         const now = new Date().getTime();
-        const diff = 24 * 60 * 60 * 1000 - (now - last);
+        const diff = 86400000 - (now - last);
         if (diff > 0) {
-            const h = Math.floor(diff / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
             msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
-            msg.style.color = "var(--danger)";
-            btn.disabled = true; btn.style.opacity = "0.5";
+            msg.style.color = "var(--danger)"; btn.disabled = true; btn.style.opacity = "0.5";
         } else {
             msg.innerText = "Ready to roll!";
-            msg.style.color = "var(--success)";
-            btn.disabled = false; btn.style.opacity = "1";
+            msg.style.color = "var(--success)"; btn.disabled = false; btn.style.opacity = "1";
         }
     }
 
@@ -315,7 +295,6 @@
         mList.innerHTML = ""; hList.innerHTML = "";
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
-            const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
             const isExpired = new Date(m.deadline) < new Date();
             if(m.status === 'active') {
@@ -332,19 +311,13 @@
                 mList.appendChild(card);
             } else {
                 const card = document.createElement('div'); card.className = 'market-card';
-                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
+                card.innerHTML = `<div class="settled-badge">Settled</div><h2 style="margin-top:15px;">${m.title}</h2>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
                     </div>`).join('')}`;
                 hList.appendChild(card);
             }
         });
-    }
-
-    function checkDeadlines() {
-        document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
     }
 
     function addGroup() {
@@ -369,59 +342,50 @@
         const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
 
-        // Alapadatok ellenőrzése
-        if(!t) return alert("Add meg az esemény nevét!");
-        if(!dl || isNaN(b) || b <= 0) return alert("Helytelen határidő vagy büdzsé!");
-
-        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return alert("Nincs elég fedezet!");
+        if(!t) return alert("Esemény neve üres!");
+        if(!dl || isNaN(b) || b <= 0) return alert("Hibás adatok!");
+        if(b > userProfile[type === 'REAL' ? 'real_balance' : 'demo_balance']) return alert("Nincs elég fedezet!");
 
         const groups = [];
-        const groupElements = document.querySelectorAll('#groups-container .market-group');
-        
-        // Kategóriák és kimenetelek validálása
-        for(let g of groupElements) {
+        const groupEls = document.querySelectorAll('#groups-container .market-group');
+        for(let g of groupEls) {
             const gTitle = g.querySelector('.gt').value.trim();
-            if(!gTitle) return alert("Minden kategóriának kell nevet adni!");
-
+            if(!gTitle) return alert("Kategória neve nem lehet üres!");
             const outcomes = [];
-            const outcomeRows = g.querySelectorAll('div[id^="o-cont-"] > div');
-            
-            for(let o of outcomeRows) {
+            const oRows = g.querySelectorAll('div[id^="o-cont-"] > div');
+            for(let o of oRows) {
                 const oName = o.querySelector('.on').value.trim();
                 const oOdds = parseFloat(o.querySelector('.oo').value);
-
-                if(!oName) return alert(`A(z) "${gTitle}" kategóriában van üres kimenetel!`);
-                if(isNaN(oOdds) || oOdds < 1.01) return alert(`A(z) "${oName}" szorzója legalább 1.01 kell legyen!`);
-
+                if(!oName) return alert("A kimenetel neve üres!");
+                if(oOdds < 1.01) return alert("Minimum odds: 1.01!");
                 outcomes.push({ n: oName, o: oOdds, status: 'pending' });
             }
-            groups.push({ title: gTitle, outcomes: outcomes });
+            groups.push({ title: gTitle, outcomes });
         }
+        if(groups.length === 0) return alert("Nincs kategória!");
 
-        if(groups.length === 0) return alert("Adj hozzá legalább egy kategóriát!");
-
+        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ 
-            title: t, 
-            type: type, 
-            take: b, 
-            stake: b, 
-            deadline: new Date(dl).toISOString(), 
-            note: JSON.stringify(groups), 
-            creator_name: currentUser.username, 
-            status: 'active' 
-        }]);
+        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
 
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        document.getElementById('link-' + id).classList.add('active');
+    }
+
+    function checkDeadlines() {
+        document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
+    }
     function openBet(mId, n, o, t, dl) {
         if(new Date(dl) < new Date()) return alert("Lezárult!");
         activeBet = { mId, n, o, t, dl };
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
-
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
@@ -434,7 +398,6 @@
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
         location.reload();
     }
-
     async function openSettle(mId, title) {
         const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
         currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
@@ -450,7 +413,6 @@
         });
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
-
     async function finalSubmitSettle() {
         const btn = document.getElementById('finalize-btn');
         btn.disabled = true; btn.innerText = "Processing...";
@@ -465,41 +427,27 @@
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            if(bets && bets.length > 0) {
+            if(bets) {
                 for(let bet of bets) {
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
                         const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
                         await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: payout, p_field: field });
-                    } else {
-                        hostTotal += parseFloat(bet.amount);
-                    }
+                    } else { hostTotal += parseFloat(bet.amount); }
                     await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
                 }
             }
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-            if (host) { await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id); }
+            if (host) await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
             await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() }).eq('id', currentSettleId);
             location.reload();
-        } catch(e) { 
-            console.error(e);
-            alert("Error during settlement!"); 
-            btn.disabled = false; btn.innerText = "FINALIZE";
-        }
+        } catch(e) { console.error(e); btn.disabled = false; btn.innerText = "FINALIZE"; }
     }
-
     async function claimDailyDemo() {
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("Várj 24 órát!");
         const win = Math.floor(Math.random() * 8000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
         document.getElementById('reward-msg').innerText = "WON " + win + " D!"; fetchProfile();
-    }
-
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-' + id).classList.add('active');
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById('link-' + id).classList.add('active');
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
