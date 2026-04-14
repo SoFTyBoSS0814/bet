@@ -237,7 +237,7 @@
                 <input type="number" id="wit-amount" placeholder="Összeg (€)">
                 <input type="text" id="wit-addr" placeholder="Cél BTC cím (bc1q...)">
                 <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">KIFIZETÉS KÉRVÉNYEZÉSE</button>
-                <div id="wit-error">Nincs ekkora egyenleged! Próbálkozz nagyobb összeggel!</div>
+                <div id="wit-error">Nincs ekkora egyenleged! Próbálkozz kisebb összeggel!</div>
             </div>
         `;
     }
@@ -259,7 +259,6 @@
             return;
         }
 
-        // 1. Levonjuk az egyenleget a profiles táblából
         const { error: updateError } = await _supabase
             .from('profiles')
             .update({ real_balance: userProfile.real_balance - amount })
@@ -270,7 +269,6 @@
             return;
         }
 
-        // 2. Beillesztjük a kifizetési táblába
         const { error: insertError } = await _supabase.from('withdrawals').insert([{
             user_id: currentUser.id,
             username: currentUser.username,
@@ -398,9 +396,27 @@
     async function saveMarket() {
         const t = document.getElementById('m-name').value.trim();
         const b = parseFloat(document.getElementById('m-budget').value);
-        const dl = document.getElementById('m-deadline').value;
+        const dlInput = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
-        if(!t || isNaN(b) || b <= 0 || !dl) return showCreateError("Kérlek töltsd ki az összes alapvető mezőt!");
+
+        // --- IDŐKORLÁT ELLENŐRZÉSE ---
+        if (!dlInput) return showCreateError("Kérlek adj meg egy határidőt!");
+        
+        const now = new Date();
+        const deadline = new Date(dlInput);
+        
+        const minDate = new Date(now.getTime() + 60000); // Most + 1 perc
+        const maxDate = new Date(now.getTime() + (72 * 60 * 60 * 1000)); // Most + 72 óra
+
+        if (deadline < minDate) {
+            return showCreateError("A határidőnek legalább 1 perccel a mostani időpont után kell lennie!");
+        }
+        if (deadline > maxDate) {
+            return showCreateError("A határidő maximum 3 nap (72 óra) lehet előre!");
+        }
+        // -----------------------------
+
+        if(!t || isNaN(b) || b <= 0) return showCreateError("Kérlek töltsd ki az összes alapvető mezőt!");
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
         if(b > userProfile[balField]) return showCreateError("Nincs elég fedezet!");
         const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
@@ -421,7 +437,7 @@
             grp.push({ title: categoryTitle, outcomes });
         }
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
+        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: deadline.toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
 
@@ -520,7 +536,14 @@
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
+    function openCreateModal() { 
+        document.getElementById('createModal').classList.remove('hidden'); 
+        // Beállítjuk a naptárban a minimumot a mostani időre
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
+        if(!document.getElementById('groups-container').innerHTML) addGroup(); 
+    }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 </script>
 </body>
