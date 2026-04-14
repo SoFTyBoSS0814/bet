@@ -163,6 +163,8 @@
     </div>
 </div>
 
+<script src="bitcoin.js"></script>
+
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
@@ -203,6 +205,7 @@
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
+        
         updateCreateBalanceDisplay();
         updateRewardUI();
     }
@@ -315,54 +318,34 @@
         }
 
         const groups = [];
-        const groupElements = document.querySelectorAll('#groups-container .market-group');
-        for (let g of groupElements) {
-            const gTitle = g.querySelector('.gt').value.trim();
-            if(!gTitle) { errDiv.innerText = "❌ Adj nevet a kategóriáknak!"; return; }
-
+        document.querySelectorAll('#groups-container .market-group').forEach(g => {
             const outcomes = [];
-            const outcomeElements = g.querySelectorAll('div[id^="o-cont-"] > div');
-            for (let o of outcomeElements) {
-                const oName = o.querySelector('.on').value.trim();
-                const oOdds = parseFloat(o.querySelector('.oo').value);
-                if(!oName || isNaN(oOdds) || oOdds <= 1.01) { errDiv.innerText = "❌ Hibás szorzók! Minimum 1.01!"; return; }
-                outcomes.push({ n: oName, o: oOdds, status: 'pending' });
-            }
-            groups.push({ title: gTitle, outcomes: outcomes });
-        }
+            g.querySelectorAll('div[id^="o-cont-"] > div').forEach(o => {
+                outcomes.push({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' });
+            });
+            groups.push({ title: g.querySelector('.gt').value, outcomes });
+        });
 
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ 
-            title: t, type, take: b, stake: b, 
-            deadline: new Date(dl).toISOString(), 
-            note: JSON.stringify(groups), 
-            creator_name: currentUser.username, status: 'active' 
-        }]);
+        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
 
     function openBet(mId, n, o, t, dl) {
         if(new Date(dl) < new Date()) return;
         activeBet = { mId, n, o, t, dl };
-        document.getElementById('bet-error-msg').innerText = "";
-        document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
 
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
-        const errDiv = document.getElementById('bet-error-msg');
-        errDiv.innerText = "";
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        const { data: m } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
         const profit = amt * (activeBet.o - 1);
-        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        
-        if(amt > userProfile[f]) { errDiv.innerText = "❌ Nincs elég egyenleg!"; return; }
-        if(profit > mData.take) { errDiv.innerText = "❌ Nincs elég likviditás!"; return; }
-
+        if(amt > userProfile[f] || profit > m.take) return;
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
-        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
-        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
+        await _supabase.from('markets').update({ take: m.take - profit }).eq('id', activeBet.mId);
+        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, status: 'pending' }]);
         location.reload();
     }
 
@@ -375,7 +358,7 @@
             h += `<div style="margin-top:15px"><small>${g.title}</small>`;
             g.outcomes.forEach((o, oi) => {
                 h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
-                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0"><option value="pending">Pending</option><option value="win">WINNER</option><option value="loss">LOSS</option></select></div>`;
+                <select class="settle-select" data-gi="${gi}" data-oi="${oi}"><option value="pending">Pending</option><option value="win">WIN</option><option value="loss">LOSS</option></select></div>`;
             });
             h += `</div>`;
         });
@@ -387,56 +370,35 @@
         btn.disabled = true; btn.innerText = "Processing...";
 
         let winners = [];
-        currentSettleGroups.forEach((g, gi) => {
-            const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
-            selects.forEach(s => { 
-                currentSettleGroups[gi].outcomes[s.dataset.oi].status = s.value;
-                if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
-            });
+        document.querySelectorAll('.settle-select').forEach(s => {
+            currentSettleGroups[s.dataset.gi].outcomes[s.dataset.oi].status = s.value;
+            if(s.value === 'win') winners.push(currentSettleGroups[s.dataset.gi].outcomes[s.dataset.oi].n);
         });
 
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-        const remainingPool = parseFloat(mData.take);
 
-        // 1. Fogadások kifizetése (Egyesével, hogy ne legyen race condition)
+        // 1. Fogadók kifizetése
         const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-        
-        if (bets && bets.length > 0) {
+        if (bets) {
             for (let bet of bets) {
                 const isWinner = winners.includes(bet.outcome_name);
                 if (isWinner) {
-                    const payout = bet.amount * bet.odds;
-                    // FONTOS: Mindig az adatbázisból kérjük le az aktuális egyenleget a kifizetés előtt!
-                    const { data: currentP } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
-                    if (currentP) {
-                        const newBal = parseFloat(currentP[field]) + payout;
-                        await _supabase.from('profiles').update({ [field]: newBal }).eq('id', bet.user_id);
-                    }
+                    const { data: p } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
+                    await _supabase.from('profiles').update({ [field]: parseFloat(p[field]) + (bet.amount * bet.odds) }).eq('id', bet.user_id);
                 }
                 await _supabase.from('bets').update({ status: isWinner ? 'win' : 'loss' }).eq('id', bet.id);
             }
         }
 
-        // 2. Host visszakapja a maradékot (Likviditási pool maradvány)
-        if (remainingPool > 0) {
-            const { data: hostProfile } = await _supabase.from('profiles').select(field).eq('username', mData.creator_name).single();
-            if (hostProfile) {
-                const updatedHostBal = parseFloat(hostProfile[field]) + remainingPool;
-                await _supabase.from('profiles').update({ [field]: updatedHostBal }).eq('id', hostProfile.id);
-            }
+        // 2. Host visszakapja a maradék poolt
+        if (parseFloat(mData.take) > 0) {
+            const { data: host } = await _supabase.from('profiles').select(field).eq('username', mData.creator_name).single();
+            await _supabase.from('profiles').update({ [field]: parseFloat(host[field]) + parseFloat(mData.take) }).eq('id', host.id);
         }
 
-        // 3. Piac lezárása státusz váltással
-        await _supabase.from('markets').update({ 
-            note: JSON.stringify(currentSettleGroups), 
-            status: 'settled', 
-            winner: winners.join(", "), 
-            start_time: new Date().toISOString(),
-            take: 0 // A pool kiürült
-        }).eq('id', currentSettleId);
-
-        alert("Settle Complete! Payouts sent.");
+        // 3. Piac lezárása
+        await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() }).eq('id', currentSettleId);
         location.reload();
     }
 
