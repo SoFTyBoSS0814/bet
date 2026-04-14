@@ -15,9 +15,11 @@
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         
-        /* Jobb oldali kombinált panel */
-        .right-panel { display: flex; align-items: center; gap: 10px; }
-        .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
+        .right-panel { display: flex; align-items: center; gap: 15px; }
+        
+        /* Frissített, szeparált egyenleg kijelző */
+        .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 15px; }
+        .wallet-sep { width: 1px; height: 18px; background: #334756; }
 
         .lang-select { background: #0b1218; color: var(--primary); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; outline: none; height: 38px; font-weight: bold; }
 
@@ -76,6 +78,7 @@
     <div class="right-panel">
         <div class="wallet-display">
             <span id="nav-real" style="color:var(--primary)">0.00 €</span>
+            <div class="wallet-sep"></div>
             <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
         </div>
         <select id="lang-switcher" class="lang-select" onchange="changeLang(this.value)">
