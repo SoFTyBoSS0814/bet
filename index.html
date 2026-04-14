@@ -320,7 +320,9 @@
                 card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px; margin-bottom:5px;">${m.title} <span style="font-size:14px; color:#666; font-weight:normal;">(${sDate.toLocaleString()})</span></h2>
+                    <h2 style="margin-top:15px; margin-bottom:5px;">
+                        ${m.title} <span style="color:${typeColor};">- Settled at ${sDate.toLocaleString()}.</span>
+                    </h2>
                     <div style="margin-bottom:15px;">
                         <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
                         <small style="color:var(--danger); display:block;">Deadline: ${dlDate.toLocaleString()}</small>
