@@ -48,7 +48,7 @@
 
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
         
-        .inline-error { color: var(--danger); font-weight: bold; font-size: 16px; margin: 10px 0; text-align: center; min-height: 20px; }
+        .inline-error { color: var(--danger); font-weight: bold; font-size: 15px; margin: 10px 0; text-align: center; min-height: 18px; }
     </style>
 </head>
 <body>
@@ -321,14 +321,14 @@
         const groupElements = document.querySelectorAll('#groups-container .market-group');
         for (let g of groupElements) {
             const gTitle = g.querySelector('.gt').value.trim();
-            if(!gTitle) { errDiv.innerText = "❌ Minden kategóriának (Category) kell nevet adni!"; return; }
+            if(!gTitle) { errDiv.innerText = "❌ Kérjük adjon nevet az összes kategóriának!"; return; }
 
             const outcomes = [];
             const outcomeElements = g.querySelectorAll('div[id^="o-cont-"] > div');
             for (let o of outcomeElements) {
                 const oName = o.querySelector('.on').value.trim();
                 const oOdds = parseFloat(o.querySelector('.oo').value);
-                if(!oName || isNaN(oOdds) || oOdds <= 1.01) { errDiv.innerText = "❌ Minden kimenetelnek kell név és érvényes szorzó (>1.01)!"; return; }
+                if(!oName || isNaN(oOdds) || oOdds <= 1) { errDiv.innerText = "❌ Töltse ki az összes opciót és adjon meg érvényes szorzót (>1)!"; return; }
                 outcomes.push({ n: oName, o: oOdds, status: 'pending' });
             }
             groups.push({ title: gTitle, outcomes: outcomes });
@@ -398,13 +398,39 @@
         });
 
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
-        const remainingPool = parseFloat(mData.take);
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+        
+        // 1. Host visszakapja a maradék Poolt
         const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
+        if (host && parseFloat(mData.take) > 0) {
+            await _supabase.from('profiles').update({ [field]: host[field] + parseFloat(mData.take) }).eq('id', host.id);
+        }
         
-        if (host && remainingPool > 0) await _supabase.from('profiles').update({ [field]: host[field] + remainingPool }).eq('id', host.id);
-        
-        await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winners.join(", "), start_time: new Date().toISOString() }).eq('id', currentSettleId);
+        // 2. Piaci állapot frissítése
+        await _supabase.from('markets').update({ 
+            note: JSON.stringify(currentSettleGroups), 
+            status: 'settled', 
+            winner: winners.join(", "), 
+            start_time: new Date().toISOString() 
+        }).eq('id', currentSettleId);
+
+        // 3. Manuális kifizetés a fogadóknak
+        const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
+        if (bets) {
+            for (let bet of bets) {
+                let isWinner = winners.includes(bet.outcome_name);
+                let newStatus = isWinner ? 'win' : 'loss';
+                if (isWinner) {
+                    const payout = bet.amount * bet.odds;
+                    const { data: player } = await _supabase.from('profiles').select('*').eq('id', bet.user_id).single();
+                    if (player) {
+                        await _supabase.from('profiles').update({ [field]: player[field] + payout }).eq('id', bet.user_id);
+                    }
+                }
+                await _supabase.from('bets').update({ status: newStatus }).eq('id', bet.id);
+            }
+        }
+
         await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
         location.reload();
     }
