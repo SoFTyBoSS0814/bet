@@ -153,7 +153,7 @@
     <div class="modal-box">
         <h3 id="settle-title"></h3>
         <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" id="finalize-btn" onclick="finalSubmitSettle()">FINALIZE</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
     </div>
 </div>
@@ -204,7 +204,6 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        // Meghívjuk a bitcoin.js ellenőrzőjét
         if(typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
         }
@@ -351,27 +350,64 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
+    // --- CSAK EZ A RÉSZ VÁLTOZOTT ---
     async function finalSubmitSettle() {
+        const btn = document.getElementById('finalize-btn');
+        btn.disabled = true; btn.innerText = "Processing...";
+
         let winners = [];
-        currentSettleGroups.forEach((g, gi) => {
-            const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
-            selects.forEach(s => { 
-                currentSettleGroups[gi].outcomes[s.dataset.oi].status = s.value;
-                if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
-            });
+        document.querySelectorAll('.settle-select').forEach(s => {
+            const gi = s.dataset.gi, oi = s.dataset.oi;
+            currentSettleGroups[gi].outcomes[oi].status = s.value;
+            if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[oi].n);
         });
 
-        const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
-        const pool = parseFloat(mData.take);
-        const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-        const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-        
-        if (host && pool > 0) await _supabase.from('profiles').update({ [field]: host[field] + pool }).eq('id', host.id);
-        
-        await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winners.join(", "), start_time: new Date().toISOString() }).eq('id', currentSettleId);
-        await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
-        location.reload();
+        try {
+            const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
+            const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+            let hostTotal = parseFloat(mData.take) || 0;
+
+            const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
+            
+            if(bets && bets.length > 0) {
+                for(let bet of bets) {
+                    const isWin = winners.includes(bet.outcome_name);
+                    if(isWin) {
+                        const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
+                        // RPC hívás a biztonságos kifizetéshez
+                        await _supabase.rpc('settle_bet_payout', {
+                            p_user_id: bet.user_id,
+                            p_amount: payout,
+                            p_field: field
+                        });
+                    } else {
+                        hostTotal += parseFloat(bet.amount);
+                    }
+                    await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
+                }
+            }
+
+            // Host kifizetése (Aki lezárta, az kapja a maradék pool-t)
+            const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
+            if (host) {
+                await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
+            }
+
+            await _supabase.from('markets').update({ 
+                note: JSON.stringify(currentSettleGroups), 
+                status: 'settled', 
+                take: 0,
+                start_time: new Date().toISOString() 
+            }).eq('id', currentSettleId);
+            
+            location.reload();
+        } catch(e) { 
+            console.error(e);
+            alert("Error during settlement!"); 
+            btn.disabled = false; btn.innerText = "FINALIZE";
+        }
     }
+    // --- VÁLTOZÁS VÉGE ---
 
     async function claimDailyDemo() {
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("Várj 24 órát!");
