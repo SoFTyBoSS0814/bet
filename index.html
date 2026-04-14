@@ -207,8 +207,12 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
+        // MÓDOSÍTÁS: Csak akkor renderelünk BTC panelt, ha NEM magyar az IP
+        const btcArea = document.getElementById('btc-wallet-area');
         if(!isHungarian) {
             renderBTCPanel(data.btc_address);
+        } else {
+            btcArea.innerHTML = ""; // Biztonsági ürítés
         }
 
         updateCreateBalanceDisplay();
@@ -250,7 +254,6 @@
             return;
         }
 
-        // Ha minden oké, beküldjük az adatbázisba (itt a te meglévő logikád kell)
         const { error } = await _supabase.from('withdrawals').insert([{
             user_id: currentUser.id,
             username: currentUser.username,
