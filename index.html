@@ -46,7 +46,7 @@
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
         .hidden { display: none !important; }
 
-        #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
+        #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; text-align: center; }
     </style>
 </head>
 <body>
@@ -82,8 +82,7 @@
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2>Balances</h2>
-            <div id="geo-restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
-            
+            <div id="geo-restriction">⚠️ Magyarország területéről a kifizetés és feltöltés korlátozott.</div>
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
                     <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
@@ -109,7 +108,6 @@
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
                 <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                
                 <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
                 <p style="margin:5px 0; color:#aaa">Account ID</p>
@@ -175,7 +173,7 @@
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        await checkIP(); // Először az IP-t nézzük
+        await checkIP();
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
@@ -189,12 +187,6 @@
             if(data.country_code === 'HU') {
                 isHungarian = true;
                 document.getElementById('geo-restriction').style.display = 'block';
-                // Ha magyar, biztosítjuk, hogy a BTC terület tiszta legyen
-                const btcArea = document.getElementById('btc-wallet-area');
-                if(btcArea) btcArea.innerHTML = "";
-            } else {
-                isHungarian = false;
-                document.getElementById('geo-restriction').style.display = 'none';
             }
         } catch(e) { console.error("Geo-check error", e); }
     }
@@ -202,10 +194,14 @@
     async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         userProfile = data;
+        
+        // Update Balances
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
+        
+        // Update Account Info
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
@@ -213,7 +209,7 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        // CSAK AKKOR töltjük be a pénztárca címet és kifizetést, ha NEM magyar
+        // Bitcoin funkciók betöltése (kizárólag nem magyar IP esetén)
         if(!isHungarian && typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
         } else if (isHungarian) {
@@ -221,51 +217,18 @@
         }
     }
 
-    // --- A többi funkció (Market, Settle, Reward) változatlan marad ---
-
-    function updateRewardUI() {
-        const msg = document.getElementById('reward-msg');
-        const btn = document.getElementById('btn-claim-reward');
-        if (!userProfile) return;
-        if (!userProfile.last_claim) {
-            msg.innerText = "Ready to roll!";
-            btn.disabled = false; btn.style.opacity = "1";
-            return;
-        }
-        const last = new Date(userProfile.last_claim).getTime();
-        const now = new Date().getTime();
-        const diff = 24 * 60 * 60 * 1000 - (now - last);
-        if (diff > 0) {
-            const h = Math.floor(diff / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
-            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
-            msg.style.color = "var(--danger)";
-            btn.disabled = true; btn.style.opacity = "0.5";
-        } else {
-            msg.innerText = "Ready to roll!";
-            msg.style.color = "var(--success)";
-            btn.disabled = false; btn.style.opacity = "1";
-        }
-    }
-
-    function updateCreateBalanceDisplay() {
-        if(!userProfile) return;
-        const type = document.getElementById('m-type').value;
-        const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
-        document.getElementById('create-balance-display').innerText = "Balance: " + bal;
-    }
-
     async function loadMarkets() {
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
+        
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
             const isExpired = new Date(m.deadline) < new Date();
+            
             if(m.status === 'active') {
                 const card = document.createElement('div');
                 card.className = 'market-card';
@@ -279,7 +242,8 @@
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                const card = document.createElement('div'); card.className = 'market-card';
+                const card = document.createElement('div');
+                card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
@@ -291,8 +255,72 @@
         });
     }
 
+    // --- Helper Functions ---
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        document.getElementById('link-' + id).classList.add('active');
+    }
+
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
+    }
+
+    function updateCreateBalanceDisplay() {
+        if(!userProfile) return;
+        const type = document.getElementById('m-type').value;
+        const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
+        document.getElementById('create-balance-display').innerText = "Balance: " + bal;
+    }
+
+    function updateRewardUI() {
+        const msg = document.getElementById('reward-msg');
+        const btn = document.getElementById('btn-claim-reward');
+        if (!userProfile) return;
+        if (!userProfile.last_claim) {
+            msg.innerText = "Ready to roll!"; btn.disabled = false; btn.style.opacity = "1"; return;
+        }
+        const last = new Date(userProfile.last_claim).getTime();
+        const now = new Date().getTime();
+        const diff = 86400000 - (now - last);
+        if (diff > 0) {
+            const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
+            msg.style.color = "var(--danger)"; btn.disabled = true; btn.style.opacity = "0.5";
+        } else {
+            msg.innerText = "Ready to roll!"; msg.style.color = "var(--success)"; btn.disabled = false; btn.style.opacity = "1";
+        }
+    }
+
+    async function claimDailyDemo() {
+        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return;
+        const win = Math.floor(Math.random() * 8000 + 1000);
+        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
+        document.getElementById('reward-msg').innerText = "WON " + win + " D!";
+        fetchProfile();
+    }
+
+    function openBet(mId, n, o, t, dl) {
+        if(new Date(dl) < new Date()) return alert("Lezárult!");
+        activeBet = { mId, n, o, t, dl };
+        document.getElementById('bet-on').innerText = n;
+        document.getElementById('bet-odds').innerText = "x" + o;
+        document.getElementById('betModal').classList.remove('hidden');
+        calcWin();
+    }
+
+    async function placeBet() {
+        const amt = parseFloat(document.getElementById('bet-amount').value);
+        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        const profit = amt * (activeBet.o - 1);
+        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+        if(amt > userProfile[f]) return alert("Nincs elég egyenleg!");
+        if(profit > mData.take) return alert("Nincs elég likviditás!");
+        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
+        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
+        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
+        location.reload();
     }
 
     function addGroup() {
@@ -328,26 +356,6 @@
         location.reload();
     }
 
-    function openBet(mId, n, o, t, dl) {
-        if(new Date(dl) < new Date()) return alert("Lezárult!");
-        activeBet = { mId, n, o, t, dl };
-        document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
-        document.getElementById('betModal').classList.remove('hidden'); calcWin();
-    }
-
-    async function placeBet() {
-        const amt = parseFloat(document.getElementById('bet-amount').value);
-        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-        const profit = amt * (activeBet.o - 1);
-        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        if(amt > userProfile[f]) return alert("Nincs elég egyenleg!");
-        if(profit > mData.take) return alert("Nincs elég likviditás!");
-        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
-        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
-        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
-        location.reload();
-    }
-
     async function openSettle(mId, title) {
         const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
         currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
@@ -378,40 +386,22 @@
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            if(bets && bets.length > 0) {
+            if(bets) {
                 for(let bet of bets) {
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
-                        const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
-                        await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: payout, p_field: field });
-                    } else {
-                        hostTotal += parseFloat(bet.amount);
-                    }
+                        await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: bet.amount * bet.odds, p_field: field });
+                    } else { hostTotal += parseFloat(bet.amount); }
                     await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
                 }
             }
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-            if (host) {
-                await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
-            }
+            if (host) await _supabase.from('profiles').update({ [field]: host[field] + hostTotal }).eq('id', host.id);
             await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() }).eq('id', currentSettleId);
             location.reload();
-        } catch(e) { console.error(e); alert("Error!"); btn.disabled = false; btn.innerText = "FINALIZE"; }
+        } catch(e) { console.error(e); btn.disabled = false; btn.innerText = "FINALIZE"; }
     }
 
-    async function claimDailyDemo() {
-        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("Várj 24 órát!");
-        const win = Math.floor(Math.random() * 8000 + 1000);
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = "WON " + win + " D!"; fetchProfile();
-    }
-
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-' + id).classList.add('active');
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById('link-' + id).classList.add('active');
-    }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
