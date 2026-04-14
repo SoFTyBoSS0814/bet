@@ -17,10 +17,9 @@
         
         .right-panel { display: flex; align-items: center; gap: 15px; }
         
-        /* Szeparált egyenleg kijelző - Egymás mellett az érték és a pénznem */
+        /* Navbar egyenleg - Egymás mellett */
         .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
         .wallet-sep { width: 1px; height: 18px; background: #334756; }
-        .wallet-unit { font-size: 11px; margin-left: 4px; opacity: 0.8; }
 
         .lang-select { background: #0b1218; color: var(--primary); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; outline: none; height: 38px; font-weight: bold; }
 
@@ -29,6 +28,13 @@
         .section.active { display: block; }
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
+        
+        /* Középső egyenleg kártyák - JAVÍTVA: Szám és DEMO/€ egymás mellett */
+        .balance-item { flex: 1; padding: 20px; border: 1px solid var(--border); border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
+        .balance-value-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .balance-value-row h2 { margin: 0; line-height: 1; }
+        .balance-unit { font-size: 16px; font-weight: bold; opacity: 0.9; }
+
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 15px; }
         .header-left { flex: 1; }
         .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
@@ -110,14 +116,22 @@
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2 data-i18n="balances">Balances</h2>
             <div id="geo-restriction" data-i18n="geo_msg">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
+            
             <div style="display:flex; gap:10px; margin:20px 0;">
-                <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>REAL</small><h2 style="color:var(--primary)"><span id="w-real">0.00</span> €</h2>
+                <div class="balance-item">
+                    <small>REAL</small>
+                    <div class="balance-value-row" style="color:var(--primary)">
+                        <h2 id="w-real">0.00</h2><span class="balance-unit">€</span>
+                    </div>
                 </div>
-                <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>DEMO</small><h2 style="color:var(--demo)"><span id="w-demo">0.00</span> DEMO</h2>
+                <div class="balance-item">
+                    <small>DEMO</small>
+                    <div class="balance-value-row" style="color:var(--demo)">
+                        <h2 id="w-demo">0.00</h2><span class="balance-unit">DEMO</span>
+                    </div>
                 </div>
             </div>
+
             <div id="btc-wallet-area"></div>
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)" data-i18n="mystery_box">Daily Mystery Box</h3>
