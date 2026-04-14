@@ -86,6 +86,7 @@
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2>Balances</h2>
+            
             <div id="geo-restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
             
             <div style="display:flex; gap:10px; margin:20px 0;">
@@ -162,8 +163,6 @@
     </div>
 </div>
 
-<script src="bitcoin.js"></script>
-
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
@@ -174,13 +173,14 @@
     let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
-    let isHungarian = true; // Alapértelmezés biztonsági okokból
+    let isHungarian = null; // Kezdetben null, hogy várja meg a mérést
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
         
-        // Előbb IP check, aztán profil
+        // 1. IP ellenőrzés fut le először
         await checkIP();
+        // 2. Profil betöltése (ez fogja kirajzolni a BTC panelt, ha nem magyar)
         await fetchProfile();
         
         loadMarkets();
@@ -190,25 +190,26 @@
 
     async function checkIP() {
         try {
+            // Próbálunk egy megbízható IP API-t (HTTPS-en)
             const res = await fetch('https://ipapi.co/json/');
-            if(!res.ok) throw new Error("Fetch failed");
+            if(!res.ok) throw new Error("API Limit vagy hiba");
             const data = await res.json();
             isHungarian = (data.country_code === 'HU');
         } catch(e) { 
             console.error("Geo-check error", e);
-            // Ha hiba van (pl. CORS), tekintsük magyarnak a biztonság kedvéért
+            // Ha az API blokkolva van vagy hiba van, biztonsági okból magyarnak vesszük
             isHungarian = true; 
         }
 
-        // UI frissítése az eredmény alapján
         const geoMsg = document.getElementById('geo-restriction');
         const btcArea = document.getElementById('btc-wallet-area');
 
         if(isHungarian) {
             geoMsg.style.display = 'block';
-            btcArea.innerHTML = ''; 
+            btcArea.innerHTML = ''; // Töröljük a BTC panelt, ha magyar
         } else {
             geoMsg.style.display = 'none';
+            // Itt még nem rajzolunk, mert nincs meg a userProfile btc_address-e
         }
     }
 
@@ -225,9 +226,12 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
-        // Csak ha nem magyar IP, akkor rajzoljuk ki a BTC panelt
-        if(!isHungarian) {
+        // SZIGORÚ ELLENŐRZÉS: Csak akkor rajzolunk BTC-t, ha isHungarian === false
+        const btcArea = document.getElementById('btc-wallet-area');
+        if(isHungarian === false) {
             renderBTCPanel(data.btc_address);
+        } else {
+            btcArea.innerHTML = ''; // Biztosra megyünk, hogy üres legyen
         }
 
         updateCreateBalanceDisplay();
@@ -436,7 +440,6 @@
     async function finalSubmitSettle() {
         const btn = document.getElementById('finalize-btn');
         btn.disabled = true; btn.innerText = "Processing...";
-
         let winners = [];
         document.querySelectorAll('.settle-select').forEach(s => {
             const gi = s.dataset.gi, oi = s.dataset.oi;
@@ -468,7 +471,7 @@
             location.reload();
         } catch(e) { 
             console.error(e);
-            alert("Error during settlement!");
+            alert("Error!");
             btn.disabled = false; btn.innerText = "FINALIZE";
         }
     }
