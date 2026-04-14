@@ -17,7 +17,6 @@
         
         .right-panel { display: flex; align-items: center; gap: 15px; }
         
-        /* Navbar egyenleg - Egymás mellett */
         .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
         .wallet-sep { width: 1px; height: 18px; background: #334756; }
 
@@ -29,11 +28,29 @@
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         
-        /* Középső egyenleg kártyák - JAVÍTVA: Szám és DEMO/€ egymás mellett */
-        .balance-item { flex: 1; padding: 20px; border: 1px solid var(--border); border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
-        .balance-value-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
-        .balance-value-row h2 { margin: 0; line-height: 1; }
-        .balance-unit { font-size: 16px; font-weight: bold; opacity: 0.9; }
+        /* MÓDOSÍTOTT EGYENLEG STÍLUS - EGY SÍKBAN */
+        .balance-item { 
+            flex: 1; 
+            padding: 25px 15px; 
+            border: 1px solid var(--border); 
+            border-radius: 15px; 
+            display: flex; 
+            flex-direction: row; /* Vizszintes elrendezés */
+            align-items: baseline; /* Az alapvonalhoz igazítja a számot és a szöveget */
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            min-width: 160px;
+        }
+        .balance-item small { 
+            position: absolute; 
+            top: 8px; 
+            font-size: 10px; 
+            color: #aaa; 
+            letter-spacing: 1px;
+        }
+        .balance-item h2 { margin: 0; font-size: 24px; line-height: 1; }
+        .balance-unit { font-size: 16px; font-weight: bold; }
 
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 15px; }
         .header-left { flex: 1; }
@@ -118,17 +135,15 @@
             <div id="geo-restriction" data-i18n="geo_msg">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
             
             <div style="display:flex; gap:10px; margin:20px 0;">
-                <div class="balance-item">
+                <div class="balance-item" style="color:var(--primary)">
                     <small>REAL</small>
-                    <div class="balance-value-row" style="color:var(--primary)">
-                        <h2 id="w-real">0.00</h2><span class="balance-unit">€</span>
-                    </div>
+                    <h2 id="w-real">0.00</h2>
+                    <span class="balance-unit">€</span>
                 </div>
-                <div class="balance-item">
+                <div class="balance-item" style="color:var(--demo)">
                     <small>DEMO</small>
-                    <div class="balance-value-row" style="color:var(--demo)">
-                        <h2 id="w-demo">0.00</h2><span class="balance-unit">DEMO</span>
-                    </div>
+                    <h2 id="w-demo">0.00</h2>
+                    <span class="balance-unit">DEMO</span>
                 </div>
             </div>
 
@@ -270,7 +285,7 @@
             settled_at: "Завершено в", category_placeholder: "Имя категории", outcome_placeholder: "Результат",
             ready_roll: "Готово!", avail_in: "Доступно через: ", wait_24: "Подождите 24 часа!", won: "ВЫИГРАНО ",
             insufficient: "Недостаточно средств!", min_deadline_err: "Минимум 1 минута в будущем!",
-            max_deadline_err: "Максимум 3 дня вперед!", fill_all: "Заполните все поля!", 
+            max_deadline_err: "Maximum 3 days ahead!", fill_all: "Заполните все поля!", 
             cat_err: "Назовите все категории!", outcome_err: "Назовите все результаты!",
             odds_err: "Коэффициент от 1.01 до 1000!", win_loss_err: "Нужен минимум 1 WINNER и 1 LOSS!",
             btc_title: "BTC Депозит / Вывод", btc_addr_label: "Ваш BTC адрес для депозита:", btc_copy: "(Нажмите, чтобы скопировать)",
@@ -478,14 +493,11 @@
             } else {
                 const card = document.createElement('div');
                 card.className = 'market-card';
-                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `
                     <div class="settled-badge">Settled</div>
                     <div class="market-header">
                         <div class="header-left">
-                            <h2 style="margin-top:15px; margin-bottom:5px;">
-                                ${m.title} <span style="color:${typeColor}; opacity:0.7">- ${dict.settled_at} ${sDate.toLocaleString()}.</span>
-                            </h2>
+                            <h2 style="margin-top:15px; margin-bottom:5px;">${m.title}</h2>
                             <div style="margin-bottom:15px;">
                                 <small style="color:#aaa; display:block;">${dict.host}: ${m.creator_name}</small>
                                 <small style="color:var(--danger); display:block;">${dict.deadline}: ${dlDate.toLocaleString()}</small>
@@ -568,7 +580,6 @@
 
     function openBet(mId, n, o, t, dl) {
         activeBet = { mId, n, o, t, dl };
-        const symbol = t === 'REAL' ? '€' : 'DEMO';
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
