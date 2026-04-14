@@ -163,6 +163,7 @@
 </div>
 
 <script src="bitcoin.js"></script>
+<script src="geo.js"></script>
 
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
@@ -178,27 +179,20 @@
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        await checkIP();
+        
+        // Geo-ellenőrzés a geo.js-ből
+        isHungarian = await checkGeoRestriction();
+        
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
     };
 
-    async function checkIP() {
-        try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            if(data.country_code === 'HU') {
-                isHungarian = true;
-                document.getElementById('geo-restriction').style.display = 'block';
-            }
-        } catch(e) { console.error("Geo-check error", e); }
-    }
-
     async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         userProfile = data;
+        
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
@@ -207,12 +201,10 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
-        // MÓDOSÍTÁS: Csak akkor renderelünk BTC panelt, ha NEM magyar az IP
-        const btcArea = document.getElementById('btc-wallet-area');
+        // Geo UI frissítés és BTC panel feltételes megjelenítése
+        applyGeoUI(isHungarian);
         if(!isHungarian) {
             renderBTCPanel(data.btc_address);
-        } else {
-            btcArea.innerHTML = ""; // Biztonsági ürítés
         }
 
         updateCreateBalanceDisplay();
@@ -241,7 +233,6 @@
         const amount = parseFloat(document.getElementById('wit-amount').value);
         const address = document.getElementById('wit-addr').value;
         const errorDiv = document.getElementById('wit-error');
-        
         errorDiv.style.display = 'none';
 
         if(isNaN(amount) || amount <= 0 || !address) {
@@ -255,19 +246,12 @@
         }
 
         const { error } = await _supabase.from('withdrawals').insert([{
-            user_id: currentUser.id,
-            username: currentUser.username,
-            amount: amount,
-            btc_address: address,
-            status: 'pending'
+            user_id: currentUser.id, username: currentUser.username,
+            amount: amount, btc_address: address, status: 'pending'
         }]);
 
-        if(!error) {
-            alert("Kifizetési kérelem sikeresen elküldve!");
-            location.reload();
-        } else {
-            alert("Hiba történt a kérés küldésekor.");
-        }
+        if(!error) { alert("Kifizetési kérelem elküldve!"); location.reload(); }
+        else { alert("Hiba történt a kérés küldésekor."); }
     }
 
     function copyBTCAddress() {
@@ -421,7 +405,6 @@
     async function finalSubmitSettle() {
         const btn = document.getElementById('finalize-btn');
         btn.disabled = true; btn.innerText = "Processing...";
-
         let winners = [];
         document.querySelectorAll('.settle-select').forEach(s => {
             const gi = s.dataset.gi, oi = s.dataset.oi;
@@ -433,7 +416,6 @@
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
-
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
             
             if(bets && bets.length > 0) {
@@ -441,36 +423,21 @@
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
                         const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
-                        await _supabase.rpc('settle_bet_payout', {
-                            p_user_id: bet.user_id,
-                            p_amount: payout,
-                            p_field: field
-                        });
-                    } else {
-                        hostTotal += parseFloat(bet.amount);
-                    }
+                        await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: payout, p_field: field });
+                    } else { hostTotal += parseFloat(bet.amount); }
                     await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
                 }
             }
 
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-            if (host) {
-                await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
-            }
+            if (host) { await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id); }
 
             await _supabase.from('markets').update({ 
-                note: JSON.stringify(currentSettleGroups), 
-                status: 'settled', 
-                take: 0,
-                start_time: new Date().toISOString() 
+                note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() 
             }).eq('id', currentSettleId);
             
             location.reload();
-        } catch(e) { 
-            console.error(e);
-            alert("Error during settlement!"); 
-            btn.disabled = false; btn.innerText = "FINALIZE";
-        }
+        } catch(e) { console.error(e); alert("Error during settlement!"); btn.disabled = false; btn.innerText = "FINALIZE"; }
     }
 
     async function claimDailyDemo() {
