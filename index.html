@@ -48,7 +48,8 @@
 
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
         
-        .error-text { color: var(--danger); font-weight: bold; font-size: 16px; margin-top: 10px; display: block; }
+        /* ÚJ STÍLUS A HIBAÜZENETHEZ */
+        .inline-error { color: var(--danger); font-weight: bold; font-size: 18px; margin: 10px 0; min-height: 22px; }
     </style>
 </head>
 <body>
@@ -95,7 +96,7 @@
             </div>
 
             <div id="btc-wallet-area"></div>
-            <div id="wallet-error-msg" class="error-text"></div>
+            <div id="wallet-error-msg" class="inline-error"></div>
 
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
@@ -127,7 +128,7 @@
         <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
         <p id="bet-win-text">Payout: 0.00</p>
-        <div id="bet-error-msg" class="error-text"></div>
+        <div id="bet-error-msg" class="inline-error"></div>
         <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
     </div>
@@ -306,9 +307,9 @@
         const b = parseFloat(document.getElementById('m-budget').value);
         const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
-        if(!dl || isNaN(b) || b <= 0) return alert("Helytelen adatok!");
+        if(!dl || isNaN(b) || b <= 0) return;
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return alert("Nincs elég fedezet!");
+        if(b > userProfile[balField]) return;
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
         const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
             title: g.querySelector('.gt').value,
@@ -319,10 +320,9 @@
     }
 
     function openBet(mId, n, o, t, dl) {
-        if(new Date(dl) < new Date()) return alert("Lezárult!");
+        if(new Date(dl) < new Date()) return;
         activeBet = { mId, n, o, t, dl };
-        // Reset hibaüzenet
-        document.getElementById('bet-error-msg').innerText = "";
+        document.getElementById('bet-error-msg').innerText = ""; // Hiba reset
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
@@ -331,7 +331,7 @@
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const errDiv = document.getElementById('bet-error-msg');
         errDiv.innerText = "";
-        
+
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         const profit = amt * (activeBet.o - 1);
         const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
@@ -340,12 +340,10 @@
             errDiv.innerText = "❌ Hiba: Nincs elég egyenleged!";
             return;
         }
-        
         if(profit > mData.take) {
             errDiv.innerText = "❌ Hiba: Nincs elég likviditás!";
             return;
         }
-
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
@@ -391,7 +389,7 @@
     }
 
     async function claimDailyDemo() {
-        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("Várj 24 órát!");
+        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return;
         const win = Math.floor(Math.random() * 8000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
         document.getElementById('reward-msg').innerText = "WON " + win + " D!"; fetchProfile();
@@ -402,7 +400,6 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
-        // Reset hibaüzenet ha szekciót váltunk
         if(id === 'wallet') document.getElementById('wallet-error-msg').innerText = "";
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
