@@ -395,58 +395,31 @@
 async function requestWithdrawal() {
         const amount = parseFloat(document.getElementById('wit-amount').value);
         const address = document.getElementById('wit-addr').value;
-        const errorDiv = document.getElementById('wit-error');
-        // Kikeressük a szótárból az üzenetet, vagy fixen beírjuk, ahogy kérted
         const dict = i18n[currentLang] || i18n['en'];
 
-        errorDiv.style.display = 'none';
-        errorDiv.style.background = 'none';
-        errorDiv.style.color = 'var(--danger)';
-
         if(isNaN(amount) || amount <= 0 || !address) return;
+
         if(amount > userProfile.real_balance) { 
-            errorDiv.innerText = (currentLang === 'hu') ? "Nincs elég egyenleged!" : "Insufficient balance!";
-            errorDiv.style.display = 'block'; 
+            showTimedMessage(dict.withdraw_error, '--danger', 'rgba(255, 68, 68, 0.1)');
             return; 
         }
 
-        // Levonás az adatbázisból
         const { error: updateError } = await _supabase.from('profiles').update({ 
             real_balance: userProfile.real_balance - amount 
         }).eq('id', currentUser.id);
 
         if(updateError) return;
 
-        // Kérelem rögzítése
         await _supabase.from('withdrawals').insert([{ 
-            user_id: currentUser.id, 
-            username: currentUser.username, 
-            amount: amount, 
-            btc_address: address, 
-            status: 'pending' 
+            user_id: currentUser.id, username: currentUser.username, 
+            amount: amount, btc_address: address, status: 'pending' 
         }]);
 
-        // --- SIKERES VISSZAJELZÉS BEÁLLÍTÁSA ---
-        errorDiv.innerText = "Sikeres kérés! Az admin 24órán belül felülvizsgálja-és elszámolja a tranzakciót!";
-        errorDiv.style.display = 'block';
-        errorDiv.style.color = 'var(--success)'; 
-        errorDiv.style.background = 'rgba(40, 167, 69, 0.15)';
-        errorDiv.style.padding = '10px';
-        errorDiv.style.borderRadius = '8px';
-
-        // Mezők ürítése
         document.getElementById('wit-amount').value = '';
         document.getElementById('wit-addr').value = '';
+        fetchProfile();
 
-        // Egyenleg frissítése a felületen (számok változása)
-        fetchProfile(); 
-
-        // --- IDŐZÍTŐ: 8 másodperc (8000 ms) után eltüntetjük ---
-        setTimeout(() => {
-            errorDiv.style.display = 'none';
-            errorDiv.innerText = '';
-            errorDiv.style.background = 'none';
-        }, 8000);
+        showTimedMessage(dict.withdraw_success, '--success', 'rgba(40, 167, 69, 0.15)');
     }
 
     function copyBTCAddress() {
