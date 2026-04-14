@@ -26,15 +26,14 @@
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         
-        /* Betting History Stílusok */
+        /* ÚJ STÍLUSOK A FOGADÁSOKHOZ */
         .bet-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .bet-table th { text-align: left; padding: 12px; color: #888; font-size: 12px; border-bottom: 1px solid var(--border); }
         .bet-table td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .row-won { background: rgba(40, 167, 69, 0.15) !important; border-left: 4px solid var(--success); }
-        .row-lost { background: rgba(255, 68, 68, 0.1) !important; border-left: 4px solid var(--danger); }
-        .type-badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 5px; }
-        .type-real { background: var(--primary); color: #000; }
-        .type-demo { background: var(--demo); color: #000; }
+        .bet-won { border-left: 5px solid var(--success); background: rgba(40, 167, 69, 0.1); }
+        .bet-lost { border-left: 5px solid var(--danger); background: rgba(255, 68, 68, 0.1); }
+        .bet-pending { border-left: 5px solid var(--demo); }
+        .type-tag { font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
 
         .balance-container { display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 15px; margin: 30px 0; flex-wrap: nowrap; }
         .balance-item { 
@@ -132,14 +131,14 @@
                 <thead>
                     <tr>
                         <th data-i18n="th_market">Market</th>
-                        <th data-i18n="th_selection">Selection</th>
+                        <th data-i18n="th_pick">Pick</th>
                         <th>Odds</th>
                         <th data-i18n="th_stake">Stake</th>
                         <th data-i18n="th_payout">Payout</th>
                         <th data-i18n="th_status">Status</th>
                     </tr>
                 </thead>
-                <tbody id="my-bets-list"></tbody>
+                <tbody id="betting-history-list"></tbody>
             </table>
         </div>
     </div>
@@ -194,15 +193,12 @@
     <div class="modal-box" style="max-width:350px; text-align:center;">
         <h3 id="m-bet-title" style="margin-top:0;"></h3>
         <p id="m-bet-choice" style="color:var(--primary); font-weight:bold; font-size:18px;"></p>
-        
         <div style="display:flex; gap:10px; margin:20px 0;">
             <button id="btn-mode-real" class="btn-demo" style="flex:1; margin:0; background:transparent; border:1px solid var(--primary); color:var(--primary);" onclick="setBetMode('REAL')">REAL (€)</button>
             <button id="btn-mode-demo" class="btn-demo" style="flex:1; margin:0;" onclick="setBetMode('DEMO')">DEMO</button>
         </div>
-
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
         <p id="bet-win-text" style="font-weight:bold; color:var(--success); margin:15px 0;"></p>
-        
         <button class="btn-primary" onclick="placeBet()" data-i18n="btn_place_bet">Place Bet</button>
         <button class="btn-demo" style="background:transparent; color:#888; width:100%;" onclick="closeModal('betModal')" data-i18n="cancel">Cancel</button>
     </div>
@@ -211,14 +207,12 @@
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
         <h3 data-i18n="create_market">Create Market</h3>
-        <input type="text" id="m-name" placeholder="Market Name (e.g. BTC Price)">
+        <input type="text" id="m-name" placeholder="Market Name">
         <textarea id="m-desc" placeholder="Description/Rules" rows="3"></textarea>
         <label style="font-size:12px; color:#aaa;" data-i18n="deadline">Settlement Deadline</label>
         <input type="datetime-local" id="m-deadline">
-        
         <div id="groups-container"></div>
         <button class="btn-demo" style="width:100%; margin-bottom:15px; background:#1a2a33; color:var(--primary); border:1px solid var(--primary);" onclick="addGroup()" data-i18n="add_group">+ Add Odds Group</button>
-        
         <button class="btn-primary" onclick="createMarket()" data-i18n="btn_launch">Launch Market</button>
         <button class="btn-demo" style="background:transparent; color:#888; width:100%;" onclick="closeModal('createModal')" data-i18n="cancel">Cancel</button>
     </div>
@@ -247,10 +241,9 @@
             username: "Felhasználónév", email: "Email cím", logout: "Kijelentkezés",
             create_market: "Piac Létrehozása", deadline: "Lezárási Határidő", add_group: "+ Csoport Hozzáadása", btn_launch: "PIAC INDÍTÁSA",
             cancel: "Mégse", settle_market: "Piac Lezárása", btn_place_bet: "FOGADÁS MEGTÉTELE",
-            th_market: "Piac", th_selection: "Tipp", th_stake: "Tét", th_payout: "Várható", th_status: "Állapot",
-            withdraw_success: "Sikeres kérés! Az admin 24órán belül felülvizsgálja-és elszámolja a tranzakciót!",
-            withdraw_error: "Nincs elég egyenleged!",
-            claim_wait: "Még várnod kell: ", won: "Gratulálunk! Nyertél: "
+            th_market: "Piac", th_pick: "Tipp", th_stake: "Tét", th_payout: "Várható", th_status: "Állapot",
+            withdraw_success: "Sikeres kérés! Az admin 24órán belül felülvizsgálja!",
+            withdraw_error: "Nincs elég egyenleged!", claim_wait: "Még várnod kell: ", won: "Gratulálunk! Nyertél: "
         },
         en: {
             nav_markets: "Markets", nav_history: "Events", nav_betting: "Betting History", nav_wallet: "Wallet", nav_account: "Account",
@@ -260,10 +253,8 @@
             username: "Username", email: "Email Address", logout: "Logout",
             create_market: "Create Market", deadline: "Settlement Deadline", add_group: "+ Add Group", btn_launch: "LAUNCH MARKET",
             cancel: "Cancel", settle_market: "Settle Market", btn_place_bet: "PLACE BET",
-            th_market: "Market", th_selection: "Pick", th_stake: "Stake", th_payout: "Payout", th_status: "Status",
-            withdraw_success: "Request successful! Admin will review and settle within 24 hours!",
-            withdraw_error: "Insufficient balance!",
-            claim_wait: "Wait: ", won: "Congrats! You won: "
+            th_market: "Market", th_pick: "Pick", th_stake: "Stake", th_payout: "Payout", th_status: "Status",
+            withdraw_success: "Request successful!", withdraw_error: "Insufficient balance!", claim_wait: "Wait: ", won: "Congrats! You won: "
         }
     };
 
@@ -309,22 +300,11 @@
                 });
                 groupsHtml += `</div></div>`;
             });
-
             let adminHtml = '';
             if(userProfile.role === 'admin') {
-                adminHtml = `<div class="admin-controls">
-                    <button class="btn-admin btn-settle" onclick="openSettleModal('${m.id}', '${m.name}')">Settle</button>
-                    <button class="btn-admin btn-delete" onclick="deleteMarket('${m.id}')">Delete</button>
-                </div>`;
+                adminHtml = `<div class="admin-controls"><button class="btn-admin btn-settle" onclick="openSettleModal('${m.id}', '${m.name}')">Settle</button><button class="btn-admin btn-delete" onclick="deleteMarket('${m.id}')">Delete</button></div>`;
             }
-
-            card.innerHTML = `
-                <div class="market-header">
-                    <h3 class="market-title">${m.name}</h3>
-                    <span class="market-deadline">Ends: ${new Date(m.deadline).toLocaleString()}</span>
-                </div>
-                <p class="market-desc">${m.description || ''}</p>
-                ${groupsHtml}${adminHtml}`;
+            card.innerHTML = `<div class="market-header"><h3 class="market-title">${m.name}</h3><span class="market-deadline">Ends: ${new Date(m.deadline).toLocaleString()}</span></div><p class="market-desc">${m.description || ''}</p>${groupsHtml}${adminHtml}`;
             list.appendChild(card);
         });
     }
@@ -341,25 +321,27 @@
         });
     }
 
+    // ÚJ FOGADÁSI ELŐZMÉNYEK LEKÉRÉSE
     async function loadBettingHistory() {
         const { data } = await _supabase.from('bets').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-        const list = document.getElementById('my-bets-list');
+        const list = document.getElementById('betting-history-list');
         list.innerHTML = '';
         data.forEach(b => {
             const tr = document.createElement('tr');
-            if(b.status === 'won') tr.className = 'row-won';
-            else if(b.status === 'lost') tr.className = 'row-lost';
+            if(b.status === 'won') tr.className = 'bet-won';
+            else if(b.status === 'lost') tr.className = 'bet-lost';
+            else tr.className = 'bet-pending';
 
-            const typeClass = b.type === 'REAL' ? 'type-real' : 'type-demo';
-            const payout = b.status === 'won' ? (b.amount * b.odds).toFixed(2) : (b.status === 'lost' ? "0.00" : "---");
-
+            const payout = b.status === 'won' ? (b.amount * b.odds).toFixed(2) : (b.status === 'pending' ? (b.amount * b.odds).toFixed(2) : '0.00');
+            const typeColor = b.type === 'REAL' ? 'var(--primary)' : 'var(--demo)';
+            
             tr.innerHTML = `
                 <td>${b.market_name}</td>
-                <td>${b.selection} <span class="type-badge ${typeClass}">${b.type}</span></td>
+                <td>${b.selection} <span class="type-tag" style="background:${typeColor}; color:#000;">${b.type}</span></td>
                 <td>${b.odds.toFixed(2)}</td>
                 <td>${b.amount.toFixed(2)}</td>
-                <td>${payout}</td>
-                <td style="font-weight:bold; text-transform:uppercase;">${b.status}</td>
+                <td style="font-weight:bold;">${payout}</td>
+                <td style="text-transform:uppercase; font-weight:bold; color:${b.status === 'won' ? 'var(--success)' : (b.status === 'lost' ? 'var(--danger)' : 'var(--demo)')}">${b.status}</td>
             `;
             list.appendChild(tr);
         });
@@ -388,17 +370,12 @@
         if(!amt || amt <= 0) return;
         const balKey = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         if(amt > userProfile[balKey]) { alert("Insufficient funds!"); return; }
-
-        const { error } = await _supabase.from('profiles').update({ [balKey]: userProfile[balKey] - amt }).eq('id', currentUser.id);
-        if(!error) {
-            await _supabase.from('bets').insert([{
-                user_id: currentUser.id, username: currentUser.username, market_id: activeBet.id,
-                market_name: activeBet.n, selection: activeBet.c, odds: activeBet.o, amount: amt, type: activeBet.t, status: 'pending'
-            }]);
-            closeModal('betModal');
-            fetchProfile();
-            loadBettingHistory();
-        }
+        await _supabase.from('profiles').update({ [balKey]: userProfile[balKey] - amt }).eq('id', currentUser.id);
+        await _supabase.from('bets').insert([{
+            user_id: currentUser.id, username: currentUser.username, market_id: activeBet.id,
+            market_name: activeBet.n, selection: activeBet.c, odds: activeBet.o, amount: amt, type: activeBet.t, status: 'pending'
+        }]);
+        closeModal('betModal'); fetchProfile(); loadBettingHistory();
     }
 
     async function requestWithdrawal() {
@@ -406,16 +383,10 @@
         const address = document.getElementById('wit-addr').value;
         const dict = i18n[currentLang];
         if (isMessageActive || isNaN(amount) || amount <= 0 || !address) return;
-
-        if(amount > userProfile.real_balance) {
-            displayStatus(dict.withdraw_error, 'rgba(255, 68, 68, 0.1)', 'var(--danger)');
-            return;
-        }
-
+        if(amount > userProfile.real_balance) { displayStatus(dict.withdraw_error, 'rgba(255, 68, 68, 0.1)', 'var(--danger)'); return; }
         await _supabase.from('profiles').update({ real_balance: userProfile.real_balance - amount }).eq('id', currentUser.id);
         await _supabase.from('withdrawals').insert([{ user_id: currentUser.id, username: currentUser.username, amount, btc_address: address, status: 'pending' }]);
-        fetchProfile();
-        displayStatus(dict.withdraw_success, 'rgba(40, 167, 69, 0.15)', 'var(--success)');
+        fetchProfile(); displayStatus(dict.withdraw_success, 'rgba(40, 167, 69, 0.15)', 'var(--success)');
     }
 
     function displayStatus(text, bg, color) {
@@ -428,9 +399,7 @@
     function addGroup() {
         const div = document.createElement('div');
         div.className = 'market-group';
-        div.innerHTML = `<input type="text" placeholder="Group Name (e.g. Winner)" class="g-name">
-            <div class="outcomes-grid"></div>
-            <button class="btn-demo" style="width:100%; font-size:11px;" onclick="addOption(this)">+ Add Option</button>`;
+        div.innerHTML = `<input type="text" placeholder="Group Name" class="g-name"><div class="outcomes-grid"></div><button class="btn-demo" style="width:100%; font-size:11px;" onclick="addOption(this)">+ Add Option</button>`;
         document.getElementById('groups-container').appendChild(div);
         addOption(div.querySelector('button'));
     }
@@ -439,9 +408,7 @@
         const grid = btn.previousElementSibling;
         const div = document.createElement('div');
         div.style.display = 'flex'; div.style.gap = '5px';
-        div.innerHTML = `<input type="text" placeholder="Outcome" class="o-name" style="margin:0;">
-            <input type="number" step="0.01" placeholder="Odds" class="o-val" style="margin:0; width:80px;">
-            <button class="btn-demo" style="margin:0; background:var(--danger); color:#fff;" onclick="this.parentElement.remove()">X</button>`;
+        div.innerHTML = `<input type="text" placeholder="Outcome" class="o-name" style="margin:0;"><input type="number" step="0.01" placeholder="Odds" class="o-val" style="margin:0; width:80px;"><button class="btn-demo" style="margin:0; background:var(--danger); color:#fff;" onclick="this.parentElement.remove()">X</button>`;
         grid.appendChild(div);
     }
 
@@ -516,21 +483,17 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
     }
-
     function calcWin() { 
         const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
         document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
     }
-
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
     function openCreateModal() { 
         document.getElementById('createModal').classList.remove('hidden');
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
         if(!document.getElementById('groups-container').innerHTML) addGroup();
     }
-
     function changeLang(l) { currentLang = l; localStorage.setItem("lang", l); updatePageText(); }
     function updatePageText() {
         const dict = i18n[currentLang];
