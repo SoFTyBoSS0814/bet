@@ -54,7 +54,6 @@
         .btc-address { background: #0b1218; padding: 10px; border: 1px dashed var(--primary); border-radius: 6px; font-size: 11px; word-break: break-all; color: var(--primary); cursor: pointer; text-align: center; margin: 10px 0; }
         #wit-error { color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold; display: none; text-align: center; }
         
-        /* Új stílus a deadline kijelzéshez */
         .deadline-badge { margin-top: 5px; font-size: 12px; font-weight: bold; color: var(--danger); background: rgba(255,68,68,0.1); padding: 4px 8px; border-radius: 4px; display: inline-block; border: 1px solid rgba(255,68,68,0.2); }
     </style>
 </head>
@@ -348,7 +347,12 @@
                 card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
+                    <h2 style="margin-top:15px;">${m.title}</h2>
+                    <div style="margin-bottom:15px; font-size:12px; color:#aaa;">
+                        Host: <b>${m.creator_name}</b><br>
+                        Deadline: <b>${dlDate.toLocaleString()}</b><br>
+                        Final Pool: <b style="color:var(--primary)">${parseFloat(m.take).toFixed(2)} ${symbol}</b>
+                    </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
                     </div>`).join('')}`;
@@ -498,7 +502,8 @@
             if (host) {
                 await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
             }
-            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() }).eq('id', currentSettleId);
+            // A take mezőt NEM nullázzuk le itt, hogy a History-ban látható legyen a végállapot
+            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', start_time: new Date().toISOString() }).eq('id', currentSettleId);
             location.reload();
         } catch(e) { 
             console.error(e); alert("Error!"); btn.disabled = false; btn.innerText = "FINALIZE";
