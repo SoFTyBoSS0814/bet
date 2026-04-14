@@ -334,6 +334,7 @@
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
+                    <div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <div class="market-header">
                         <div>
                             <h2 style="margin:0;">${m.title}</h2>
@@ -538,7 +539,6 @@
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { 
         document.getElementById('createModal').classList.remove('hidden'); 
-        // Beállítjuk a naptárban a minimumot a mostani időre
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
