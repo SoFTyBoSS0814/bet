@@ -170,12 +170,13 @@
     let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
+    let isHungarian = false;
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
+        await checkIP(); // Először az IP ellenőrzés
         await fetchProfile();
         loadMarkets();
-        checkIP();
         setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
     };
@@ -185,9 +186,16 @@
             const res = await fetch('https://ipapi.co/json/');
             const data = await res.json();
             if(data.country_code === 'HU') {
+                isHungarian = true;
                 document.getElementById('geo-restriction').style.display = 'block';
+                document.getElementById('btc-wallet-area').innerHTML = "";
+            } else {
+                isHungarian = false;
+                document.getElementById('geo-restriction').style.display = 'none';
             }
-        } catch(e) { console.error("Geo-check error", e); }
+        } catch(e) { 
+            console.error("Geo-check error", e); 
+        }
     }
 
     async function fetchProfile() {
@@ -204,7 +212,8 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        if(typeof loadSavedBTC === 'function') {
+        // Csak akkor töltjük be a BTC felületet, ha nem magyar az IP
+        if(!isHungarian && typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
         }
     }
@@ -350,7 +359,6 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-    // --- CSAK EZ A RÉSZ VÁLTOZOTT ---
     async function finalSubmitSettle() {
         const btn = document.getElementById('finalize-btn');
         btn.disabled = true; btn.innerText = "Processing...";
@@ -374,7 +382,6 @@
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
                         const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
-                        // RPC hívás a biztonságos kifizetéshez
                         await _supabase.rpc('settle_bet_payout', {
                             p_user_id: bet.user_id,
                             p_amount: payout,
@@ -387,7 +394,6 @@
                 }
             }
 
-            // Host kifizetése (Aki lezárta, az kapja a maradék pool-t)
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
             if (host) {
                 await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
@@ -407,7 +413,6 @@
             btn.disabled = false; btn.innerText = "FINALIZE";
         }
     }
-    // --- VÁLTOZÁS VÉGE ---
 
     async function claimDailyDemo() {
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert("Várj 24 órát!");
