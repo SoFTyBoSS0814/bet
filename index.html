@@ -392,17 +392,52 @@
         `;
     }
 
-    async function requestWithdrawal() {
+async function requestWithdrawal() {
         const amount = parseFloat(document.getElementById('wit-amount').value);
         const address = document.getElementById('wit-addr').value;
         const errorDiv = document.getElementById('wit-error');
+        const dict = i18n[currentLang] || i18n['en']; // Nyelvi támogatás (opcionális)
+
         errorDiv.style.display = 'none';
+        errorDiv.style.background = 'none'; // Alaphelyzetbe állítás
+        errorDiv.style.color = 'var(--danger)'; // Alap hiba szín
+
         if(isNaN(amount) || amount <= 0 || !address) return;
-        if(amount > userProfile.real_balance) { errorDiv.style.display = 'block'; return; }
-        const { error: updateError } = await _supabase.from('profiles').update({ real_balance: userProfile.real_balance - amount }).eq('id', currentUser.id);
+        if(amount > userProfile.real_balance) { 
+            errorDiv.style.display = 'block'; 
+            return; 
+        }
+
+        // Levonás az adatbázisból
+        const { error: updateError } = await _supabase.from('profiles').update({ 
+            real_balance: userProfile.real_balance - amount 
+        }).eq('id', currentUser.id);
+
         if(updateError) return;
-        await _supabase.from('withdrawals').insert([{ user_id: currentUser.id, username: currentUser.username, amount: amount, btc_address: address, status: 'pending' }]);
-        location.reload();
+
+        // Kérelem rögzítése
+        await _supabase.from('withdrawals').insert([{ 
+            user_id: currentUser.id, 
+            username: currentUser.username, 
+            amount: amount, 
+            btc_address: address, 
+            status: 'pending' 
+        }]);
+
+        // SIKERES VISSZAJELZÉS - Oldalfrissítés helyett
+        errorDiv.innerText = "Sikeres kérés! Az admin 24órán belül felülvizsgálja-és elszámolja a tranzakciót!";
+        errorDiv.style.display = 'block';
+        errorDiv.style.color = 'var(--success)'; // Átállítjuk zöldre
+        errorDiv.style.background = 'rgba(40, 167, 69, 0.15)'; // Opcionális háttérszín
+        errorDiv.style.padding = '10px';
+        errorDiv.style.borderRadius = '8px';
+
+        // Mezők ürítése
+        document.getElementById('wit-amount').value = '';
+        document.getElementById('wit-addr').value = '';
+
+        // Egyenleg frissítése a felületen újratöltés nélkül
+        fetchProfile(); 
     }
 
     function copyBTCAddress() {
