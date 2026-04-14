@@ -17,9 +17,10 @@
         
         .right-panel { display: flex; align-items: center; gap: 15px; }
         
-        /* Frissített, szeparált egyenleg kijelző */
-        .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 15px; }
+        /* Szeparált egyenleg kijelző - Egymás mellett az érték és a pénznem */
+        .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
         .wallet-sep { width: 1px; height: 18px; background: #334756; }
+        .wallet-unit { font-size: 11px; margin-left: 4px; opacity: 0.8; }
 
         .lang-select { background: #0b1218; color: var(--primary); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; outline: none; height: 38px; font-weight: bold; }
 
@@ -77,9 +78,9 @@
     </div>
     <div class="right-panel">
         <div class="wallet-display">
-            <span id="nav-real" style="color:var(--primary)">0.00 €</span>
+            <span style="color:var(--primary)"><span id="nav-real">0.00</span> €</span>
             <div class="wallet-sep"></div>
-            <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
+            <span style="color:var(--demo)"><span id="nav-demo">0.00</span> DEMO</span>
         </div>
         <select id="lang-switcher" class="lang-select" onchange="changeLang(this.value)">
             <option value="en">EN</option>
@@ -111,10 +112,10 @@
             <div id="geo-restriction" data-i18n="geo_msg">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
+                    <small>REAL</small><h2 style="color:var(--primary)"><span id="w-real">0.00</span> €</h2>
                 </div>
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
-                    <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
+                    <small>DEMO</small><h2 style="color:var(--demo)"><span id="w-demo">0.00</span> DEMO</h2>
                 </div>
             </div>
             <div id="btc-wallet-area"></div>
@@ -345,10 +346,10 @@
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(!data) return;
         userProfile = data;
-        document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
-        document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
-        document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
-        document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
+        document.getElementById("nav-real").innerText = data.real_balance.toFixed(2);
+        document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2);
+        document.getElementById("w-real").innerText = data.real_balance.toFixed(2);
+        document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2);
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
@@ -418,8 +419,9 @@
     function updateCreateBalanceDisplay() {
         if(!userProfile) return;
         const type = document.getElementById('m-type').value;
-        const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
-        document.getElementById('create-balance-display').innerText = "Balance: " + bal;
+        const val = type === 'REAL' ? userProfile.real_balance.toFixed(2) : userProfile.demo_balance.toFixed(2);
+        const unit = type === 'REAL' ? '€' : 'DEMO';
+        document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
     async function loadMarkets() {
@@ -432,7 +434,7 @@
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
-            const symbol = m.type === 'REAL' ? '€' : 'D';
+            const symbol = m.type === 'REAL' ? '€' : 'DEMO';
             const dlDate = new Date(m.deadline);
             const isExpired = dlDate < new Date();
             
@@ -552,6 +554,7 @@
 
     function openBet(mId, n, o, t, dl) {
         activeBet = { mId, n, o, t, dl };
+        const symbol = t === 'REAL' ? '€' : 'DEMO';
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
@@ -628,7 +631,7 @@
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert(dict.wait_24);
         const win = Math.floor(Math.random() * 8000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = dict.won + win + " D!"; fetchProfile();
+        document.getElementById('reward-msg').innerText = dict.won + win + " DEMO!"; fetchProfile();
     }
 
     function showSection(id) {
@@ -637,7 +640,10 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
     }
-    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
+    function calcWin() { 
+        const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
+        document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
+    }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { 
         document.getElementById('createModal').classList.remove('hidden');
