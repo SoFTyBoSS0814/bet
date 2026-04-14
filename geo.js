@@ -4,20 +4,26 @@ async function checkGeoRestriction() {
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
         
-        // Visszaadjuk, hogy magyar-e az IP
+        // Visszaadja, hogy magyar-e (true/false)
         return data.country_code === 'HU';
     } catch (e) {
-        console.error("Geo-check error:", e);
-        return false; // Hiba esetén alapértelmezetten nem tiltunk, vagy döntés szerint fordítva
+        console.error("Geo-check hiba:", e);
+        return false; // Hiba esetén biztonsági okból nem tiltunk le mindent
     }
 }
 
-function applyGeoUI(isHungarian) {
-    const restrictionWarning = document.getElementById('geo-restriction');
+function updateGeoUI(isHU, userBTCAddress) {
+    const geoWarning = document.getElementById('geo-restriction');
     const btcArea = document.getElementById('btc-wallet-area');
 
-    if (isHungarian) {
-        if (restrictionWarning) restrictionWarning.style.display = 'block';
-        if (btcArea) btcArea.innerHTML = ""; 
+    if (isHU) {
+        // Ha magyar: üzenet mutat, BTC panel elrejt
+        geoWarning.style.display = 'block';
+        geoWarning.innerText = "⚠️ Magyarország területéről a kriptovaluta BE/KI fizetés nem engedélyezett.";
+        btcArea.innerHTML = ""; 
+    } else {
+        // Ha nem magyar: üzenet elrejt, BTC panel kirajzolása
+        geoWarning.style.display = 'none';
+        renderBTCPanel(userBTCAddress);
     }
 }
