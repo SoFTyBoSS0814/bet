@@ -46,8 +46,6 @@
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
         .hidden { display: none !important; }
 
-        #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
-        
         .inline-error { color: var(--danger); font-weight: bold; font-size: 15px; margin: 10px 0; text-align: center; min-height: 18px; }
     </style>
 </head>
@@ -84,7 +82,6 @@
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2>Balances</h2>
-            <div id="geo-restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
                     <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
@@ -93,10 +90,8 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-
             <div id="btc-wallet-area"></div>
             <div id="wallet-error-msg" class="inline-error"></div>
-
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
                 <div id="reward-msg"></div>
@@ -111,7 +106,6 @@
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
                 <p style="margin:5px 0; color:#aaa">Username</p>
                 <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                
                 <p style="margin:5px 0; color:#aaa">Email Address</p>
                 <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
                 <p style="margin:5px 0; color:#aaa">Account ID</p>
@@ -158,7 +152,7 @@
     <div class="modal-box">
         <h3 id="settle-title"></h3>
         <div id="settle-area"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE</button>
+        <button class="btn-primary" style="margin-top:20px; background:var(--success)" onclick="finalSubmitSettle()">FINALIZE & PAYOUT</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')">Cancel</button>
     </div>
 </div>
@@ -180,20 +174,9 @@
         if(!currentUser) { window.location.href="login.html"; return; }
         await fetchProfile();
         loadMarkets();
-        checkIP();
         setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
     };
-
-    async function checkIP() {
-        try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            if(data.country_code === 'HU') {
-                document.getElementById('geo-restriction').style.display = 'block';
-            }
-        } catch(e) { console.error("Geo-check error", e); }
-    }
 
     async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
@@ -205,39 +188,21 @@
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
-        
         updateCreateBalanceDisplay();
-        updateRewardUI();
     }
 
     function updateRewardUI() {
         const msg = document.getElementById('reward-msg');
         const btn = document.getElementById('btn-claim-reward');
-        if (!userProfile) return;
-        if (!userProfile.last_claim) {
-            msg.innerText = "Ready to roll!";
-            btn.disabled = false; btn.style.opacity = "1";
-            return;
-        }
-        const last = new Date(userProfile.last_claim).getTime();
-        const now = new Date().getTime();
-        const diff = 24 * 60 * 60 * 1000 - (now - last);
+        if (!userProfile || !userProfile.last_claim) { if(msg) msg.innerText = "Ready!"; return; }
+        const diff = 86400000 - (new Date().getTime() - new Date(userProfile.last_claim).getTime());
         if (diff > 0) {
-            const h = Math.floor(diff / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
-            msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
-            msg.style.color = "var(--danger)";
-            btn.disabled = true; btn.style.opacity = "0.5";
-        } else {
-            msg.innerText = "Ready to roll!";
-            msg.style.color = "var(--success)";
-            btn.disabled = false; btn.style.opacity = "1";
-        }
+            const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+            msg.innerText = `${h}h ${m}m ${s}s`; btn.disabled = true; btn.style.opacity = "0.5";
+        } else { msg.innerText = "Ready!"; btn.disabled = false; btn.style.opacity = "1"; }
     }
 
     function updateCreateBalanceDisplay() {
-        if(!userProfile) return;
         const type = document.getElementById('m-type').value;
         const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
         document.getElementById('create-balance-display').innerText = "Balance: " + bal;
@@ -245,32 +210,25 @@
 
     async function loadMarkets() {
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
-        const mList = document.getElementById('market-list');
-        const hList = document.getElementById('history-list');
+        const mList = document.getElementById('market-list'), hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
         markets.forEach(m => {
-            const groups = JSON.parse(m.note || "[]");
-            const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
-            const symbol = m.type === 'REAL' ? '€' : 'D';
-            const isExpired = new Date(m.deadline) < new Date();
+            const groups = JSON.parse(m.note || "[]"), symbol = m.type === 'REAL' ? '€' : 'D';
             if(m.status === 'active') {
-                const card = document.createElement('div');
-                card.className = 'market-card';
+                const card = document.createElement('div'); card.className = 'market-card';
                 card.innerHTML = `
                     <div class="market-header">
-                        <div><h2 style="margin:0;">${m.title}</h2><small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small></div>
+                        <div><h2 style="margin:0;">${m.title}</h2><small>Host: ${m.creator_name} | Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small></div>
                         ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                     </div>
                     ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
-                        ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
+                        ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')">${o.n}<br><b>${o.o}</b></button>`).join('')}
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
                 const card = document.createElement('div'); card.className = 'market-card';
-                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
-                    ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
+                card.innerHTML = `<div class="settled-badge">Settled</div><h2 style="margin-top:15px;">${m.title}</h2>
+                    ${groups.map(g => `<div class="market-group"><small>${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
                     </div>`).join('')}`;
                 hList.appendChild(card);
@@ -283,88 +241,49 @@
     }
 
     function addGroup() {
-        const id = "g-" + Date.now();
-        const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
-        const isFirst = document.getElementById('groups-container').children.length === 0;
-        d.innerHTML = `${!isFirst ? `<button onclick="this.parentElement.remove()" style="position:absolute;right:10px;top:10px;background:none;border:none;color:var(--danger);cursor:pointer">✕</button>` : ''}
-            <input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
+        const id = "g-" + Date.now(); const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
+        d.innerHTML = `<input class="gt" placeholder="Category Name"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="font-size:10px;margin-top:5px;border-style:dashed">+ Add Option</button>`;
         document.getElementById('groups-container').appendChild(d); addO(id); addO(id);
     }
 
     function addO(groupId) {
-        const cont = document.getElementById('o-cont-' + groupId);
-        const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
+        const cont = document.getElementById('o-cont-' + groupId); const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
+        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">`;
         cont.appendChild(d);
     }
 
     async function saveMarket() {
-        const t = document.getElementById('m-name').value.trim();
-        const b = parseFloat(document.getElementById('m-budget').value);
-        const dl = document.getElementById('m-deadline').value;
-        const type = document.getElementById('m-type').value;
-        const errDiv = document.getElementById('create-error-msg');
-        errDiv.innerText = "";
-
-        if(!t || !dl || isNaN(b) || b <= 0) {
-            errDiv.innerText = "❌ Töltse ki az összes mezőt (Név, Határidő, Pool)!";
-            return;
-        }
-
+        const t = document.getElementById('m-name').value.trim(), b = parseFloat(document.getElementById('m-budget').value), dl = document.getElementById('m-deadline').value, type = document.getElementById('m-type').value, errDiv = document.getElementById('create-error-msg');
+        if(!t || !dl || isNaN(b) || b <= 0) { errDiv.innerText = "❌ Töltse ki az összes mezőt!"; return; }
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) {
-            errDiv.innerText = "❌ Nincs elég fedezet a Pool létrehozásához!";
-            return;
-        }
-
+        if(b > userProfile[balField]) { errDiv.innerText = "❌ Nincs elég fedezet!"; return; }
         const groups = [];
-        const groupElements = document.querySelectorAll('#groups-container .market-group');
-        for (let g of groupElements) {
-            const gTitle = g.querySelector('.gt').value.trim();
-            if(!gTitle) { errDiv.innerText = "❌ Kérjük adjon nevet az összes kategóriának!"; return; }
-
-            const outcomes = [];
-            const outcomeElements = g.querySelectorAll('div[id^="o-cont-"] > div');
-            for (let o of outcomeElements) {
-                const oName = o.querySelector('.on').value.trim();
-                const oOdds = parseFloat(o.querySelector('.oo').value);
-                if(!oName || isNaN(oOdds) || oOdds <= 1) { errDiv.innerText = "❌ Töltse ki az összes opciót és adjon meg érvényes szorzót (>1)!"; return; }
-                outcomes.push({ n: oName, o: oOdds, status: 'pending' });
+        for (let g of document.querySelectorAll('#groups-container .market-group')) {
+            const gTitle = g.querySelector('.gt').value.trim(), outcomes = [];
+            if(!gTitle) { errDiv.innerText = "❌ Adj nevet a kategóriáknak!"; return; }
+            for (let o of g.querySelectorAll('div[id^="o-cont-"] > div')) {
+                const oN = o.querySelector('.on').value.trim(), oO = parseFloat(o.querySelector('.oo').value);
+                if(!oN || isNaN(oO) || oO <= 1) { errDiv.innerText = "❌ Hibás opciók!"; return; }
+                outcomes.push({ n: oN, o: oO, status: 'pending' });
             }
-            groups.push({ title: gTitle, outcomes: outcomes });
+            groups.push({ title: gTitle, outcomes });
         }
-
-        if(groups.length === 0) { errDiv.innerText = "❌ Legalább egy kategóriát létre kell hozni!"; return; }
-
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ 
-            title: t, type, take: b, stake: b, 
-            deadline: new Date(dl).toISOString(), 
-            note: JSON.stringify(groups), 
-            creator_name: currentUser.username, status: 'active' 
-        }]);
+        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
 
     function openBet(mId, n, o, t, dl) {
-        if(new Date(dl) < new Date()) return;
-        activeBet = { mId, n, o, t, dl };
-        document.getElementById('bet-error-msg').innerText = "";
+        if(new Date(dl) < new Date()) return; activeBet = { mId, n, o, t };
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
 
     async function placeBet() {
-        const amt = parseFloat(document.getElementById('bet-amount').value);
-        const errDiv = document.getElementById('bet-error-msg');
-        errDiv.innerText = "";
-        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        const amt = parseFloat(document.getElementById('bet-amount').value), f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         const profit = amt * (activeBet.o - 1);
         const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        
-        if(amt > userProfile[f]) { errDiv.innerText = "❌ Hiba: Nincs elég egyenleged!"; return; }
-        if(profit > mData.take) { errDiv.innerText = "❌ Hiba: Nincs elég likviditás!"; return; }
-
+        if(amt > userProfile[f] || profit > mData.take) { alert("Hiba: Egyenleg vagy Likviditás!"); return; }
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
@@ -374,13 +293,13 @@
     async function openSettle(mId, title) {
         const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
         currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
-        document.getElementById('settle-title').innerText = "Settle: " + title;
+        document.getElementById('settle-title').innerText = title;
         let h = '';
         currentSettleGroups.forEach((g, gi) => {
-            h += `<div style="margin-top:15px"><small>${g.title}</small>`;
+            h += `<div style="margin-top:10px"><small>${g.title}</small>`;
             g.outcomes.forEach((o, oi) => {
                 h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
-                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0"><option value="pending">Pending</option><option value="win">WINNER</option><option value="loss">LOSS</option></select></div>`;
+                <select class="settle-select" data-gi="${gi}" data-oi="${oi}"><option value="pending">Pending</option><option value="win">WIN</option><option value="loss">LOSS</option></select></div>`;
             });
             h += `</div>`;
         });
@@ -389,57 +308,45 @@
 
     async function finalSubmitSettle() {
         let winners = [];
-        currentSettleGroups.forEach((g, gi) => {
-            const selects = document.querySelectorAll(`.settle-select[data-gi="${gi}"]`);
-            selects.forEach(s => { 
-                currentSettleGroups[gi].outcomes[s.dataset.oi].status = s.value;
-                if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[s.dataset.oi].n);
-            });
+        document.querySelectorAll('.settle-select').forEach(s => {
+            currentSettleGroups[s.dataset.gi].outcomes[s.dataset.oi].status = s.value;
+            if(s.value === 'win') winners.push(currentSettleGroups[s.dataset.gi].outcomes[s.dataset.oi].n);
         });
 
         const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-        
-        // 1. Host visszakapja a maradék Poolt
-        const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-        if (host && parseFloat(mData.take) > 0) {
-            await _supabase.from('profiles').update({ [field]: host[field] + parseFloat(mData.take) }).eq('id', host.id);
-        }
-        
-        // 2. Piaci állapot frissítése
-        await _supabase.from('markets').update({ 
-            note: JSON.stringify(currentSettleGroups), 
-            status: 'settled', 
-            winner: winners.join(", "), 
-            start_time: new Date().toISOString() 
-        }).eq('id', currentSettleId);
+        const remainingPool = parseFloat(mData.take);
 
-        // 3. Manuális kifizetés a fogadóknak
+        // 1. Piac lezárása
+        await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', winner: winners.join(", "), start_time: new Date().toISOString() }).eq('id', currentSettleId);
+
+        // 2. Kifizetések a nyerteseknek
         const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
         if (bets) {
             for (let bet of bets) {
                 let isWinner = winners.includes(bet.outcome_name);
-                let newStatus = isWinner ? 'win' : 'loss';
                 if (isWinner) {
                     const payout = bet.amount * bet.odds;
-                    const { data: player } = await _supabase.from('profiles').select('*').eq('id', bet.user_id).single();
-                    if (player) {
-                        await _supabase.from('profiles').update({ [field]: player[field] + payout }).eq('id', bet.user_id);
-                    }
+                    const { data: p } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
+                    await _supabase.from('profiles').update({ [field]: parseFloat(p[field]) + payout }).eq('id', bet.user_id);
                 }
-                await _supabase.from('bets').update({ status: newStatus }).eq('id', bet.id);
+                await _supabase.from('bets').update({ status: isWinner ? 'win' : 'loss' }).eq('id', bet.id);
             }
         }
 
-        await _supabase.rpc('settle_market_payouts', { m_id: currentSettleId });
-        location.reload();
+        // 3. Host visszakapja a maradékot
+        if (remainingPool > 0) {
+            const { data: h } = await _supabase.from('profiles').select(field).eq('username', mData.creator_name).single();
+            await _supabase.from('profiles').update({ [field]: parseFloat(h[field]) + remainingPool }).eq('id', h.id);
+        }
+
+        alert("Kifizetések elvégezve!"); location.reload();
     }
 
     async function claimDailyDemo() {
-        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return;
         const win = Math.floor(Math.random() * 8000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = "WON " + win + " D!"; fetchProfile();
+        alert("Won: " + win + " D"); fetchProfile();
     }
 
     function showSection(id) {
@@ -447,11 +354,10 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
-        if(id === 'wallet') document.getElementById('wallet-error-msg').innerText = "";
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); document.getElementById('create-error-msg').innerText = ""; if(!document.getElementById('groups-container').innerHTML) addGroup(); }
+    function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 </script>
 </body>
