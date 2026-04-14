@@ -32,7 +32,6 @@
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
 
         .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
-        .history-type { position: absolute; top: 15px; right: 15px; font-weight: 900; font-size: 14px; }
         .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
         
         .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
@@ -46,9 +45,8 @@
         input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
         .hidden { display: none !important; }
 
-        #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
+        #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; text-align: center; }
         
-        /* BTC AREA STYLES */
         .btc-box { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
         .btc-address { background: #0b1218; padding: 10px; border: 1px dashed var(--primary); border-radius: 6px; font-size: 11px; word-break: break-all; color: var(--primary); cursor: pointer; text-align: center; margin: 10px 0; }
         #wit-error { color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold; display: none; text-align: center; }
@@ -178,9 +176,9 @@
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        // 1. IP ellenőrzés
+        
+        // FONTOS SORREND: GEO -> PROFIL -> MARKETS
         await checkIP();
-        // 2. Profil és egyenlegek
         await fetchProfile();
         
         loadMarkets();
@@ -195,7 +193,6 @@
             if(data.country_code === 'HU') {
                 isHungarian = true;
                 document.getElementById('geo-restriction').style.display = 'block';
-                document.getElementById('btc-wallet-area').innerHTML = ''; // Biztonsági törlés
             } else {
                 isHungarian = false;
                 document.getElementById('geo-restriction').style.display = 'none';
@@ -207,19 +204,27 @@
     }
 
     async function fetchProfile() {
-        const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        const { data, error } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        if(error) return;
         userProfile = data;
+        
+        // Egyenlegek frissítése
+        const elements = ["nav-real", "nav-demo", "w-real", "w-demo"];
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
+        
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
-        // CSAK HA NEM MAGYAR, AKKOR RAJZOLJUK KI A BTC PANELT
+        // BTC Panel csak ha nem magyar
+        const btcArea = document.getElementById('btc-wallet-area');
         if(!isHungarian) {
             renderBTCPanel(data.btc_address);
+        } else {
+            btcArea.innerHTML = ''; 
         }
 
         updateCreateBalanceDisplay();
@@ -239,7 +244,7 @@
                 <input type="number" id="wit-amount" placeholder="Összeg (€)">
                 <input type="text" id="wit-addr" placeholder="Cél BTC cím (bc1q...)">
                 <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">KIFIZETÉS KÉRVÉNYEZÉSE</button>
-                <div id="wit-error">Nincs ekkora egyenleged! Próbálkozz nagyobb összeggel!</div>
+                <div id="wit-error">Nincs ekkora egyenleged!</div>
             </div>
         `;
     }
@@ -248,33 +253,14 @@
         const amount = parseFloat(document.getElementById('wit-amount').value);
         const address = document.getElementById('wit-addr').value;
         const errorDiv = document.getElementById('wit-error');
-        
         errorDiv.style.display = 'none';
-
-        if(isNaN(amount) || amount <= 0 || !address) {
-            alert("Kérlek adj meg egy érvényes összeget és címet!");
-            return;
-        }
-
-        if(amount > userProfile.real_balance) {
-            errorDiv.style.display = 'block';
-            return;
-        }
-
+        if(isNaN(amount) || amount <= 0 || !address) return alert("Helytelen adatok!");
+        if(amount > userProfile.real_balance) { errorDiv.style.display = 'block'; return; }
+        
         const { error } = await _supabase.from('withdrawals').insert([{
-            user_id: currentUser.id,
-            username: currentUser.username,
-            amount: amount,
-            btc_address: address,
-            status: 'pending'
+            user_id: currentUser.id, username: currentUser.username, amount: amount, btc_address: address, status: 'pending'
         }]);
-
-        if(!error) {
-            alert("Kifizetési kérelem sikeresen elküldve!");
-            location.reload();
-        } else {
-            alert("Hiba történt a kérés küldésekor.");
-        }
+        if(!error) { alert("Kérés elküldve!"); location.reload(); }
     }
 
     function copyBTCAddress() {
@@ -284,31 +270,26 @@
         alert("Cím másolva!");
     }
 
-    // --- Innentől a te eredeti logikád folytatódik változtatás nélkül ---
-
     function updateRewardUI() {
         const msg = document.getElementById('reward-msg');
         const btn = document.getElementById('btn-claim-reward');
-        if (!userProfile) return;
+        if (!userProfile || !msg) return;
         if (!userProfile.last_claim) {
-            msg.innerText = "Ready to roll!";
-            btn.disabled = false; btn.style.opacity = "1";
+            msg.innerText = "Ready to roll!"; btn.disabled = false; btn.style.opacity = "1";
             return;
         }
         const last = new Date(userProfile.last_claim).getTime();
         const now = new Date().getTime();
-        const diff = 24 * 60 * 60 * 1000 - (now - last);
+        const diff = 86400000 - (now - last);
         if (diff > 0) {
-            const h = Math.floor(diff / (1000 * 60 * 60));
-            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
             msg.innerText = `Available in: ${h}h ${m}m ${s}s`;
-            msg.style.color = "var(--danger)";
-            btn.disabled = true; btn.style.opacity = "0.5";
+            msg.style.color = "var(--danger)"; btn.disabled = true; btn.style.opacity = "0.5";
         } else {
             msg.innerText = "Ready to roll!";
-            msg.style.color = "var(--success)";
-            btn.disabled = false; btn.style.opacity = "1";
+            msg.style.color = "var(--success)"; btn.disabled = false; btn.style.opacity = "1";
         }
     }
 
@@ -324,11 +305,12 @@
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
+        
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
-            const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
             const isExpired = new Date(m.deadline) < new Date();
+            
             if(m.status === 'active') {
                 const card = document.createElement('div');
                 card.className = 'market-card';
@@ -343,19 +325,13 @@
                 mList.appendChild(card);
             } else {
                 const card = document.createElement('div'); card.className = 'market-card';
-                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
+                card.innerHTML = `<div class="settled-badge">Settled</div><h2 style="margin-top:15px;">${m.title}</h2>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
                     </div>`).join('')}`;
                 hList.appendChild(card);
             }
         });
-    }
-
-    function checkDeadlines() {
-        document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
     }
 
     function addGroup() {
@@ -370,25 +346,50 @@
     function addO(groupId) {
         const cont = document.getElementById('o-cont-' + groupId);
         const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
-        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
+        d.innerHTML = `<input class="on" placeholder="Outcome"><input class="oo" type="number" step="0.01" value="2.00" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
         cont.appendChild(d);
     }
 
     async function saveMarket() {
-        const t = document.getElementById('m-name').value;
+        const t = document.getElementById('m-name').value.trim();
         const b = parseFloat(document.getElementById('m-budget').value);
         const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
-        if(!dl || isNaN(b) || b <= 0) return alert("Helytelen adatok!");
+
+        if(!t || !dl || isNaN(b) || b <= 0) return alert("Hiányzó vagy hibás adatok!");
+        if(b > userProfile[type === 'REAL' ? 'real_balance' : 'demo_balance']) return alert("Nincs elég fedezet!");
+
+        const groups = [];
+        const groupEls = document.querySelectorAll('#groups-container .market-group');
+        for(let g of groupEls) {
+            const gTitle = g.querySelector('.gt').value.trim();
+            if(!gTitle) return alert("Category name empty!");
+            const outcomes = [];
+            const oRows = g.querySelectorAll('div[id^="o-cont-"] > div');
+            for(let o of oRows) {
+                const oName = o.querySelector('.on').value.trim();
+                const oOdds = parseFloat(o.querySelector('.oo').value);
+                if(!oName || oOdds < 1.01) return alert("Outcome or Odds invalid (min 1.01)!");
+                outcomes.push({ n: oName, o: oOdds, status: 'pending' });
+            }
+            groups.push({ title: gTitle, outcomes });
+        }
+
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return alert("Nincs elég fedezet!");
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
-            title: g.querySelector('.gt').value,
-            outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
-        }));
-        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
+        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(groups), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
+    }
+
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        document.getElementById('link-' + id).classList.add('active');
+    }
+
+    function checkDeadlines() {
+        document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
     }
 
     function openBet(mId, n, o, t, dl) {
@@ -400,11 +401,13 @@
 
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
+        if(isNaN(amt) || amt <= 0) return alert("Hibás összeg!");
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         const profit = amt * (activeBet.o - 1);
         const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
         if(amt > userProfile[f]) return alert("Nincs elég egyenleg!");
         if(profit > mData.take) return alert("Nincs elég likviditás!");
+        
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
@@ -430,56 +433,32 @@
     async function finalSubmitSettle() {
         const btn = document.getElementById('finalize-btn');
         btn.disabled = true; btn.innerText = "Processing...";
-
         let winners = [];
         document.querySelectorAll('.settle-select').forEach(s => {
             const gi = s.dataset.gi, oi = s.dataset.oi;
             currentSettleGroups[gi].outcomes[oi].status = s.value;
             if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[oi].n);
         });
-
         try {
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
-
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            
-            if(bets && bets.length > 0) {
+            if(bets) {
                 for(let bet of bets) {
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
                         const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
-                        await _supabase.rpc('settle_bet_payout', {
-                            p_user_id: bet.user_id,
-                            p_amount: payout,
-                            p_field: field
-                        });
-                    } else {
-                        hostTotal += parseFloat(bet.amount);
-                    }
+                        await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: payout, p_field: field });
+                    } else { hostTotal += parseFloat(bet.amount); }
                     await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
                 }
             }
-
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-            if (host) {
-                await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
-            }
-
-            await _supabase.from('markets').update({ 
-                note: JSON.stringify(currentSettleGroups), 
-                status: 'settled', 
-                take: 0,
-                start_time: new Date().toISOString() 
-            }).eq('id', currentSettleId);
-            
+            if (host) await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
+            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() }).eq('id', currentSettleId);
             location.reload();
-        } catch(e) { 
-            console.error(e);
-            alert("Error during settlement!"); 
-            btn.disabled = false; btn.innerText = "FINALIZE";
-        }
+        } catch(e) { console.error(e); btn.disabled = false; btn.innerText = "FINALIZE"; }
     }
 
     async function claimDailyDemo() {
@@ -489,12 +468,6 @@
         document.getElementById('reward-msg').innerText = "WON " + win + " D!"; fetchProfile();
     }
 
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-' + id).classList.add('active');
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById('link-' + id).classList.add('active');
-    }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); if(!document.getElementById('groups-container').innerHTML) addGroup(); }
