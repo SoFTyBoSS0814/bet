@@ -48,7 +48,6 @@
 
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
         
-        /* BTC AREA STYLES */
         .btc-box { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
         .btc-address { background: #0b1218; padding: 10px; border: 1px dashed var(--primary); border-radius: 6px; font-size: 11px; word-break: break-all; color: var(--primary); cursor: pointer; text-align: center; margin: 10px 0; }
         #wit-error { color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold; display: none; text-align: center; }
@@ -88,6 +87,7 @@
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2>Balances</h2>
             <div id="geo-restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
+            
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
                     <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
@@ -174,13 +174,13 @@
     let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
-    let isHungarian = false;
+    let isHungarian = true; // Alapértelmezés biztonsági okokból
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        // 1. IP ellenőrzés Cloudflare segítségével
+        
+        // Előbb IP check, aztán profil
         await checkIP();
-        // 2. Profil és egyenlegek
         await fetchProfile();
         
         loadMarkets();
@@ -190,30 +190,33 @@
 
     async function checkIP() {
         try {
-            // Cloudflare megbízhatóbb és korlátlan GEO lekérdezéshez
-            const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-            const text = await res.text();
-            const data = Object.fromEntries(text.split('\n').filter(v=>v).map(v=>v.split('=')));
-            
-            if(data.loc === 'HU') {
-                isHungarian = true;
-                document.getElementById('geo-restriction').style.display = 'block';
-                const btcArea = document.getElementById('btc-wallet-area');
-                if(btcArea) btcArea.innerHTML = ''; 
-            } else {
-                isHungarian = false;
-                document.getElementById('geo-restriction').style.display = 'none';
-            }
+            const res = await fetch('https://ipapi.co/json/');
+            if(!res.ok) throw new Error("Fetch failed");
+            const data = await res.json();
+            isHungarian = (data.country_code === 'HU');
         } catch(e) { 
-            console.error("Geo-check error", e); 
-            // Hiba esetén biztonsági okból hamisra állítjuk, vagy maradhat alapértelmezetten false
-            isHungarian = false; 
+            console.error("Geo-check error", e);
+            // Ha hiba van (pl. CORS), tekintsük magyarnak a biztonság kedvéért
+            isHungarian = true; 
+        }
+
+        // UI frissítése az eredmény alapján
+        const geoMsg = document.getElementById('geo-restriction');
+        const btcArea = document.getElementById('btc-wallet-area');
+
+        if(isHungarian) {
+            geoMsg.style.display = 'block';
+            btcArea.innerHTML = ''; 
+        } else {
+            geoMsg.style.display = 'none';
         }
     }
 
     async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        if(!data) return;
         userProfile = data;
+
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
@@ -222,7 +225,7 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
-        // CSAK HA NEM MAGYAR, AKKOR RAJZOLJUK KI A BTC PANELT
+        // Csak ha nem magyar IP, akkor rajzoljuk ki a BTC panelt
         if(!isHungarian) {
             renderBTCPanel(data.btc_address);
         }
@@ -233,19 +236,18 @@
 
     function renderBTCPanel(address) {
         const btcArea = document.getElementById('btc-wallet-area');
-        if(!btcArea) return;
         btcArea.innerHTML = `
             <div class="btc-box">
-                <h4 style="margin:0; text-align:center; color:var(--primary)">BTC Befizetés / Kifizetés</h4>
-                <p style="font-size:12px; color:#aaa; margin-top:15px; margin-bottom:5px;">Saját BTC befizetési címed:</p>
+                <h4 style="margin:0; text-align:center; color:var(--primary)">BTC Deposit / Withdraw</h4>
+                <p style="font-size:12px; color:#aaa; margin-top:15px; margin-bottom:5px; text-align:center;">Saját BTC befizetési címed:</p>
                 <div class="btc-address" id="btc-addr-display" onclick="copyBTCAddress()">${address || "No address found"}</div>
                 <small style="display:block; text-align:center; color:#666; font-size:10px;">(Kattints a címre a másoláshoz)</small>
                 <hr style="border:0; border-top:1px solid #334756; margin:20px 0;">
                 <h4 style="text-align:center; margin-bottom:10px;">Kifizetés indítása</h4>
                 <input type="number" id="wit-amount" placeholder="Összeg (€)">
                 <input type="text" id="wit-addr" placeholder="Cél BTC cím (bc1q...)">
-                <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">KIFIZETÉS KÉRVÉNYEZÉSE</button>
-                <div id="wit-error">Nincs ekkora egyenleged! Próbálkozz nagyobb összeggel!</div>
+                <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">KIFIZETÉSI KÉRELEM</button>
+                <div id="wit-error">Nincs ekkora egyenleged!</div>
             </div>
         `;
     }
@@ -256,7 +258,6 @@
         const errorDiv = document.getElementById('wit-error');
         
         errorDiv.style.display = 'none';
-
         if(isNaN(amount) || amount <= 0 || !address) {
             alert("Kérlek adj meg egy érvényes összeget és címet!");
             return;
@@ -320,8 +321,7 @@
         if(!userProfile) return;
         const type = document.getElementById('m-type').value;
         const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
-        const display = document.getElementById('create-balance-display');
-        if(display) display.innerText = "Balance: " + bal;
+        document.getElementById('create-balance-display').innerText = "Balance: " + bal;
     }
 
     async function loadMarkets() {
@@ -347,7 +347,8 @@
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                const card = document.createElement('div'); card.className = 'market-card';
+                const card = document.createElement('div');
+                card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <h2 style="margin-top:15px;">${m.title} - ${sDate.toLocaleString()}</h2>
@@ -442,47 +443,32 @@
             currentSettleGroups[gi].outcomes[oi].status = s.value;
             if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[oi].n);
         });
-
         try {
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
-
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            
             if(bets && bets.length > 0) {
                 for(let bet of bets) {
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
                         const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
-                        await _supabase.rpc('settle_bet_payout', {
-                            p_user_id: bet.user_id,
-                            p_amount: payout,
-                            p_field: field
-                        });
+                        await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: payout, p_field: field });
                     } else {
                         hostTotal += parseFloat(bet.amount);
                     }
                     await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
                 }
             }
-
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
             if (host) {
                 await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
             }
-
-            await _supabase.from('markets').update({ 
-                note: JSON.stringify(currentSettleGroups), 
-                status: 'settled', 
-                take: 0,
-                start_time: new Date().toISOString() 
-            }).eq('id', currentSettleId);
-            
+            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() }).eq('id', currentSettleId);
             location.reload();
         } catch(e) { 
             console.error(e);
-            alert("Error during settlement!"); 
+            alert("Error during settlement!");
             btn.disabled = false; btn.innerText = "FINALIZE";
         }
     }
