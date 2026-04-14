@@ -173,7 +173,7 @@
     let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
-    let isHungarian = null;
+    let isHungarian = true; // Alapértelmezett biztonsági érték
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
@@ -187,20 +187,25 @@
     async function checkIP() {
         try {
             const res = await fetch('https://ipapi.co/json/');
-            if(!res.ok) throw new Error("API Limit");
             const data = await res.json();
+            console.log("GeoCheck:", data.country_code);
             isHungarian = (data.country_code === 'HU');
         } catch(e) { 
-            console.error("Geo-check error", e);
+            console.error("Geo-check error, defaulting to Restricted", e);
             isHungarian = true; 
         }
+        updateGeoUI();
+    }
+
+    function updateGeoUI() {
         const geoMsg = document.getElementById('geo-restriction');
         const btcArea = document.getElementById('btc-wallet-area');
         if(isHungarian) {
             geoMsg.style.display = 'block';
-            btcArea.innerHTML = '';
+            if(btcArea) btcArea.innerHTML = '';
         } else {
             geoMsg.style.display = 'none';
+            if(userProfile) renderBTCPanel(userProfile.btc_address);
         }
     }
 
@@ -216,17 +221,15 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
-        if(isHungarian === false) {
-            renderBTCPanel(data.btc_address);
-        } else {
-            document.getElementById('btc-wallet-area').innerHTML = '';
-        }
+        // Fontos: Frissítjük a UI-t a profil betöltése után is
+        updateGeoUI();
         updateCreateBalanceDisplay();
         updateRewardUI();
     }
 
     function renderBTCPanel(address) {
         const btcArea = document.getElementById('btc-wallet-area');
+        if(!btcArea) return;
         btcArea.innerHTML = `
             <div class="btc-box">
                 <h4 style="margin:0; text-align:center; color:var(--primary)">BTC Deposit / Withdraw</h4>
@@ -443,20 +446,16 @@
     async function finalSubmitSettle() {
         const errDiv = document.getElementById('settle-error-msg');
         errDiv.style.display = 'none';
-        
-        // Először frissítjük a lokális adatokat a választható mezők alapján
         const selects = document.querySelectorAll('.settle-select');
         selects.forEach(s => {
             const gi = s.dataset.gi, oi = s.dataset.oi;
             currentSettleGroups[gi].outcomes[oi].status = s.value;
         });
 
-        // VALIDÁCIÓ: Minden kategóriában kell lennie legalább 1 WIN és 1 LOSS értéknek
         for(let i = 0; i < currentSettleGroups.length; i++) {
             const group = currentSettleGroups[i];
             const hasWin = group.outcomes.some(o => o.status === 'win');
             const hasLoss = group.outcomes.some(o => o.status === 'loss');
-            
             if(!hasWin || !hasLoss) {
                 errDiv.innerText = `Hiba a(z) "${group.title}" kategóriában: Kötelező legalább 1 WINNER és 1 LOSS kimenetelt választani!`;
                 errDiv.style.display = 'block';
@@ -466,7 +465,6 @@
 
         const btn = document.getElementById('finalize-btn');
         btn.disabled = true; btn.innerText = "Processing...";
-        
         let winners = [];
         currentSettleGroups.forEach(g => {
             g.outcomes.forEach(o => { if(o.status === 'win') winners.push(o.n); });
@@ -477,7 +475,6 @@
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            
             if(bets && bets.length > 0) {
                 for(let bet of bets) {
                     const isWin = winners.includes(bet.outcome_name);
