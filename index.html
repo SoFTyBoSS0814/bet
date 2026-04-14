@@ -51,7 +51,7 @@
             <h2>Aktív Piacok</h2>
             <button class="btn-primary" style="width:auto; padding:8px 20px;" onclick="openCreateModal()">+ ÚJ PIAC</button>
         </div>
-        <div id="market-list">Piacok betöltése...</div>
+        <div id="market-list">Betöltés...</div>
     </div>
 
     <div id="section-history" class="section">
@@ -66,7 +66,7 @@
                 <p>Real: <span id="w-real" style="color:var(--primary); font-size:24px; font-weight:bold;">0.00 €</span></p>
                 <p>Demo: <span id="w-demo" style="color:var(--demo); font-size:24px; font-weight:bold;">0.00 D</span></p>
             </div>
-            <button class="btn-primary" style="background:var(--demo); color:#000;" onclick="claimDaily()">Napi Demo Igénylése</button>
+            <button class="btn-primary" style="background:var(--demo); color:#000;" onclick="claimDaily()">Napi Demo (+1000 D)</button>
             <button class="btn-bet" style="margin-top:20px; color:var(--danger);" onclick="logout()">Kijelentkezés</button>
         </div>
     </div>
@@ -88,7 +88,7 @@
     <div class="modal-box" style="width:500px">
         <h3>Új Piac</h3>
         <select id="m-type"><option value="REAL">REAL (EUR)</option><option value="DEMO">DEMO (D)</option></select>
-        <input id="m-name" placeholder="Piac neve">
+        <input id="m-name" placeholder="Esemény neve">
         <input id="m-budget" type="number" placeholder="Likviditási Alap (Pool)">
         <input id="m-deadline" type="datetime-local">
         <div id="groups-container"></div>
@@ -126,7 +126,8 @@
     };
 
     async function fetchProfile() {
-        const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        const { data, error } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+        if(error || !data) { console.error("Profil hiba:", error); return; }
         userProfile = data;
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
@@ -144,7 +145,7 @@
             if(m.status === 'active') {
                 const card = document.createElement('div'); card.className = 'market-card';
                 card.innerHTML = `<div class="market-header"><div><h2>${m.title}</h2><small>Host: ${m.creator_name} | Pool: ${parseFloat(m.take).toFixed(2)}</small></div>
-                ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-primary" style="width:auto; padding:5px 15px;">LEZÁRÁS</button>` : ''}</div>
+                ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-primary" style="width:auto; padding:5px 15px; margin:0">LEZÁRÁS</button>` : ''}</div>
                 ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
                 ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}')">${o.n}<br><b>${o.o}</b></button>`).join('')}</div></div>`).join('')}`;
                 mList.appendChild(card);
@@ -156,49 +157,6 @@
                 hList.appendChild(card);
             }
         });
-    }
-
-    async function placeBet() {
-        const amt = parseFloat(document.getElementById('bet-amount').value);
-        const field = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-        const potentialProfit = amt * (activeBet.o - 1);
-        
-        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        if(amt > userProfile[field]) return alert("Nincs elég egyenleg!");
-        if(potentialProfit > mData.take) return alert("A Pool fedezete kevés ehhez a fogadáshoz!");
-
-        const { error: betErr } = await _supabase.from('bets').insert([{
-            user_id: currentUser.id,
-            market_id: activeBet.mId,
-            outcome_name: activeBet.n,
-            amount: amt,
-            odds: activeBet.o,
-            type: activeBet.t,
-            status: 'pending'
-        }]);
-
-        if(betErr) return alert("Hiba a fogadás rögzítésekor!");
-
-        await _supabase.from('profiles').update({ [field]: userProfile[field] - amt }).eq('id', currentUser.id);
-        await _supabase.from('markets').update({ take: mData.take - potentialProfit }).eq('id', activeBet.mId);
-        
-        location.reload();
-    }
-
-    async function openSettle(mId, title) {
-        const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
-        currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
-        document.getElementById('settle-title').innerText = title;
-        let h = '';
-        currentSettleGroups.forEach((g, gi) => {
-            h += `<div style="margin-top:15px"><small>${g.title}</small>`;
-            g.outcomes.forEach((o, oi) => {
-                h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
-                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:100px; padding:2px;"><option value="pending">Vár</option><option value="win">NYERT</option><option value="loss">VESZTETT</option></select></div>`;
-            });
-            h += `</div>`;
-        });
-        document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
     async function finalSubmitSettle() {
@@ -214,18 +172,23 @@
 
         try {
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
+            if (!mData) throw new Error("A piac nem található!");
+
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
 
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
             
-            if(bets) {
+            if(bets && bets.length > 0) {
                 for(let bet of bets) {
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
                         const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
-                        const { data: u } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
-                        await _supabase.from('profiles').update({ [field]: (parseFloat(u[field]) || 0) + payout }).eq('id', bet.user_id);
+                        const { data: u } = await _supabase.from('profiles').select('*').eq('id', bet.user_id).single();
+                        // BIZTONSÁGI ELLENŐRZÉS: Csak akkor frissítünk, ha megvan a profil
+                        if (u && u[field] !== undefined) {
+                            await _supabase.from('profiles').update({ [field]: (parseFloat(u[field]) || 0) + payout }).eq('id', bet.user_id);
+                        }
                     } else {
                         hostTotal += parseFloat(bet.amount);
                     }
@@ -233,22 +196,50 @@
                 }
             }
 
-            const { data: host } = await _supabase.from('profiles').select(field).eq('username', mData.creator_name).single();
-            await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
+            // Host kifizetése ellenőrzéssel
+            const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
+            if (host && host[field] !== undefined) {
+                await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
+            }
+
             await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0 }).eq('id', currentSettleId);
             
             location.reload();
         } catch(e) { 
-            console.error(e);
+            console.error("Részletes hiba:", e);
             alert("Settle hiba: " + e.message); 
-            btn.disabled = false; 
+            btn.disabled = false; btn.innerText = "KIFIZETÉS ÉS LEZÁRÁS";
         }
+    }
+
+    async function placeBet() {
+        const amt = parseFloat(document.getElementById('bet-amount').value);
+        const field = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+        const potentialProfit = amt * (activeBet.o - 1);
+        
+        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+        if(amt > userProfile[field]) return alert("Nincs elég egyenleg!");
+        if(potentialProfit > mData.take) return alert("A Pool fedezete kevés!");
+
+        await _supabase.from('bets').insert([{
+            user_id: currentUser.id,
+            market_id: activeBet.mId,
+            outcome_name: activeBet.n,
+            amount: amt,
+            odds: activeBet.o,
+            type: activeBet.t,
+            status: 'pending'
+        }]);
+
+        await _supabase.from('profiles').update({ [field]: userProfile[field] - amt }).eq('id', currentUser.id);
+        await _supabase.from('markets').update({ take: mData.take - potentialProfit }).eq('id', activeBet.mId);
+        location.reload();
     }
 
     function addGroup() {
         const id = "g-" + Date.now();
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
-        d.innerHTML = `<input class="gt" placeholder="Kategória pl. Ki nyeri?"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="margin-top:5px;border-style:dashed">+ Opció</button>`;
+        d.innerHTML = `<input class="gt" placeholder="Kategória neve"><div id="o-cont-${id}"></div><button class="btn-bet" onclick="addO('${id}')" style="margin-top:5px;border-style:dashed">+ Opció</button>`;
         document.getElementById('groups-container').appendChild(d); addO(id); addO(id);
     }
     function addO(gid) {
@@ -269,7 +260,21 @@
         await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
-
+    async function openSettle(mId, title) {
+        const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
+        currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
+        document.getElementById('settle-title').innerText = title;
+        let h = '';
+        currentSettleGroups.forEach((g, gi) => {
+            h += `<div style="margin-top:15px"><small>${g.title}</small>`;
+            g.outcomes.forEach((o, oi) => {
+                h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
+                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:100px; padding:2px;"><option value="pending">Vár</option><option value="win">NYERT</option><option value="loss">VESZTETT</option></select></div>`;
+            });
+            h += `</div>`;
+        });
+        document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
+    }
     async function claimDaily() {
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + 1000 }).eq('id', currentUser.id);
         location.reload();
