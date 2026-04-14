@@ -573,19 +573,54 @@
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
 
-    async function placeBet() {
-        const amt = parseFloat(document.getElementById('bet-amount').value);
-        const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-        const profit = amt * (activeBet.o - 1);
-        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        if(amt > userProfile[f]) return alert(i18n[currentLang].insufficient);
-        if(profit > mData.take) return alert("Liquidity limit reached!");
-        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
-        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
-        await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
-        location.reload();
+async function placeBet() {
+    const amt = parseFloat(document.getElementById('bet-amount').value);
+    const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+
+    if (isNaN(amt) || amt <= 0) return;
+
+    if (amt > userProfile[f]) {
+        return alert(i18n[currentLang].insufficient);
     }
 
+    // extra double bet védelem
+    const { data: existing } = await _supabase
+        .from('bets')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('market_id', activeBet.mId)
+        .eq('outcome_name', activeBet.n)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+    if (existing) {
+        return alert("Already placed bet on this outcome!");
+    }
+
+    // SAFE RPC CALL
+    const { data, error } = await _supabase.rpc('place_bet_safe', {
+        p_market_id: activeBet.mId,
+        p_user_id: currentUser.id,
+        p_amount: amt,
+        p_odds: activeBet.o,
+        p_outcome: activeBet.n,
+        p_type: activeBet.t
+    });
+
+    if (error) {
+        console.error(error);
+        return alert("Bet failed (system error)");
+    }
+
+    if (!data) {
+        return alert("Liquidity limit reached!");
+    }
+
+    // balance update client-side (optimistic fix)
+    userProfile[f] -= amt;
+
+    location.reload();
+}
     async function openSettle(mId, title) {
         const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
         currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
