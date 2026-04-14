@@ -21,20 +21,26 @@
         .section.active { display: block; }
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
-        .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        
+        /* Fejléc elrendezés javítása */
+        .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 15px; }
+        .header-left { flex: 1; }
+        .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
         .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; border-color: #222; }
-        .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.2s; }
+        .btn-create:hover { opacity: 0.8; }
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
 
         .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
-        .history-type { position: absolute; top: 15px; right: 15px; font-weight: 900; font-size: 14px; }
-        .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
         
+        /* A típus jelzése relatív lesz a header-right-on belül, nem lóg bele semmibe */
+        .market-type-label { font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
         .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
         .history-item.loss-row { border-left-color: var(--danger); background: rgba(255, 68, 68, 0.1); }
 
@@ -324,24 +330,32 @@
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
         mList.innerHTML = ""; hList.innerHTML = "";
+        
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'D';
             const dlDate = new Date(m.deadline);
             const isExpired = dlDate < new Date();
+            
             if(m.status === 'active') {
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 card.innerHTML = `
-                    <div class="history-type" style="color:${typeColor}">${m.type}</div>
                     <div class="market-header">
-                        <div>
+                        <div class="header-left">
                             <h2 style="margin:0;">${m.title}</h2>
                             <div class="deadline-badge">⏳ DEADLINE: ${dlDate.toLocaleString()}</div>
-                            <div style="margin-top:5px;"><small style="color:#aaa">Host: ${m.creator_name} | <b>Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small></div>
+                            <div style="margin-top:5px;">
+                                <small style="color:#aaa">Host: ${m.creator_name} | 
+                                    <b style="color:${typeColor}">Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b>
+                                </small>
+                            </div>
                         </div>
-                        ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                        <div class="header-right">
+                            <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
+                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                        </div>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
                         ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
@@ -351,14 +365,22 @@
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-                card.innerHTML = `<div class="settled-badge">Settled</div><div class="history-type" style="color:${typeColor}">${m.type}</div>
-                    <h2 style="margin-top:15px; margin-bottom:5px;">
-                        ${m.title} <span style="color:${typeColor};">- Settled at ${sDate.toLocaleString()}.</span>
-                    </h2>
-                    <div style="margin-bottom:15px;">
-                        <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
-                        <small style="color:var(--danger); display:block;">Deadline: ${dlDate.toLocaleString()}</small>
-                        <small style="color:var(--primary); font-weight:bold;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <div class="market-header">
+                        <div class="header-left">
+                            <h2 style="margin-top:15px; margin-bottom:5px;">
+                                ${m.title} <span style="color:${typeColor}; opacity:0.7">- Settled at ${sDate.toLocaleString()}.</span>
+                            </h2>
+                            <div style="margin-bottom:15px;">
+                                <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
+                                <small style="color:var(--danger); display:block;">Deadline: ${dlDate.toLocaleString()}</small>
+                                <small style="color:${typeColor}; font-weight:bold;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            </div>
+                        </div>
+                        <div class="header-right">
+                            <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
+                        </div>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
@@ -400,14 +422,13 @@
         const dlInput = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
 
-        // --- IDŐKORLÁT ELLENŐRZÉSE ---
         if (!dlInput) return showCreateError("Kérlek adj meg egy határidőt!");
         
         const now = new Date();
         const deadline = new Date(dlInput);
         
-        const minDate = new Date(now.getTime() + 60000); // Most + 1 perc
-        const maxDate = new Date(now.getTime() + (72 * 60 * 60 * 1000)); // Most + 72 óra
+        const minDate = new Date(now.getTime() + 60000); 
+        const maxDate = new Date(now.getTime() + (72 * 60 * 60 * 1000)); 
 
         if (deadline < minDate) {
             return showCreateError("A határidőnek legalább 1 perccel a mostani időpont után kell lennie!");
@@ -415,7 +436,6 @@
         if (deadline > maxDate) {
             return showCreateError("A határidő maximum 3 nap (72 óra) lehet előre!");
         }
-        // -----------------------------
 
         if(!t || isNaN(b) || b <= 0) return showCreateError("Kérlek töltsd ki az összes alapvető mezőt!");
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
