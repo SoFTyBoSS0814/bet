@@ -124,6 +124,7 @@
         <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
         <p id="bet-win-text">Payout: 0.00</p>
+        <div id="bet-error-msg" style="color:var(--danger); font-weight:bold; font-size:16px; margin: 10px 0; min-height: 20px;"></div>
         <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
     </div>
@@ -204,7 +205,6 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        // Meghívjuk a bitcoin.js ellenőrzőjét
         if(typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
         }
@@ -318,16 +318,25 @@
     function openBet(mId, n, o, t, dl) {
         if(new Date(dl) < new Date()) return alert("Lezárult!");
         activeBet = { mId, n, o, t, dl };
+        document.getElementById('bet-error-msg').innerText = "";
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
 
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
+        const errDiv = document.getElementById('bet-error-msg');
+        errDiv.innerText = "";
+        
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         const profit = amt * (activeBet.o - 1);
         const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        if(amt > userProfile[f]) return alert("Nincs elég egyenleg!");
+        
+        if(amt > userProfile[f]) {
+            errDiv.innerText = "❌ Hiba: Nincs elég egyenleged!";
+            return;
+        }
+        
         if(profit > mData.take) return alert("Nincs elég likviditás!");
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
