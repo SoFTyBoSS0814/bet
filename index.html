@@ -83,6 +83,7 @@
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2>Balances</h2>
             <div id="geo-restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
+            
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
                     <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
@@ -174,7 +175,7 @@
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        await checkIP(); // Először az IP ellenőrzés
+        await checkIP(); // Először az IP-t nézzük
         await fetchProfile();
         loadMarkets();
         setInterval(checkDeadlines, 1000);
@@ -188,14 +189,14 @@
             if(data.country_code === 'HU') {
                 isHungarian = true;
                 document.getElementById('geo-restriction').style.display = 'block';
-                document.getElementById('btc-wallet-area').innerHTML = "";
+                // Ha magyar, biztosítjuk, hogy a BTC terület tiszta legyen
+                const btcArea = document.getElementById('btc-wallet-area');
+                if(btcArea) btcArea.innerHTML = "";
             } else {
                 isHungarian = false;
                 document.getElementById('geo-restriction').style.display = 'none';
             }
-        } catch(e) { 
-            console.error("Geo-check error", e); 
-        }
+        } catch(e) { console.error("Geo-check error", e); }
     }
 
     async function fetchProfile() {
@@ -212,11 +213,15 @@
         updateCreateBalanceDisplay();
         updateRewardUI();
 
-        // Csak akkor töltjük be a BTC felületet, ha nem magyar az IP
+        // CSAK AKKOR töltjük be a pénztárca címet és kifizetést, ha NEM magyar
         if(!isHungarian && typeof loadSavedBTC === 'function') {
             loadSavedBTC(data.btc_address);
+        } else if (isHungarian) {
+            document.getElementById('btc-wallet-area').innerHTML = "";
         }
     }
+
+    // --- A többi funkció (Market, Settle, Reward) változatlan marad ---
 
     function updateRewardUI() {
         const msg = document.getElementById('reward-msg');
@@ -362,56 +367,36 @@
     async function finalSubmitSettle() {
         const btn = document.getElementById('finalize-btn');
         btn.disabled = true; btn.innerText = "Processing...";
-
         let winners = [];
         document.querySelectorAll('.settle-select').forEach(s => {
             const gi = s.dataset.gi, oi = s.dataset.oi;
             currentSettleGroups[gi].outcomes[oi].status = s.value;
             if(s.value === 'win') winners.push(currentSettleGroups[gi].outcomes[oi].n);
         });
-
         try {
             const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
             const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
             let hostTotal = parseFloat(mData.take) || 0;
-
             const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            
             if(bets && bets.length > 0) {
                 for(let bet of bets) {
                     const isWin = winners.includes(bet.outcome_name);
                     if(isWin) {
                         const payout = parseFloat(bet.amount) * parseFloat(bet.odds);
-                        await _supabase.rpc('settle_bet_payout', {
-                            p_user_id: bet.user_id,
-                            p_amount: payout,
-                            p_field: field
-                        });
+                        await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: payout, p_field: field });
                     } else {
                         hostTotal += parseFloat(bet.amount);
                     }
                     await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
                 }
             }
-
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
             if (host) {
                 await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
             }
-
-            await _supabase.from('markets').update({ 
-                note: JSON.stringify(currentSettleGroups), 
-                status: 'settled', 
-                take: 0,
-                start_time: new Date().toISOString() 
-            }).eq('id', currentSettleId);
-            
+            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', take: 0, start_time: new Date().toISOString() }).eq('id', currentSettleId);
             location.reload();
-        } catch(e) { 
-            console.error(e);
-            alert("Error during settlement!"); 
-            btn.disabled = false; btn.innerText = "FINALIZE";
-        }
+        } catch(e) { console.error(e); alert("Error!"); btn.disabled = false; btn.innerText = "FINALIZE"; }
     }
 
     async function claimDailyDemo() {
