@@ -17,6 +17,7 @@
         
         .right-panel { display: flex; align-items: center; gap: 15px; }
         
+        /* Navbar egyenleg - Egymás mellett */
         .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
         .wallet-sep { width: 1px; height: 18px; background: #334756; }
 
@@ -28,29 +29,11 @@
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         
-        /* JAVÍTOTT RÉSZ: Az egyenleg és a jelzés most már egymás mellett van */
-        .balance-item { 
-            flex: 1; 
-            padding: 15px 25px; 
-            border: 1px solid var(--border); 
-            border-radius: 15px; 
-            display: flex; 
-            flex-direction: row; /* Egymás mellé teszi az elemeket */
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; /* Távolság a szám és a jelzés között */
-            min-width: 160px; /* Megnövelt szélesség a biztonság kedvéért */
-        }
-        .balance-item small { 
-            color: #aaa; 
-            font-size: 10px; 
-            text-transform: uppercase; 
-            margin-right: 5px;
-            position: absolute;
-            top: 5px;
-        }
-        .balance-item h2 { margin: 0; font-size: 24px; }
-        .balance-unit { font-size: 18px; font-weight: bold; }
+        /* Középső egyenleg kártyák - JAVÍTVA: Szám és DEMO/€ egymás mellett */
+        .balance-item { flex: 1; padding: 20px; border: 1px solid var(--border); border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
+        .balance-value-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
+        .balance-value-row h2 { margin: 0; line-height: 1; }
+        .balance-unit { font-size: 16px; font-weight: bold; opacity: 0.9; }
 
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 15px; }
         .header-left { flex: 1; }
@@ -130,20 +113,22 @@
     </div>
 
     <div id="section-wallet" class="section">
-        <div class="market-card" style="max-width:550px; margin:auto; text-align:center;">
+        <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2 data-i18n="balances">Balances</h2>
             <div id="geo-restriction" data-i18n="geo_msg">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
             
-            <div style="display:flex; gap:15px; margin:30px 0; justify-content: center; position: relative;">
-                <div class="balance-item" style="color:var(--primary)">
+            <div style="display:flex; gap:10px; margin:20px 0;">
+                <div class="balance-item">
                     <small>REAL</small>
-                    <h2 id="w-real">0.00</h2>
-                    <span class="balance-unit">€</span>
+                    <div class="balance-value-row" style="color:var(--primary)">
+                        <h2 id="w-real">0.00</h2><span class="balance-unit">€</span>
+                    </div>
                 </div>
-                <div class="balance-item" style="color:var(--demo)">
+                <div class="balance-item">
                     <small>DEMO</small>
-                    <h2 id="w-demo">0.00</h2>
-                    <span class="balance-unit">DEMO</span>
+                    <div class="balance-value-row" style="color:var(--demo)">
+                        <h2 id="w-demo">0.00</h2><span class="balance-unit">DEMO</span>
+                    </div>
                 </div>
             </div>
 
@@ -226,7 +211,7 @@
             mystery_box: "Napi Meglepetés", btn_luck: "SZERENCSE PRÓBA", acc_profile: "Fiók Adatok",
             username: "Felhasználónév", email: "E-mail cím", acc_id: "Fiók Azonosító", logout: "KIJELENTKEZÉS",
             btn_place_bet: "FOGADÁS", cancel: "Mégse", new_market: "Új Piac", event_placeholder: "Esemény neve",
-            budget_placeholder: "Kezdő Pool", add_category: "+ Kategória", publish: "KÖZZÉTÉTEL",
+            budget_placeholder: "Kezdő Likviditási Pool", add_category: "+ Kategória", publish: "KÖZZÉTÉTEL",
             finalize: "VÉGLEGESÍTÉS", deadline: "HATÁRIDŐ", host: "Házigazda", pool: "Pool", final_pool: "Végső Pool",
             settled_at: "Lezárva", category_placeholder: "Kategória neve", outcome_placeholder: "Kimenetel",
             ready_roll: "Készen állsz!", avail_in: "Elérhető: ", wait_24: "Várj 24 órát!", won: "NYERTÉL ",
@@ -235,7 +220,7 @@
             cat_err: "Minden kategóriának adj nevet!", outcome_err: "Minden kimenetelnek adj nevet!",
             odds_err: "Odds 1.01 és 1000 között lehet!", win_loss_err: "Kell legalább 1 WINNER és 1 LOSS!",
             btc_title: "BTC Befizetés / Kifizetés", btc_addr_label: "Saját BTC befizetési címed:", btc_copy: "(Kattints a címre a másoláshoz)",
-            btc_withdraw_title: "Kifizetés indítása", btc_amount_ph: "Összeg (€)", btc_dest_ph: "Cél BTC cím", btn_withdraw: "KIFIZETÉS KÉRVÉNYEZÉSE"
+            btc_withdraw_title: "Kifizetés indítása", btc_amount_ph: "Összeg (€)", btc_dest_ph: "Cél BTC cím (bc1q...)", btn_withdraw: "KIFIZETÉS KÉRVÉNYEZÉSE"
         },
         en: {
             nav_markets: "Markets", nav_history: "History", nav_wallet: "Wallet", nav_account: "Account",
@@ -244,16 +229,70 @@
             mystery_box: "Daily Mystery Box", btn_luck: "TRY MY LUCK", acc_profile: "Account Profile",
             username: "Username", email: "Email Address", acc_id: "Account ID", logout: "LOG OUT",
             btn_place_bet: "PLACE BET", cancel: "Cancel", new_market: "New Market", event_placeholder: "Event Name",
-            budget_placeholder: "Initial Pool", add_category: "+ Add Category", publish: "PUBLISH",
+            budget_placeholder: "Initial Liquidity Pool", add_category: "+ Add Category", publish: "PUBLISH",
             finalize: "FINALIZE", deadline: "DEADLINE", host: "Host", pool: "Pool", final_pool: "Final Pool",
             settled_at: "Settled at", category_placeholder: "Category Name", outcome_placeholder: "Outcome",
-            ready_roll: "Ready to roll!", avail_in: "Available in: ", wait_24: "Wait 24h!", won: "WON ",
-            insufficient: "Insufficient funds!", min_deadline_err: "Deadline must be future!",
-            max_deadline_err: "Max 3 days!", fill_all: "Fill all fields!", 
-            cat_err: "Name categories!", outcome_err: "Name outcomes!",
-            odds_err: "Odds 1.01-1000!", win_loss_err: "Need WINNER and LOSS!",
-            btc_title: "BTC Deposit / Withdraw", btc_addr_label: "Your BTC deposit address:", btc_copy: "(Click to copy)",
-            btc_withdraw_title: "Withdraw", btc_amount_ph: "Amount (€)", btc_dest_ph: "Destination BTC", btn_withdraw: "REQUEST WITHDRAWAL"
+            ready_roll: "Ready to roll!", avail_in: "Available in: ", wait_24: "Wait 24 hours!", won: "WON ",
+            insufficient: "Insufficient funds!", min_deadline_err: "Deadline must be at least 1 min in future!",
+            max_deadline_err: "Maximum 3 days ahead!", fill_all: "Fill all fields!", 
+            cat_err: "Name all categories!", outcome_err: "Name all outcomes!",
+            odds_err: "Odds between 1.01 and 1000!", win_loss_err: "Need at least 1 WINNER and 1 LOSS!",
+            btc_title: "BTC Deposit / Withdraw", btc_addr_label: "Your BTC deposit address:", btc_copy: "(Click to copy address)",
+            btc_withdraw_title: "Start Withdrawal", btc_amount_ph: "Amount (€)", btc_dest_ph: "Destination BTC address", btn_withdraw: "REQUEST WITHDRAWAL"
+        },
+        de: {
+            nav_markets: "Märkte", nav_history: "Verlauf", nav_wallet: "Brieftasche", nav_account: "Konto",
+            live_markets: "Live-Märkte", btn_create: "+ Erstellen", loading: "Laden...",
+            settled_markets_title: "Abgeschlossene Märkte", balances: "Guthaben", geo_msg: "⚠️ Einzahlungen/Auszahlungen sind in Ungarn eingeschränkt.",
+            mystery_box: "Tägliche Mystery Box", btn_luck: "MEIN GLÜCK VERSUCHEN", acc_profile: "Kontoprofil",
+            username: "Benutzername", email: "E-Mail-Adresse", acc_id: "Konto-ID", logout: "AUSLOGGEN",
+            btn_place_bet: "WETTE PLATZIEREN", cancel: "Abbrechen", new_market: "Neuer Markt", event_placeholder: "Ereignisname",
+            budget_placeholder: "Anfänglicher Liquiditätspool", add_category: "+ Kategorie", publish: "VERÖFFENTLICHEN",
+            finalize: "FINALISIEREN", deadline: "DEADLINE", host: "Gastgeber", pool: "Pool", final_pool: "Endgültiger Pool",
+            settled_at: "Abgeschlossen am", category_placeholder: "Kategoriename", outcome_placeholder: "Ergebnis",
+            ready_roll: "Bereit!", avail_in: "Verfügbar in: ", wait_24: "Warten Sie 24 Stunden!", won: "GEWONNEN ",
+            insufficient: "Unzureichende Mittel!", min_deadline_err: "Deadline muss mindestens 1 Min. in der Zukunft liegen!",
+            max_deadline_err: "Maximal 3 Tage im Voraus!", fill_all: "Alle Felder ausfüllen!", 
+            cat_err: "Alle Kategorien benennen!", outcome_err: "Alle Ergebnisse benennen!",
+            odds_err: "Quoten zwischen 1.01 und 1000!", win_loss_err: "Mindestens 1 GEWINNER und 1 VERLIERER!",
+            btc_title: "BTC Einzahlung / Auszahlung", btc_addr_label: "Ihre BTC-Einzahlungsadresse:", btc_copy: "(Zum Kopieren auf die Adresse klicken)",
+            btc_withdraw_title: "Auszahlung starten", btc_amount_ph: "Betrag (€)", btc_dest_ph: "Ziel-BTC-Adresse", btn_withdraw: "AUSZAHLUNG BEANTRAGEN"
+        },
+        ru: {
+            nav_markets: "Рынки", nav_history: "История", nav_wallet: "Кошелек", nav_account: "Аккаунт",
+            live_markets: "Живые рынки", btn_create: "+ Создать", loading: "Загрузка...",
+            settled_markets_title: "Завершенные рынки", balances: "Балансы", geo_msg: "⚠️ Депозиты/выводы ограничены в Венгрии.",
+            mystery_box: "Ежедневный Mystery Box", btn_luck: "ИСПЫТАТЬ УДАЧУ", acc_profile: "Профиль",
+            username: "Имя пользователя", email: "Email", acc_id: "ID аккаунта", logout: "ВЫЙТИ",
+            btn_place_bet: "СДЕЛАТЬ СТАВКУ", cancel: "Отмена", new_market: "Новый рынок", event_placeholder: "Название события",
+            budget_placeholder: "Начальный пул", add_category: "+ Категория", publish: "ОПУБЛИКОВАТЬ",
+            finalize: "ЗАВЕРШИТЬ", deadline: "СРОК", host: "Организатор", pool: "Пул", final_pool: "Итоговый пул",
+            settled_at: "Завершено в", category_placeholder: "Имя категории", outcome_placeholder: "Результат",
+            ready_roll: "Готово!", avail_in: "Доступно через: ", wait_24: "Подождите 24 часа!", won: "ВЫИГРАНО ",
+            insufficient: "Недостаточно средств!", min_deadline_err: "Минимум 1 минута в будущем!",
+            max_deadline_err: "Максимум 3 дня вперед!", fill_all: "Заполните все поля!", 
+            cat_err: "Назовите все категории!", outcome_err: "Назовите все результаты!",
+            odds_err: "Коэффициент от 1.01 до 1000!", win_loss_err: "Нужен минимум 1 WINNER и 1 LOSS!",
+            btc_title: "BTC Депозит / Вывод", btc_addr_label: "Ваш BTC адрес для депозита:", btc_copy: "(Нажмите, чтобы скопировать)",
+            btc_withdraw_title: "Начать вывод", btc_amount_ph: "Сумма (€)", btc_dest_ph: "BTC адрес получателя", btn_withdraw: "ЗАПРОСИТЬ ВЫВОД"
+        },
+        zh: {
+            nav_markets: "市场", nav_history: "历史", nav_wallet: "钱包", nav_account: "账户",
+            live_markets: "进行中市场", btn_create: "+ 创建", loading: "加载中...",
+            settled_markets_title: "已结算市场", balances: "余额", geo_msg: "⚠️ 匈牙利境内的充值/提现受限。",
+            mystery_box: "每日神秘宝箱", btn_luck: "碰碰运气", acc_profile: "个人资料",
+            username: "用户名", email: "电子邮件", acc_id: "账户 ID", logout: "登出",
+            btn_place_bet: "下注", cancel: "取消", new_market: "新市场", event_placeholder: "活动名称",
+            budget_placeholder: "初始流动性池", add_category: "+ 添加类别", publish: "发布",
+            finalize: "结算", deadline: "截止日期", host: "主持人", pool: "奖池", final_pool: "最终奖池",
+            settled_at: "结算于", category_placeholder: "类别名称", outcome_placeholder: "结果",
+            ready_roll: "准备就绪！", avail_in: "可用时间：", wait_24: "请等待 24 小时！", won: "赢得 ",
+            insufficient: "余额不足！", min_deadline_err: "截止日期必须至少晚 1 分钟！",
+            max_deadline_err: "最多提前 3 天！", fill_all: "请填写所有字段！", 
+            cat_err: "请命名所有类别！", outcome_err: "请命名所有结果！",
+            odds_err: "赔率在 1.01 到 1000 之间！", win_loss_err: "至少需要 1 个赢家和 1 个输家！",
+            btc_title: "BTC 充值 / 提现", btc_addr_label: "您的 BTC 充值地址：", btc_copy: "（点击地址复制）",
+            btc_withdraw_title: "开始提现", btc_amount_ph: "金额 (€)", btc_dest_ph: "目标 BTC 地址", btn_withdraw: "请求提现"
         }
     };
 
@@ -274,7 +313,7 @@
     }
 
     function updatePageText() {
-        const dict = i18n[currentLang] || i18n['en'];
+        const dict = i18n[currentLang];
         document.querySelectorAll("[data-i18n]").forEach(el => {
             const key = el.getAttribute("data-i18n");
             if (dict[key]) el.innerText = dict[key];
@@ -336,7 +375,7 @@
     function renderBTCPanel(address) {
         const btcArea = document.getElementById('btc-wallet-area');
         if(!btcArea) return;
-        const d = i18n[currentLang] || i18n['en'];
+        const d = i18n[currentLang];
         btcArea.innerHTML = `
             <div class="btc-box">
                 <h4 style="margin:0; text-align:center; color:var(--primary)">${d.btc_title}</h4>
@@ -348,7 +387,7 @@
                 <input type="number" id="wit-amount" placeholder="${d.btc_amount_ph}">
                 <input type="text" id="wit-addr" placeholder="${d.btc_dest_ph}">
                 <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">${d.btn_withdraw}</button>
-                <div id="wit-error" style="display:none; color:var(--danger); font-size:11px; margin-top:5px; text-align:center;">${d.insufficient}</div>
+                <div id="wit-error">${d.insufficient}</div>
             </div>
         `;
     }
@@ -376,7 +415,7 @@
     function updateRewardUI() {
         const msg = document.getElementById('reward-msg');
         const btn = document.getElementById('btn-claim-reward');
-        const dict = i18n[currentLang] || i18n['en'];
+        const dict = i18n[currentLang];
         if (!userProfile) return;
         if (!userProfile.last_claim) { msg.innerText = dict.ready_roll; btn.disabled = false; btn.style.opacity = "1"; return; }
         const last = new Date(userProfile.last_claim).getTime();
@@ -403,7 +442,7 @@
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
-        const dict = i18n[currentLang] || i18n['en'];
+        const dict = i18n[currentLang];
         mList.innerHTML = ""; hList.innerHTML = "";
         
         markets.forEach(m => {
@@ -439,13 +478,19 @@
             } else {
                 const card = document.createElement('div');
                 card.className = 'market-card';
+                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `
                     <div class="settled-badge">Settled</div>
                     <div class="market-header">
                         <div class="header-left">
-                            <h2 style="margin-top:15px; margin-bottom:5px;">${m.title}</h2>
-                            <small style="color:#aaa; display:block;">${dict.host}: ${m.creator_name}</small>
-                            <small style="color:${typeColor}; font-weight:bold;">${dict.final_pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            <h2 style="margin-top:15px; margin-bottom:5px;">
+                                ${m.title} <span style="color:${typeColor}; opacity:0.7">- ${dict.settled_at} ${sDate.toLocaleString()}.</span>
+                            </h2>
+                            <div style="margin-bottom:15px;">
+                                <small style="color:#aaa; display:block;">${dict.host}: ${m.creator_name}</small>
+                                <small style="color:var(--danger); display:block;">${dict.deadline}: ${dlDate.toLocaleString()}</small>
+                                <small style="color:${typeColor}; font-weight:bold;">${dict.final_pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            </div>
                         </div>
                         <div class="header-right">
                             <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
@@ -464,7 +509,7 @@
     }
 
     function addGroup() {
-        const dict = i18n[currentLang] || i18n['en'];
+        const dict = i18n[currentLang];
         const id = "g-" + Date.now();
         const d = document.createElement('div'); d.className = 'market-group'; d.id = id;
         const isFirst = document.getElementById('groups-container').children.length === 0;
@@ -474,7 +519,7 @@
     }
 
     function addO(groupId) {
-        const dict = i18n[currentLang] || i18n['en'];
+        const dict = i18n[currentLang];
         const cont = document.getElementById('o-cont-' + groupId);
         const d = document.createElement('div'); d.style.display="flex"; d.style.gap="5px"; d.style.marginTop="5px";
         d.innerHTML = `<input class="on" placeholder="${dict.outcome_placeholder}"><input class="oo" type="number" step="0.1" value="2.0" style="width:70px">${cont.children.length >= 2 ? `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--danger)">✕</button>` : ''}`;
@@ -488,7 +533,7 @@
     }
 
     async function saveMarket() {
-        const dict = i18n[currentLang] || i18n['en'];
+        const dict = i18n[currentLang];
         const t = document.getElementById('m-name').value.trim();
         const b = parseFloat(document.getElementById('m-budget').value);
         const dlInput = document.getElementById('m-deadline').value;
@@ -523,6 +568,7 @@
 
     function openBet(mId, n, o, t, dl) {
         activeBet = { mId, n, o, t, dl };
+        const symbol = t === 'REAL' ? '€' : 'DEMO';
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
@@ -589,13 +635,13 @@
             }
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
             if (host) await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
-            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled' }).eq('id', currentSettleId);
+            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', start_time: new Date().toISOString() }).eq('id', currentSettleId);
             location.reload();
         } catch(e) { console.error(e); btn.disabled = false; btn.innerText = "FINALIZE"; }
     }
 
     async function claimDailyDemo() {
-        const dict = i18n[currentLang] || i18n['en'];
+        const dict = i18n[currentLang];
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert(dict.wait_24);
         const win = Math.floor(Math.random() * 8000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
@@ -608,13 +654,16 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
     }
-    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
+    function calcWin() { 
+        const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
+        document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
+    }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { 
-        document.getElementById('createModal').classList.remove('hidden'); 
+        document.getElementById('createModal').classList.remove('hidden');
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
-        if(!document.getElementById('groups-container').innerHTML) addGroup(); 
+        if(!document.getElementById('groups-container').innerHTML) addGroup();
     }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 </script>
