@@ -47,6 +47,8 @@
         .hidden { display: none !important; }
 
         #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
+        
+        .error-text { color: var(--danger); font-weight: bold; font-size: 16px; margin-top: 10px; display: block; }
     </style>
 </head>
 <body>
@@ -93,6 +95,7 @@
             </div>
 
             <div id="btc-wallet-area"></div>
+            <div id="wallet-error-msg" class="error-text"></div>
 
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
@@ -124,7 +127,7 @@
         <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
         <p id="bet-win-text">Payout: 0.00</p>
-        <div id="bet-error-msg" style="color:var(--danger); font-weight:bold; font-size:16px; margin: 10px 0; min-height: 20px;"></div>
+        <div id="bet-error-msg" class="error-text"></div>
         <button class="btn-primary" onclick="placeBet()">PLACE BET</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')">Cancel</button>
     </div>
@@ -318,6 +321,7 @@
     function openBet(mId, n, o, t, dl) {
         if(new Date(dl) < new Date()) return alert("Lezárult!");
         activeBet = { mId, n, o, t, dl };
+        // Reset hibaüzenet
         document.getElementById('bet-error-msg').innerText = "";
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
@@ -337,7 +341,11 @@
             return;
         }
         
-        if(profit > mData.take) return alert("Nincs elég likviditás!");
+        if(profit > mData.take) {
+            errDiv.innerText = "❌ Hiba: Nincs elég likviditás!";
+            return;
+        }
+
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
         await _supabase.from('bets').insert([{ user_id: currentUser.id, market_id: activeBet.mId, outcome_name: activeBet.n, amount: amt, odds: activeBet.o, type: activeBet.t, status: 'pending' }]);
@@ -394,6 +402,8 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
+        // Reset hibaüzenet ha szekciót váltunk
+        if(id === 'wallet') document.getElementById('wallet-error-msg').innerText = "";
     }
     function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
