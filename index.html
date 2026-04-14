@@ -86,9 +86,7 @@
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2>Balances</h2>
-            
             <div id="geo-restriction">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
-            
             <div style="display:flex; gap:10px; margin:20px 0;">
                 <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
                     <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
@@ -97,9 +95,7 @@
                     <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-
             <div id="btc-wallet-area"></div>
-
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)">Daily Mystery Box</h3>
                 <div id="reward-msg"></div>
@@ -173,16 +169,12 @@
     let activeBet = null;
     let currentSettleId = null;
     let currentSettleGroups = null;
-    let isHungarian = null; // Kezdetben null, hogy várja meg a mérést
+    let isHungarian = null;
 
     window.onload = async () => {
         if(!currentUser) { window.location.href="login.html"; return; }
-        
-        // 1. IP ellenőrzés fut le először
         await checkIP();
-        // 2. Profil betöltése (ez fogja kirajzolni a BTC panelt, ha nem magyar)
         await fetchProfile();
-        
         loadMarkets();
         setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
@@ -190,26 +182,21 @@
 
     async function checkIP() {
         try {
-            // Próbálunk egy megbízható IP API-t (HTTPS-en)
             const res = await fetch('https://ipapi.co/json/');
-            if(!res.ok) throw new Error("API Limit vagy hiba");
+            if(!res.ok) throw new Error("API Limit");
             const data = await res.json();
             isHungarian = (data.country_code === 'HU');
         } catch(e) { 
             console.error("Geo-check error", e);
-            // Ha az API blokkolva van vagy hiba van, biztonsági okból magyarnak vesszük
             isHungarian = true; 
         }
-
         const geoMsg = document.getElementById('geo-restriction');
         const btcArea = document.getElementById('btc-wallet-area');
-
         if(isHungarian) {
             geoMsg.style.display = 'block';
-            btcArea.innerHTML = ''; // Töröljük a BTC panelt, ha magyar
+            btcArea.innerHTML = '';
         } else {
             geoMsg.style.display = 'none';
-            // Itt még nem rajzolunk, mert nincs meg a userProfile btc_address-e
         }
     }
 
@@ -217,7 +204,6 @@
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(!data) return;
         userProfile = data;
-
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
@@ -226,14 +212,11 @@
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
         
-        // SZIGORÚ ELLENŐRZÉS: Csak akkor rajzolunk BTC-t, ha isHungarian === false
-        const btcArea = document.getElementById('btc-wallet-area');
         if(isHungarian === false) {
             renderBTCPanel(data.btc_address);
         } else {
-            btcArea.innerHTML = ''; // Biztosra megyünk, hogy üres legyen
+            document.getElementById('btc-wallet-area').innerHTML = '';
         }
-
         updateCreateBalanceDisplay();
         updateRewardUI();
     }
@@ -260,18 +243,15 @@
         const amount = parseFloat(document.getElementById('wit-amount').value);
         const address = document.getElementById('wit-addr').value;
         const errorDiv = document.getElementById('wit-error');
-        
         errorDiv.style.display = 'none';
         if(isNaN(amount) || amount <= 0 || !address) {
             alert("Kérlek adj meg egy érvényes összeget és címet!");
             return;
         }
-
         if(amount > userProfile.real_balance) {
             errorDiv.style.display = 'block';
             return;
         }
-
         const { error } = await _supabase.from('withdrawals').insert([{
             user_id: currentUser.id,
             username: currentUser.username,
@@ -279,7 +259,6 @@
             btc_address: address,
             status: 'pending'
         }]);
-
         if(!error) {
             alert("Kifizetési kérelem sikeresen elküldve!");
             location.reload();
@@ -385,18 +364,40 @@
     }
 
     async function saveMarket() {
-        const t = document.getElementById('m-name').value;
+        const t = document.getElementById('m-name').value.trim();
         const b = parseFloat(document.getElementById('m-budget').value);
         const dl = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
-        if(!dl || isNaN(b) || b <= 0) return alert("Helytelen adatok!");
+
+        // Alapmezők ellenőrzése
+        if(!t || isNaN(b) || b <= 0 || !dl) return alert("Kérlek töltsd ki az összes alapvető mezőt (Név, Budget, Határidő)!");
+
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
         if(b > userProfile[balField]) return alert("Nincs elég fedezet!");
+
+        const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
+        if(groupDivs.length === 0) return alert("Legalább egy kategóriát meg kell adnod!");
+
+        const grp = [];
+        for(let g of groupDivs) {
+            const categoryTitle = g.querySelector('.gt').value.trim();
+            if(!categoryTitle) return alert("Minden kategóriának kell nevet adnod!");
+
+            const outcomes = [];
+            const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
+            for(let o of outcomeDivs) {
+                const name = o.querySelector('.on').value.trim();
+                const odds = parseFloat(o.querySelector('.oo').value);
+
+                if(!name) return alert("Minden kimenetelnek (Outcome) nevet kell adnod!");
+                if(isNaN(odds) || odds < 1.01 || odds > 1000) return alert("Az odds értéke 1.01 és 1000 között kell legyen!");
+
+                outcomes.push({ n: name, o: odds, status: 'pending' });
+            }
+            grp.push({ title: categoryTitle, outcomes });
+        }
+
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        const grp = Array.from(document.querySelectorAll('#groups-container .market-group')).map(g => ({
-            title: g.querySelector('.gt').value,
-            outcomes: Array.from(g.querySelectorAll('div[id^="o-cont-"] > div')).map(o => ({ n: o.querySelector('.on').value, o: parseFloat(o.querySelector('.oo').value), status: 'pending' }))
-        }));
         await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: new Date(dl).toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
         location.reload();
     }
