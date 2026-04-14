@@ -325,7 +325,7 @@
             for (let o of outcomeElements) {
                 const oName = o.querySelector('.on').value.trim();
                 const oOdds = parseFloat(o.querySelector('.oo').value);
-                if(!oName || isNaN(oOdds) || oOdds <= 1) { errDiv.innerText = "❌ Hibás szorzók!"; return; }
+                if(!oName || isNaN(oOdds) || oOdds <= 1.01) { errDiv.innerText = "❌ Hibás szorzók! Minimum 1.01!"; return; }
                 outcomes.push({ n: oName, o: oOdds, status: 'pending' });
             }
             groups.push({ title: gTitle, outcomes: outcomes });
