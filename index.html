@@ -28,19 +28,18 @@
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         
-        /* MÓDOSÍTOTT EGYENLEG STÍLUS - PONTOSAN A KÉP ALAPJÁN */
         .balance-item { 
             flex: 1; 
             padding: 30px 15px; 
             border: 1px solid var(--border); 
             border-radius: 15px; 
             display: flex; 
-            flex-direction: row; /* Vizszintes sor */
+            flex-direction: row; 
             align-items: center; 
             justify-content: center;
-            gap: 10px; /* Térköz az összeg és a jelzés között */
+            gap: 10px; 
             position: relative;
-            min-width: 200px; /* Megnövelt szélesség */
+            min-width: 200px; 
         }
         .balance-item small { 
             position: absolute; 
@@ -197,7 +196,7 @@
         </select>
         <input id="m-name" data-i18n-placeholder="event_placeholder" placeholder="Event Name">
         <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" data-i18n-placeholder="budget_placeholder" placeholder="Initial Liquidity Pool">
+        <input id="m-budget" type="number" data-i18n-placeholder="budget_placeholder" placeholder="Initial Pool">
         <div id="groups-container"></div>
         <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed" data-i18n="add_category">+ Add Category</button>
         <div id="create-error-msg"></div>
@@ -257,6 +256,60 @@
             odds_err: "Odds 1.01-1000!", win_loss_err: "Need WINNER and LOSS!",
             btc_title: "BTC Deposit / Withdraw", btc_addr_label: "Your BTC deposit address:", btc_copy: "(Click to copy)",
             btc_withdraw_title: "Withdraw", btc_amount_ph: "Amount (€)", btc_dest_ph: "Destination BTC", btn_withdraw: "REQUEST WITHDRAWAL"
+        },
+        de: {
+            nav_markets: "Märkte", nav_history: "Verlauf", nav_wallet: "Brieftasche", nav_account: "Konto",
+            live_markets: "Live-Märkte", btn_create: "+ Erstellen", loading: "Laden...",
+            settled_markets_title: "Abgeschlossene Märkte", balances: "Guthaben", geo_msg: "⚠️ Einzahlungen sind eingeschränkt.",
+            mystery_box: "Tägliche Box", btn_luck: "GLÜCK VERSUCHEN", acc_profile: "Kontoprofil",
+            username: "Benutzername", email: "Email", acc_id: "Konto ID", logout: "LOGOUT",
+            btn_place_bet: "WETTEN", cancel: "Abbrechen", new_market: "Neuer Markt", event_placeholder: "Eventname",
+            budget_placeholder: "Start-Pool", add_category: "+ Kategorie", publish: "PUBLIZIEREN",
+            finalize: "ABSCHLIESSEN", deadline: "DEADLINE", host: "Host", pool: "Pool", final_pool: "Finale Pool",
+            settled_at: "Abgeschlossen", category_placeholder: "Kategoriename", outcome_placeholder: "Ergebnis",
+            ready_roll: "Bereit!", avail_in: "Verfügbar in: ", wait_24: "24h warten!", won: "GEWONNEN ",
+            insufficient: "Guthaben zu gering!", min_deadline_err: "Zukunft wählen!",
+            max_deadline_err: "Max 3 Tage!", fill_all: "Felder füllen!", 
+            cat_err: "Kategorien benennen!", outcome_err: "Ergebnisse benennen!",
+            odds_err: "Quoten 1.01-1000!", win_loss_err: "WINNER und LOSS nötig!",
+            btc_title: "BTC Ein-/Auszahlung", btc_addr_label: "Ihre BTC Adresse:", btc_copy: "(Klicken zum Kopieren)",
+            btc_withdraw_title: "Auszahlung", btc_amount_ph: "Betrag (€)", btc_dest_ph: "Ziel BTC", btn_withdraw: "AUSZAHLUNG BEANTRAGEN"
+        },
+        ru: {
+            nav_markets: "Рынки", nav_history: "История", nav_wallet: "Кошелек", nav_account: "Аккаунт",
+            live_markets: "Текущие рынки", btn_create: "+ Создать", loading: "Загрузка...",
+            settled_markets_title: "Завершенные рынки", balances: "Балансы", geo_msg: "⚠️ Депозиты ограничены.",
+            mystery_box: "Бонус", btn_luck: "УДАЧА", acc_profile: "Профиль",
+            username: "Логин", email: "Email", acc_id: "ID аккаунта", logout: "ВЫХОД",
+            btn_place_bet: "СТАВКА", cancel: "Отмена", new_market: "Новый рынок", event_placeholder: "Событие",
+            budget_placeholder: "Пул", add_category: "+ Категория", publish: "ОПУБЛИКОВАТЬ",
+            finalize: "ЗАВЕРШИТЬ", deadline: "СРОК", host: "Организатор", pool: "Пул", final_pool: "Итого",
+            settled_at: "Завершено", category_placeholder: "Имя категории", outcome_placeholder: "Исход",
+            ready_roll: "Готов!", avail_in: "Доступно через: ", wait_24: "Ждите 24ч!", won: "ВЫИГРЫШ ",
+            insufficient: "Мало средств!", min_deadline_err: "Выберите будущее!",
+            max_deadline_err: "Макс 3 дня!", fill_all: "Заполните всё!", 
+            cat_err: "Назовите категории!", outcome_err: "Назовите исходы!",
+            odds_err: "Кэф 1.01-1000!", win_loss_err: "Нужны WINNER и LOSS!",
+            btc_title: "BTC Депозит/Вывод", btc_addr_label: "Ваш BTC адрес:", btc_copy: "(Клик для копирования)",
+            btc_withdraw_title: "Вывод", btc_amount_ph: "Сумма (€)", btc_dest_ph: "BTC адрес", btn_withdraw: "ВЫВЕСТИ"
+        },
+        zh: {
+            nav_markets: "市场", nav_history: "历史", nav_wallet: "钱包", nav_account: "账户",
+            live_markets: "实时市场", btn_create: "+ 创建", loading: "加载中...",
+            settled_markets_title: "已结算市场", balances: "余额", geo_msg: "⚠️ 充值受限。",
+            mystery_box: "每日宝箱", btn_luck: "试试运气", acc_profile: "个人资料",
+            username: "用户名", email: "邮箱", acc_id: "账户 ID", logout: "退出",
+            btn_place_bet: "下注", cancel: "取消", new_market: "新市场", event_placeholder: "事件名称",
+            budget_placeholder: "资金池", add_category: "+ 类别", publish: "发布",
+            finalize: "结算", deadline: "截止时间", host: "创建者", pool: "池", final_pool: "最终池",
+            settled_at: "结算于", category_placeholder: "类别名称", outcome_placeholder: "结果",
+            ready_roll: "准备好了!", avail_in: "可用时间: ", wait_24: "等24小时!", won: "赢得 ",
+            insufficient: "余额不足!", min_deadline_err: "必须是未来时间!",
+            max_deadline_err: "最长3天!", fill_all: "填满所有字段!", 
+            cat_err: "命名类别!", outcome_err: "命名结果!",
+            odds_err: "赔率1.01-1000!", win_loss_err: "需要赢家和输家!",
+            btc_title: "BTC 充值/提现", btc_addr_label: "您的 BTC 地址:", btc_copy: "(点击复制)",
+            btc_withdraw_title: "提现", btc_amount_ph: "金额 (€)", btc_dest_ph: "目标 BTC", btn_withdraw: "申请提现"
         }
     };
 
@@ -272,21 +325,28 @@
         currentLang = lang;
         localStorage.setItem("lang", lang);
         updatePageText();
-        loadMarkets();
+        loadMarkets(); // A piacokon belüli feliratok frissítése
         if(!isHungarian && userProfile) renderBTCPanel(userProfile.btc_address);
     }
 
     function updatePageText() {
         const dict = i18n[currentLang] || i18n['en'];
+        
+        // Szövegek és Gombok frissítése
         document.querySelectorAll("[data-i18n]").forEach(el => {
             const key = el.getAttribute("data-i18n");
             if (dict[key]) el.innerText = dict[key];
         });
+
+        // Placeholder-ek frissítése
         document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
             const key = el.getAttribute("data-i18n-placeholder");
             if (dict[key]) el.placeholder = dict[key];
         });
-        document.getElementById('lang-switcher').value = currentLang;
+
+        // Nyelvválasztó select értékének szinkronizálása
+        const switcher = document.getElementById('lang-switcher');
+        if(switcher) switcher.value = currentLang;
     }
 
     window.onload = async () => {
