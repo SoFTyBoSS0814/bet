@@ -328,7 +328,7 @@
             for (let o of outcomeElements) {
                 const oName = o.querySelector('.on').value.trim();
                 const oOdds = parseFloat(o.querySelector('.oo').value);
-                if(!oName || isNaN(oOdds) || oOdds <= 1) { errDiv.innerText = "❌ Minden kimenetelnek kell név és érvényes szorzó (>1)!"; return; }
+                if(!oName || isNaN(oOdds) || oOdds <= 1.01) { errDiv.innerText = "❌ Minden kimenetelnek kell név és érvényes szorzó (>1.01)!"; return; }
                 outcomes.push({ n: oName, o: oOdds, status: 'pending' });
             }
             groups.push({ title: gTitle, outcomes: outcomes });
