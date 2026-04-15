@@ -447,10 +447,14 @@
 async function loadMarkets() {
 
     // 🔥 LEKÉRJÜK MELY MARKETEKRE FOGADTÁL
-    const { data: userBets } = await _supabase
-        .from('bets')
-        .select('market_id')
-        .eq('user_id', currentUser.id);
+const { data: userBets } = await _supabase
+    .from('bets')
+    .select('market_id')
+    .eq('user_id', currentUser.id);
+
+const userMarketIds = new Set(
+    (userBets || []).map(b => String(b.market_id))
+);
 
     const userMarketIds = (userBets || []).map(b => b.market_id);
 
@@ -508,7 +512,7 @@ async function loadMarkets() {
         else {
 
             // ❗ EZ A LÉNYEG
-            if (!userMarketIds.includes(m.id)) return;
+            if (!userMarketIds.has(String(m.id))) return;
 
             const card = document.createElement('div');
             card.className = 'market-card';
