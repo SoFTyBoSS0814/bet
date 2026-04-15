@@ -16,10 +16,8 @@
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         
         .right-panel { display: flex; align-items: center; gap: 15px; }
-        
         .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
         .wallet-sep { width: 1px; height: 18px; background: #334756; }
-
         .lang-select { background: #0b1218; color: var(--primary); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; outline: none; height: 38px; font-weight: bold; }
 
         .container { max-width: 1000px; margin: auto; padding: 30px; }
@@ -27,32 +25,22 @@
         .section.active { display: block; }
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
-        
         .balance-item { flex: 1; padding: 20px; border: 1px solid var(--border); border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
         .balance-value-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
         .balance-value-row h2 { margin: 0; line-height: 1; }
-        .balance-unit { font-size: 16px; font-weight: bold; opacity: 0.9; }
 
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 15px; }
-        .header-left { flex: 1; }
-        .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-
         .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
         
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
-        .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; border-color: #222; }
-        .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.2s; }
-        .btn-create:hover { opacity: 0.8; }
-        .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
+        .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
 
-        .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
-        .market-type-label { font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        
-        /* MY BETS JAVÍTOTT STÍLUSOK */
-        .bet-history-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        .bet-history-table th { text-align: left; color: #aaa; padding: 12px 10px; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 11px; }
-        .bet-history-table td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+        /* MY BETS JAVÍTOTT TÁBLÁZAT */
+        .bet-history-table { width: 100%; border-collapse: collapse; min-width: 600px; table-layout: fixed; }
+        .bet-history-table th { text-align: left; color: #888; padding: 12px 10px; border-bottom: 2px solid var(--border); font-size: 11px; text-transform: uppercase; }
+        .bet-history-table td { padding: 12px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         .col-event { width: 30%; }
         .col-pick  { width: 20%; }
@@ -61,25 +49,16 @@
         .col-payout{ width: 15%; font-weight: bold; }
         .col-status{ width: 10%; text-align: right; }
 
-        .status-win { color: var(--success); font-weight: bold; }
-        .status-loss { color: var(--danger); font-weight: bold; }
-        .status-pending { color: var(--demo); }
+        .status-win { color: var(--success); }
+        .status-loss { color: var(--danger); }
+        .status-pending { color: var(--demo); font-style: italic; }
 
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
-        #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
-
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
-        .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border); }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; outline: none; }
+        .modal-box { background: var(--card); padding: 30px; border-radius: 20px; width: 450px; border: 1px solid var(--border); }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; background: #0b1218; border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; }
         .hidden { display: none !important; }
-
-        #geo-restriction { background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); padding: 15px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 14px; display: none; }
-        #create-error-msg { color: var(--danger); background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger); padding: 10px; border-radius: 8px; margin-top: 15px; display: none; text-align: center; font-weight: bold; font-size: 13px; }
-
-        .btc-box { border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-top: 15px; text-align: left; }
         .btc-address { background: #0b1218; padding: 10px; border: 1px dashed var(--primary); border-radius: 6px; font-size: 11px; word-break: break-all; color: var(--primary); cursor: pointer; text-align: center; margin: 10px 0; }
-        #wit-error { color: var(--danger); font-size: 12px; margin-top: 10px; font-weight: bold; display: none; text-align: center; }
-        .deadline-badge { margin-top: 5px; font-size: 12px; font-weight: bold; color: var(--danger); background: rgba(255,68,68,0.1); padding: 4px 8px; border-radius: 4px; display: inline-block; border: 1px solid rgba(255,68,68,0.2); }
     </style>
 </head>
 <body>
@@ -99,12 +78,9 @@
             <div class="wallet-sep"></div>
             <span style="color:var(--demo)"><span id="nav-demo">0.00</span> DEMO</span>
         </div>
-        <select id="lang-switcher" class="lang-select" onchange="changeLang(this.value)">
+        <select class="lang-select" onchange="changeLang(this.value)">
             <option value="en">EN</option>
             <option value="hu">HU</option>
-            <option value="de">DE</option>
-            <option value="ru">RU</option>
-            <option value="zh">ZH</option>
         </select>
     </div>
 </div>
@@ -115,7 +91,7 @@
             <h2 data-i18n="live_markets">Live Markets</h2>
             <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
         </div>
-        <div id="market-list" data-i18n="loading">Loading...</div>
+        <div id="market-list">Loading...</div>
     </div>
 
     <div id="section-mybets" class="section">
@@ -138,51 +114,32 @@
     </div>
 
     <div id="section-history" class="section">
-        <h2 data-i18n="settled_markets_title">Settled Markets</h2>
+        <h2 data-i18n="nav_history">Settled Markets</h2>
         <div id="history-list"></div>
     </div>
 
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2 data-i18n="balances">Balances</h2>
-            <div id="geo-restriction" data-i18n="geo_msg">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
-            
             <div style="display:flex; gap:10px; margin:20px 0;">
-                <div class="balance-item">
-                    <small>REAL</small>
-                    <div class="balance-value-row" style="color:var(--primary)">
-                        <h2 id="w-real">0.00</h2><span class="balance-unit">€</span>
-                    </div>
-                </div>
-                <div class="balance-item">
-                    <small>DEMO</small>
-                    <div class="balance-value-row" style="color:var(--demo)">
-                        <h2 id="w-demo">0.00</h2><span class="balance-unit">DEMO</span>
-                    </div>
-                </div>
+                <div class="balance-item"><small>REAL</small><div class="balance-value-row"><h2 id="w-real">0.00</h2><span>€</span></div></div>
+                <div class="balance-item"><small>DEMO</small><div class="balance-value-row"><h2 id="w-demo">0.00</h2><span>DEMO</span></div></div>
             </div>
-
             <div id="btc-wallet-area"></div>
             <div class="reward-box">
-                <h3 style="margin:0; color:var(--demo)" data-i18n="mystery_box">Daily Mystery Box</h3>
+                <h3 data-i18n="mystery_box">Daily Mystery Box</h3>
                 <div id="reward-msg"></div>
-                <button id="btn-claim-reward" class="btn-primary" style="background:var(--demo)" onclick="claimDailyDemo()" data-i18n="btn_luck">TRY MY LUCK</button>
+                <button class="btn-primary" onclick="claimDailyDemo()" data-i18n="btn_luck">TRY MY LUCK</button>
             </div>
         </div>
     </div>
 
     <div id="section-account" class="section">
-        <div class="market-card" style="max-width:450px; margin:auto;">
-            <h2 style="text-align:center" data-i18n="acc_profile">Account Profile</h2>
-            <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin:20px 0;">
-                <p style="margin:5px 0; color:#aaa" data-i18n="username">Username</p>
-                <p id="acc-username" style="font-weight:bold; font-size:18px; margin-bottom:15px;">-</p>
-                <p style="margin:5px 0; color:#aaa" data-i18n="email">Email Address</p>
-                <p id="acc-email" style="font-weight:bold; margin-bottom:15px;">-</p>
-                <p style="margin:5px 0; color:#aaa" data-i18n="acc_id">Account ID</p>
-                <p id="acc-id" style="font-family:monospace; font-size:12px; color:var(--primary)">-</p>
-            </div>
-            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold;" data-i18n="logout">LOG OUT</button>
+        <div class="market-card" style="max-width:400px; margin:auto; text-align:center;">
+            <h2 data-i18n="nav_account">Account</h2>
+            <p id="acc-username" style="font-weight:bold; font-size:20px"></p>
+            <p id="acc-email" style="color:#aaa"></p>
+            <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); margin-top:20px">LOG OUT</button>
         </div>
     </div>
 </div>
@@ -199,32 +156,15 @@
 
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
-        <div style="display:flex; justify-content:space-between; align-items:center">
-            <h3 data-i18n="new_market">New Market</h3>
-            <span id="create-balance-display" style="font-size:12px; font-weight:bold; color:var(--primary)">Balance: 0.00</span>
-        </div>
-        <select id="m-type" onchange="updateCreateBalanceDisplay()">
-            <option value="DEMO">DEMO</option>
-            <option value="REAL">REAL</option>
-        </select>
-        <input id="m-name" data-i18n-placeholder="event_placeholder" placeholder="Event Name">
+        <h3 data-i18n="btn_create">New Market</h3>
+        <select id="m-type"><option value="DEMO">DEMO</option><option value="REAL">REAL</option></select>
+        <input id="m-name" placeholder="Event Name">
         <input id="m-deadline" type="datetime-local">
-        <input id="m-budget" type="number" data-i18n-placeholder="budget_placeholder" placeholder="Initial Liquidity Pool">
+        <input id="m-budget" type="number" placeholder="Initial Pool">
         <div id="groups-container"></div>
-        <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed" data-i18n="add_category">+ Add Category</button>
-        <div id="create-error-msg"></div>
-        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()" data-i18n="publish">PUBLISH</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')" data-i18n="cancel">Cancel</button>
-    </div>
-</div>
-
-<div id="settleModal" class="modal hidden">
-    <div class="modal-box">
-        <h3 id="settle-title"></h3>
-        <div id="settle-area"></div>
-        <div id="settle-error-msg" style="color:var(--danger); text-align:center; font-size:12px; margin-top:10px; display:none; font-weight:bold;"></div>
-        <button class="btn-primary" style="margin-top:20px; background:var(--success)" id="finalize-btn" onclick="finalSubmitSettle()" data-i18n="finalize">FINALIZE</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')" data-i18n="cancel">Cancel</button>
+        <button class="btn-bet" onclick="addGroup()">+ Add Group</button>
+        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()">PUBLISH</button>
+        <button class="btn-bet" style="border:none" onclick="closeModal('createModal')">Cancel</button>
     </div>
 </div>
 
@@ -234,117 +174,18 @@
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
     const i18n = {
-        hu: {
-            nav_markets: "Piacok", nav_mybets: "Fogadásaim", nav_history: "Előzmények", nav_wallet: "Tárca", nav_account: "Fiók",
-            live_markets: "Élő Piacok", btn_create: "+ Létrehozás", loading: "Betöltés...",
-            settled_markets_title: "Lezárt Piacok", balances: "Egyenlegek", geo_msg: "⚠️ Magyarország területéről a BE/KI fizetés tiltva van.",
-            mystery_box: "Napi Meglepetés", btn_luck: "SZERENCSE PRÓBA", acc_profile: "Fiók Adatok",
-            username: "Felhasználónév", email: "E-mail cím", acc_id: "Fiók Azonosító", logout: "KIJELENTKEZÉS",
-            btn_place_bet: "FOGADÁS", cancel: "Mégse", new_market: "Új Piac", event_placeholder: "Esemény neve",
-            budget_placeholder: "Kezdő Likviditási Pool", add_category: "+ Kategória", publish: "KÖZZÉTÉTEL",
-            finalize: "VÉGLEGESÍTÉS", deadline: "HATÁRIDŐ", host: "Házigazda", pool: "Pool", final_pool: "Végső Pool",
-            settled_at: "Lezárva", category_placeholder: "Kategória neve", outcome_placeholder: "Kimenetel",
-            ready_roll: "Készen állsz!", avail_in: "Elérhető: ", wait_24: "Várj 24 órát!", won: "NYERTÉL ",
-            insufficient: "Nincs elég fedezet!", min_deadline_err: "Legalább 1 perccel későbbi időpont kell!",
-            max_deadline_err: "Maximum 3 nap lehet előre!", fill_all: "Minden mezőt tölts ki!", 
-            cat_err: "Minden kategóriának adj nevet!", outcome_err: "Minden kimenetelnek adj nevet!",
-            odds_err: "Odds 1.01 és 1000 között lehet!", win_loss_err: "Kell legalább 1 WINNER és 1 LOSS!",
-            btc_title: "BTC Befizetés / Kifizetés", btc_addr_label: "Saját BTC befizetési címed:", btc_copy: "(Kattints a címre a másoláshoz)",
-            btc_withdraw_title: "Kifizetés indítása", btc_amount_ph: "Összeg (€)", btc_dest_ph: "Cél BTC cím (bc1q...)", btn_withdraw: "KIFIZETÉS KÉRVÉNYEZÉSE",
-            h_event: "Esemény", h_pick: "Tipp", h_stake: "Tét", h_odds: "Odds", h_payout: "Kifizetés", h_status: "Állapot"
-        },
-        en: {
-            nav_markets: "Markets", nav_mybets: "My Bets", nav_history: "History", nav_wallet: "Wallet", nav_account: "Account",
-            live_markets: "Live Markets", btn_create: "+ Create", loading: "Loading...",
-            settled_markets_title: "Settled Markets", balances: "Balances", geo_msg: "⚠️ Deposits/Withdrawals are restricted in Hungary.",
-            mystery_box: "Daily Mystery Box", btn_luck: "TRY MY LUCK", acc_profile: "Account Profile",
-            username: "Username", email: "Email Address", acc_id: "Account ID", logout: "LOG OUT",
-            btn_place_bet: "PLACE BET", cancel: "Cancel", new_market: "New Market", event_placeholder: "Event Name",
-            budget_placeholder: "Initial Liquidity Pool", add_category: "+ Add Category", publish: "PUBLISH",
-            finalize: "FINALIZE", deadline: "DEADLINE", host: "Host", pool: "Pool", final_pool: "Final Pool",
-            settled_at: "Settled at", category_placeholder: "Category Name", outcome_placeholder: "Outcome",
-            ready_roll: "Ready to roll!", avail_in: "Available in: ", wait_24: "Wait 24 hours!", won: "WON ",
-            insufficient: "Insufficient funds!", min_deadline_err: "Deadline must be at least 1 min in future!",
-            max_deadline_err: "Maximum 3 days ahead!", fill_all: "Fill all fields!", 
-            cat_err: "Name all categories!", outcome_err: "Name all outcomes!",
-            odds_err: "Odds between 1.01 and 1000!", win_loss_err: "Need at least 1 WINNER and 1 LOSS!",
-            btc_title: "BTC Deposit / Withdraw", btc_addr_label: "Your BTC deposit address:", btc_copy: "(Click to copy address)",
-            btc_withdraw_title: "Start Withdrawal", btc_amount_ph: "Amount (€)", btc_dest_ph: "Destination BTC address", btn_withdraw: "REQUEST WITHDRAWAL",
-            h_event: "Event", h_pick: "Pick", h_stake: "Stake", h_odds: "Odds", h_payout: "Payout", h_status: "Status"
-        },
-        de: {
-            nav_markets: "Märkte", nav_mybets: "Meine Wetten", nav_history: "Verlauf", nav_wallet: "Brieftasche", nav_account: "Konto",
-            live_markets: "Live-Märkte", btn_create: "+ Erstellen", loading: "Laden...",
-            settled_markets_title: "Abgeschlossene Märkte", balances: "Guthaben", geo_msg: "⚠️ Einzahlungen/Auszahlungen sind in Ungarn eingeschränkt.",
-            mystery_box: "Tägliche Mystery Box", btn_luck: "MEIN GLÜCK VERSUCHEN", acc_profile: "Kontoprofil",
-            username: "Benutzername", email: "E-Mail-Adresse", acc_id: "Konto-ID", logout: "AUSLOGGEN",
-            btn_place_bet: "WETTE PLATZIEREN", cancel: "Abbrechen", new_market: "Neuer Markt", event_placeholder: "Ereignisname",
-            budget_placeholder: "Anfänglicher Liquiditätspool", add_category: "+ Kategorie", publish: "VERÖFFENTLICHEN",
-            finalize: "FINALISIEREN", deadline: "DEADLINE", host: "Gastgeber", pool: "Pool", final_pool: "Endgültiger Pool",
-            settled_at: "Abgeschlossen am", category_placeholder: "Kategoriename", outcome_placeholder: "Ergebnis",
-            ready_roll: "Bereit!", avail_in: "Verfügbar in: ", wait_24: "Warten Sie 24 Stunden!", won: "GEWONNEN ",
-            insufficient: "Unzureichende Mittel!", min_deadline_err: "Deadline muss mindestens 1 Min. in der Zukunft liegen!",
-            max_deadline_err: "Maximal 3 Tage im Voraus!", fill_all: "Alle Felder ausfüllen!", 
-            cat_err: "Alle Kategorien benennen!", outcome_err: "Alle Ergebnisse benennen!",
-            odds_err: "Quoten zwischen 1.01 und 1000!", win_loss_err: "Mindestens 1 GEWINNER und 1 VERLIERER!",
-            btc_title: "BTC Einzahlung / Auszahlung", btc_addr_label: "Ihre BTC-Einzahlungsadresse:", btc_copy: "(Zum Kopieren auf die Adresse klicken)",
-            btc_withdraw_title: "Auszahlung starten", btc_amount_ph: "Betrag (€)", btc_dest_ph: "Ziel-BTC-Adresse", btn_withdraw: "AUSZAHLUNG BEANTRAGEN",
-            h_event: "Ereignis", h_pick: "Tipp", h_stake: "Einsatz", h_odds: "Quote", h_payout: "Auszahlung", h_status: "Status"
-        },
-        ru: {
-            nav_markets: "Рынки", nav_mybets: "Мои ставки", nav_history: "История", nav_wallet: "Кошелек", nav_account: "Аккаунт",
-            live_markets: "Живые рынки", btn_create: "+ Создать", loading: "Загрузка...",
-            settled_markets_title: "Завершенные рынки", balances: "Балансы", geo_msg: "⚠️ Депозиты/выводы ограничены в Венгрии.",
-            mystery_box: "Ежедневный Mystery Box", btn_luck: "ИСПЫТАТЬ УДАЧУ", acc_profile: "Профиль",
-            username: "Имя пользователя", email: "Email", acc_id: "ID аккаунта", logout: "ВЫЙТИ",
-            btn_place_bet: "СДЕЛАТЬ СТАВКУ", cancel: "Отмена", new_market: "Новый рынок", event_placeholder: "Название события",
-            budget_placeholder: "Начальный пул", add_category: "+ Категория", publish: "ОПУБЛИКОВАТЬ",
-            finalize: "ЗАВЕРШИТЬ", deadline: "СРОК", host: "Организатор", pool: "Пул", final_pool: "Итоговый пул",
-            settled_at: "Завершено в", category_placeholder: "Имя категории", outcome_placeholder: "Результат",
-            ready_roll: "Готово!", avail_in: "Доступно через: ", wait_24: "Подождите 24 часа!", won: "ВЫИГРАНО ",
-            insufficient: "Недостаточно средств!", min_deadline_err: "Минимум 1 минута в будущем!",
-            max_deadline_err: "Максимум 3 дня вперед!", fill_all: "Заполните все поля!", 
-            cat_err: "Назовите все категории!", outcome_err: "Назовите все результаты!",
-            odds_err: "Коэффициент от 1.01 до 1000!", win_loss_err: "Нужен минимум 1 WINNER и 1 LOSS!",
-            btc_title: "BTC Депозит / Вывод", btc_addr_label: "Ваш BTC адрес для депозита:", btc_copy: "(Нажмите, чтобы скопировать)",
-            btc_withdraw_title: "Начать вывод", btc_amount_ph: "Сумма (€)", btc_dest_ph: "BTC адрес получателя", btn_withdraw: "ЗАПРОСИТЬ ВЫВОД",
-            h_event: "Событие", h_pick: "Пик", h_stake: "Ставка", h_odds: "Коэфф", h_payout: "Выплата", h_status: "Статус"
-        },
-        zh: {
-            nav_markets: "市场", nav_mybets: "我的投注", nav_history: "历史", nav_wallet: "钱包", nav_account: "账户",
-            live_markets: "进行中市场", btn_create: "+ 创建", loading: "加载中...",
-            settled_markets_title: "已结算市场", balances: "余额", geo_msg: "⚠️ 匈牙利境内的充值/提现受限。",
-            mystery_box: "每日神秘宝箱", btn_luck: "碰碰运气", acc_profile: "个人资料",
-            username: "用户名", email: "电子邮件", acc_id: "账户 ID", logout: "登出",
-            btn_place_bet: "下注", cancel: "取消", new_market: "新市场", event_placeholder: "活动名称",
-            budget_placeholder: "初始流动性池", add_category: "+ 添加类别", publish: "发布",
-            finalize: "结算", deadline: "截止日期", host: "主持人", pool: "奖池", final_pool: "最终奖池",
-            settled_at: "结算于", category_placeholder: "类别名称", outcome_placeholder: "结果",
-            ready_roll: "准备就绪！", avail_in: "可用时间：", wait_24: "请等待 24 小时！", won: "赢得 ",
-            insufficient: "余额不足！", min_deadline_err: "截止日期必须至少晚 1 分钟！",
-            max_deadline_err: "最多提前 3 天！", fill_all: "请填写所有字段！", 
-            cat_err: "请命名所有类别!", outcome_err: "请命名所有结果!",
-            odds_err: "赔率需在 1.01 到 1000 之间!", win_loss_err: "至少需要 1 个获胜和 1 个失败结果!",
-            btc_title: "BTC 充值 / 提现", btc_addr_label: "您的 BTC 充值地址:", btc_copy: "(点击地址复制)",
-            btc_withdraw_title: "开始提现", btc_amount_ph: "金额 (€)", btc_dest_ph: "目标 BTC 地址", btn_withdraw: "请求提现",
-            h_event: "活动", h_pick: "预测", h_stake: "投注额", h_odds: "赔率", h_payout: "奖金", h_status: "状态"
-        }
+        en: { nav_markets: "Markets", nav_mybets: "My Bets", nav_history: "History", nav_wallet: "Wallet", nav_account: "Account", live_markets: "Live Markets", btn_create: "Create Market", h_event: "Event", h_pick: "Pick", h_stake: "Stake", h_odds: "Odds", h_payout: "Payout", h_status: "Status", balances: "Balances", mystery_box: "Daily Mystery Box", btn_luck: "TRY MY LUCK", btn_place_bet: "PLACE BET", cancel: "Cancel" },
+        hu: { nav_markets: "Piacok", nav_mybets: "Fogadásaim", nav_history: "Előzmények", nav_wallet: "Tárca", nav_account: "Fiók", live_markets: "Élő Piacok", btn_create: "Piac Létrehozása", h_event: "Esemény", h_pick: "Tipp", h_stake: "Tét", h_odds: "Odds", h_payout: "Kifizetés", h_status: "Állapot", balances: "Egyenlegek", mystery_box: "Napi Meglepetés", btn_luck: "SZERENCSE PRÓBA", btn_place_bet: "FOGADÁS", cancel: "Mégse" }
     };
 
     let currentLang = 'en';
-    let dict = i18n.en;
     let currentUser = null;
     let userProfile = null;
     let activeBet = null;
 
     async function checkAuth() {
         const { data: { session } } = await _supabase.auth.getSession();
-        if (!session) {
-            const host = window.location.hostname;
-            const redirectUrl = host === 'localhost' || host === '127.0.0.1' ? 'http://localhost:5500/login17.html' : 'https://stakeforge.netlify.app/login17.html';
-            window.location.href = redirectUrl;
-            return;
-        }
+        if (!session) { window.location.href = 'login17.html'; return; }
         currentUser = session.user;
         fetchProfile();
         fetchMarkets();
@@ -359,8 +200,6 @@
         document.getElementById('w-demo').innerText = data.demo_balance.toFixed(2);
         document.getElementById('acc-username').innerText = data.username;
         document.getElementById('acc-email').innerText = currentUser.email;
-        document.getElementById('acc-id').innerText = currentUser.id;
-        updateCreateBalanceDisplay();
         renderBTCSection();
     }
 
@@ -369,82 +208,40 @@
         const list = document.getElementById('market-list');
         const hist = document.getElementById('history-list');
         list.innerHTML = ''; hist.innerHTML = '';
-
         data.forEach(m => {
-            const isSettled = !!m.settled_at;
             const card = document.createElement('div');
             card.className = 'market-card';
-            
-            let html = `
-                ${isSettled ? `<div class="settled-badge">${dict.settled_at}: ${new Date(m.settled_at).toLocaleDateString()}</div>` : ''}
-                <div class="market-header">
-                    <div class="header-left">
-                        <div class="market-type-label" style="color:${m.type==='REAL'?'var(--primary)':'var(--demo)'}">${m.type} MARKET</div>
-                        <h2 style="margin:5px 0">${m.name}</h2>
-                        <div style="font-size:12px; color:#aaa">
-                            ${dict.host}: <span style="color:var(--primary)">${m.creator_name}</span> | 
-                            ${dict.pool}: <span style="color:#fff">${m.pool.toFixed(2)} ${m.type==='REAL'?'€':'DEMO'}</span>
-                        </div>
-                    </div>
-                    <div class="header-right">
-                        ${!isSettled ? `<div class="deadline-badge">${dict.deadline}: ${new Date(m.deadline).toLocaleString()}</div>` : ''}
-                        ${!isSettled && m.creator_id === currentUser.id ? `<button class="btn-create" style="background:#444; color:#fff" onclick="openSettleModal('${m.id}')">SETTLE</button>` : ''}
-                    </div>
-                </div>
-            `;
-
+            card.innerHTML = `<h3>${m.name}</h3><p>Pool: ${m.pool.toFixed(2)} ${m.type}</p>`;
             m.groups.forEach(g => {
-                html += `
-                    <div class="market-group">
-                        <div style="font-weight:bold; font-size:14px; color:var(--primary)">${g.name}</div>
-                        <div class="outcomes-grid">
-                            ${g.outcomes.map(o => {
-                                const isWinner = isSettled && o.status === 'WINNER';
-                                const isLoss = isSettled && o.status === 'LOSS';
-                                let btnStyle = '';
-                                if(isWinner) btnStyle = 'border-color:var(--success); color:var(--success); font-weight:900; background:rgba(40,167,69,0.1)';
-                                if(isLoss) btnStyle = 'opacity:0.3; text-decoration:line-through';
-
-                                return `<button class="btn-bet" style="${btnStyle}" ${isSettled || new Date(m.deadline) < new Date() ? 'disabled' : ''} onclick="openBetModal('${m.id}', '${m.name}', '${o.name}', ${o.odds}, '${m.type}')">
-                                    ${o.name} <span style="color:var(--primary); margin-left:5px">${o.odds.toFixed(2)}</span>
-                                </button>`;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
+                g.outcomes.forEach(o => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn-bet';
+                    btn.innerHTML = `${o.name} <b>${o.odds.toFixed(2)}</b>`;
+                    btn.onclick = () => openBetModal(m.id, m.name, o.name, o.odds, m.type);
+                    card.appendChild(btn);
+                });
             });
-
-            card.innerHTML = html;
-            if (isSettled) hist.appendChild(card); else list.appendChild(card);
+            if (m.settled_at) hist.appendChild(card); else list.appendChild(card);
         });
     }
 
     async function fetchUserBets() {
-        if (!currentUser) return;
-        const { data, error } = await _supabase
-            .from('bets')
-            .select('*, markets(name)')
-            .eq('user_id', currentUser.id)
-            .order('created_at', { ascending: false });
-
+        const { data } = await _supabase.from('bets').select('*, markets(name)').eq('user_id', currentUser.id).order('created_at', { ascending: false });
         const body = document.getElementById('bet-history-body');
-        if (!body) return;
         body.innerHTML = '';
-        
         if (data) {
             data.forEach(b => {
                 const tr = document.createElement('tr');
-                const symbol = b.type === 'REAL' ? '€' : 'DEMO';
-                const statusClass = b.status === 'WINNER' ? 'status-win' : (b.status === 'LOSS' ? 'status-loss' : 'status-pending');
+                const sym = b.type === 'REAL' ? '€' : 'DEMO';
+                const status = b.status || 'PENDING';
                 const payout = b.status === 'WINNER' ? (b.amount * b.odds).toFixed(2) : (b.status === 'LOSS' ? "0.00" : "-");
-
                 tr.innerHTML = `
                     <td class="col-event">${b.markets ? b.markets.name : 'Unknown'}</td>
                     <td class="col-pick">${b.outcome_name}</td>
-                    <td class="col-stake">${b.amount.toFixed(2)} ${symbol}</td>
+                    <td class="col-stake">${b.amount.toFixed(2)} ${sym}</td>
                     <td class="col-odds">${b.odds.toFixed(2)}</td>
-                    <td class="col-payout ${statusClass}">${payout} ${b.status === 'WINNER' ? symbol : ''}</td>
-                    <td class="col-status ${statusClass}">${b.status || 'PENDING'}</td>
+                    <td class="col-payout status-${status.toLowerCase()}">${payout}</td>
+                    <td class="col-status status-${status.toLowerCase()}">${status}</td>
                 `;
                 body.appendChild(tr);
             });
@@ -456,279 +253,40 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
+        if (id === 'mybets') fetchUserBets();
+    }
 
-        if (id === 'mybets') {
-            fetchUserBets();
-        }
+    function changeLang(l) {
+        currentLang = l;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            el.innerText = i18n[l][key] || key;
+        });
     }
 
     function openBetModal(mid, mname, oname, odds, type) {
-        activeBet = { id: mid, m: mname, o: oname, odds: odds, t: type };
+        activeBet = { id: mid, o: odds, t: type };
         document.getElementById('bet-on').innerText = oname;
         document.getElementById('bet-odds').innerText = odds.toFixed(2);
         document.getElementById('betModal').classList.remove('hidden');
-        calcWin();
     }
 
     async function placeBet() {
         const amt = parseFloat(document.getElementById('bet-amount').value);
-        const balField = activeBet.t === 'REAL' ? 'balance' : 'demo_balance';
-        
-        if (amt > userProfile[balField]) return alert(dict.insufficient);
-
-        const { error } = await _supabase.from('bets').insert({
-            user_id: currentUser.id, market_id: activeBet.id, outcome_name: activeBet.o,
-            amount: amt, odds: activeBet.odds, type: activeBet.t
-        });
-
-        if (!error) {
-            await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amt }).eq('id', currentUser.id);
-            await _supabase.rpc('increment_market_pool', { m_id: activeBet.id, amt: amt });
-            closeModal('betModal');
-            fetchProfile(); fetchMarkets();
-        }
-    }
-
-    function addGroup() {
-        const container = document.getElementById('groups-container');
-        const gDiv = document.createElement('div');
-        gDiv.className = 'market-group';
-        gDiv.innerHTML = `
-            <input class="g-name" data-i18n-placeholder="category_placeholder" placeholder="Category Name">
-            <div class="outcomes-area">
-                <div style="display:flex; gap:5px">
-                    <input class="o-name" data-i18n-placeholder="outcome_placeholder" placeholder="Outcome">
-                    <input class="o-odds" type="number" step="0.01" placeholder="Odds" style="width:100px">
-                </div>
-            </div>
-            <button class="btn-bet" onclick="addOutcome(this)" style="margin-top:5px; border-style:dotted; font-size:11px">+ Add Outcome</button>
-        `;
-        container.appendChild(gDiv);
-        updateLanguage();
-    }
-
-    function addOutcome(btn) {
-        const area = btn.previousElementSibling;
-        const div = document.createElement('div');
-        div.style = "display:flex; gap:5px";
-        div.innerHTML = `<input class="o-name" data-i18n-placeholder="outcome_placeholder" placeholder="Outcome">
-                         <input class="o-odds" type="number" step="0.01" placeholder="Odds" style="width:100px">`;
-        area.appendChild(div);
-        updateLanguage();
-    }
-
-    async function saveMarket() {
-        const name = document.getElementById('m-name').value;
-        const type = document.getElementById('m-type').value;
-        const deadline = document.getElementById('m-deadline').value;
-        const budget = parseFloat(document.getElementById('m-budget').value);
-        const err = document.getElementById('create-error-msg');
-        err.style.display = 'none';
-
-        if (!name || !deadline || isNaN(budget)) return showError(dict.fill_all);
-        
-        const balField = type === 'REAL' ? 'balance' : 'demo_balance';
-        if (budget > userProfile[balField]) return showError(dict.insufficient);
-
-        const dlDate = new Date(deadline);
-        const now = new Date();
-        const maxDl = new Date(); maxDl.setDate(maxDl.getDate() + 3);
-
-        if (dlDate <= new Date(now.getTime() + 60000)) return showError(dict.min_deadline_err);
-        if (dlDate > maxDl) return showError(dict.max_deadline_err);
-
-        const groups = [];
-        let groupErr = "";
-        document.querySelectorAll('#groups-container .market-group').forEach(g => {
-            const gName = g.querySelector('.g-name').value;
-            if (!gName) groupErr = dict.cat_err;
-            const outcomes = [];
-            g.querySelectorAll('.outcomes-area > div').forEach(o => {
-                const on = o.querySelector('.o-name').value;
-                const od = parseFloat(o.querySelector('.o-odds').value);
-                if (!on) groupErr = dict.outcome_err;
-                if (isNaN(od) || od < 1.01 || od > 1000) groupErr = dict.odds_err;
-                outcomes.push({ name: on, odds: od, status: 'PENDING' });
-            });
-            groups.push({ name: gName, outcomes });
-        });
-
-        if (groupErr) return showError(groupErr);
-        if (groups.length === 0) return showError(dict.cat_err);
-
-        const { error } = await _supabase.from('markets').insert({
-            name, type, deadline, pool: budget, creator_id: currentUser.id, creator_name: userProfile.username, groups
-        });
-
-        if (!error) {
-            await _supabase.from('profiles').update({ [balField]: userProfile[balField] - budget }).eq('id', currentUser.id);
-            closeModal('createModal'); fetchProfile(); fetchMarkets();
-        }
-    }
-
-    function showError(msg) {
-        const err = document.getElementById('create-error-msg');
-        err.innerText = msg; err.style.display = 'block';
-    }
-
-    let settleMid = null;
-    async function openSettleModal(mid) {
-        settleMid = mid;
-        const { data: m } = await _supabase.from('markets').select('*').eq('id', mid).single();
-        document.getElementById('settle-title').innerText = m.name;
-        const area = document.getElementById('settle-area');
-        area.innerHTML = '';
-        
-        m.groups.forEach((g, gi) => {
-            area.innerHTML += `<h4 style="margin:15px 0 5px; color:var(--primary)">${g.name}</h4>`;
-            g.outcomes.forEach((o, oi) => {
-                area.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px; border-radius:6px; margin-bottom:5px;">
-                        <span>${o.name}</span>
-                        <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0">
-                            <option value="PENDING">PENDING</option>
-                            <option value="WINNER">WINNER</option>
-                            <option value="LOSS">LOSS</option>
-                        </select>
-                    </div>
-                `;
-            });
-        });
-        document.getElementById('settleModal').classList.remove('hidden');
-    }
-
-    async function finalSubmitSettle() {
-        const { data: m } = await _supabase.from('markets').select('*').eq('id', settleMid).single();
-        const selects = document.querySelectorAll('.settle-select');
-        let hasWinner = false; let hasLoss = false;
-        
-        selects.forEach(s => {
-            const gi = s.dataset.gi; const oi = s.dataset.oi;
-            const val = s.value;
-            m.groups[gi].outcomes[oi].status = val;
-            if(val === 'WINNER') hasWinner = true;
-            if(val === 'LOSS') hasLoss = true;
-        });
-
-        if(!hasWinner || !hasLoss) {
-            const e = document.getElementById('settle-error-msg');
-            e.innerText = dict.win_loss_err; e.style.display = 'block';
-            return;
-        }
-
-        const { error } = await _supabase.from('markets').update({ groups: m.groups, settled_at: new Date().toISOString() }).eq('id', settleMid);
-        if(!error) {
-            await _supabase.rpc('process_winners', { m_id: settleMid });
-            closeModal('settleModal'); fetchProfile(); fetchMarkets();
-        }
+        await _supabase.from('bets').insert({ user_id: currentUser.id, market_id: activeBet.id, amount: amt, odds: activeBet.o, type: activeBet.t, outcome_name: document.getElementById('bet-on').innerText });
+        closeModal('betModal'); fetchProfile();
     }
 
     function renderBTCSection() {
-        const area = document.getElementById('btc-wallet-area');
-        area.innerHTML = `
-            <div class="btc-box">
-                <h3 style="margin:0 0 10px 0; color:var(--primary)">${dict.btc_title}</h3>
-                <p style="font-size:12px; margin:0; color:#aaa">${dict.btc_addr_label}</p>
-                <div class="btc-address" onclick="copyAddr(this)">${currentUser.id.replace(/-/g,'').slice(0,24)}</div>
-                <p style="font-size:10px; margin:0; text-align:center; opacity:0.5">${dict.btc_copy}</p>
-                
-                <hr style="border:0; border-top:1px solid var(--border); margin:15px 0">
-                
-                <p style="font-size:12px; margin:0 0 10px 0; font-weight:bold">${dict.btc_withdraw_title}</p>
-                <input id="wit-amt" type="number" placeholder="${dict.btc_amount_ph}">
-                <input id="wit-addr" placeholder="${dict.btc_dest_ph}">
-                <div id="wit-error"></div>
-                <button class="btn-bet" onclick="requestWithdraw()" style="background:var(--primary); color:#000; border:none; font-weight:bold; margin-top:5px">${dict.btn_withdraw}</button>
-            </div>
-        `;
+        document.getElementById('btc-wallet-area').innerHTML = `<div class="btc-address">${currentUser.id.replace(/-/g,'').slice(0,24)}</div>`;
     }
 
-    function copyAddr(el) {
-        navigator.clipboard.writeText(el.innerText);
-        const old = el.innerText; el.innerText = "COPIED!";
-        setTimeout(() => el.innerText = old, 1000);
-    }
-
-    function requestWithdraw() {
-        const amt = parseFloat(document.getElementById('wit-amt').value);
-        const addr = document.getElementById('wit-addr').value;
-        const err = document.getElementById('wit-error');
-        err.style.display = 'none';
-
-        if(isNaN(amt) || amt < 10) { err.innerText = "Min: 10 €"; err.style.display = 'block'; return; }
-        if(amt > userProfile.balance) { err.innerText = dict.insufficient; err.style.display = 'block'; return; }
-        if(addr.length < 20) { err.innerText = "Invalid BTC Address"; err.style.display = 'block'; return; }
-
-        alert("Withdrawal request sent! Processing time: 1-24h");
-        document.getElementById('wit-amt').value = '';
-        document.getElementById('wit-addr').value = '';
-    }
-
-    async function claimDailyDemo() {
-        const last = userProfile.last_claim;
-        if (last) {
-            const hours = (new Date() - new Date(last)) / 36e5;
-            if (hours < 24) {
-                const left = 24 - hours;
-                document.getElementById('reward-msg').innerText = dict.wait_24 + " (" + left.toFixed(1) + "h)";
-                return;
-            }
-        }
-        const win = Math.floor(Math.random() * 500) + 50;
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = dict.won + win + " DEMO!"; fetchProfile();
-    }
-
-    function calcWin() { 
-        const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
-        document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.odds : 0)).toFixed(2) + " " + symbol; 
-    }
-    
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    
-    function openCreateModal() { 
-        document.getElementById('createModal').classList.remove('hidden');
-        const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
-        if(!document.getElementById('groups-container').innerHTML) addGroup();
-        updateCreateBalanceDisplay();
-    }
-
-    function updateCreateBalanceDisplay() {
-        if(!userProfile) return;
-        const type = document.getElementById('m-type').value;
-        const bal = type === 'REAL' ? userProfile.balance : userProfile.demo_balance;
-        const sym = type === 'REAL' ? '€' : 'DEMO';
-        document.getElementById('create-balance-display').innerText = "Balance: " + bal.toFixed(2) + " " + sym;
-    }
-
-    function changeLang(l) {
-        currentLang = l; dict = i18n[l];
-        updateLanguage();
-        fetchMarkets();
-    }
-
-    function updateLanguage() {
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if(dict[key]) el.innerText = dict[key];
-        });
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if(dict[key]) el.placeholder = dict[key];
-        });
-        const geo = document.getElementById('geo-restriction');
-        geo.style.display = (currentLang === 'hu' || navigator.language.startsWith('hu')) ? 'block' : 'none';
-    }
-
-    async function logout() {
-        await _supabase.auth.signOut();
-        location.reload();
-    }
+    function logout() { _supabase.auth.signOut(); location.reload(); }
+    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (document.getElementById('bet-amount').value * (activeBet?.o || 0)).toFixed(2); }
 
     checkAuth();
-    updateLanguage();
+    changeLang('en');
 </script>
-
 </body>
 </html>
