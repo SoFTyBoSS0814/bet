@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Политика конфиденциальности (GDPR)</title>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
+        h1, h2 { color: var(--primary); }
+        .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin-bottom: 25px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        .highlight { color: var(--primary); font-weight: bold; }
+        .warning-box { border: 1px dashed var(--primary); padding: 15px; background: rgba(0, 212, 255, 0.05); border-radius: 8px; }
+        .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
+        .back-link:hover { background: var(--primary); color: #000; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Политика конфиденциальности (GDPR)</h1>
+    <p class="last-updated">Последнее обновление: апрель 2026 (v1.1)</p>
+
+    <div class="section">
+        <h2>1. Принципы обработки данных</h2>
+        <p>
+            Система StakeForge следует принципу минимального сбора данных.
+            Мы храним только те данные, которые строго необходимы для работы платформы и идентификации пользователей.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>2. Объём собираемых данных</h2>
+        <p>Во время регистрации и использования собираются следующие данные:</p>
+        <ul>
+            <li><strong>Идентификаторы:</strong> имя пользователя и адрес электронной почты.</li>
+            <li><strong>Безопасность:</strong> зашифрованный пароль (хранится в виде хэша — исходный пароль недоступен).</li>
+            <li><strong>Баланс:</strong> текущий баланс DEMO и REAL аккаунта.</li>
+            <li><strong>Финансовые данные:</strong> уникальный BTC-кошелёк, привязанный к аккаунту (при наличии доступа).</li>
+            <li><strong>Технические данные:</strong> географическое местоположение (используется только для проверки доступа и применения гео-блокировки; IP-адреса не сохраняются).</li>
+        </ul>
+    </div>
+
+    <div class="section warning-box">
+        <h2>3. Ограничения (Geo-blocking)</h2>
+        <p>
+            Поставщик услуг применяет географические ограничения в соответствии с действующим законодательством.
+            <span class="highlight">Пользователи с венгерским IP-адресом не могут пополнять REAL-баланс и создавать BTC-кошельки.</span>
+            Такие пользователи могут использовать только DEMO-функции.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>4. Безопасность данных и третьи стороны</h2>
+        <p>
+            Ваши данные хранятся на зашифрованной облачной платформе Supabase.
+            Личные данные (email, имя пользователя) не передаются и не продаются третьим лицам.
+            Данные используются исключительно для аутентификации, управления аккаунтом и работы платформы.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>5. Ваши права</h2>
+        <p>
+            Вы можете запросить экспорт, изменение или полное удаление ваших данных в любое время.
+            В случае удаления все персональные данные (email, адрес кошелька) будут удалены из системы.
+            Журналы транзакций могут храниться в обезличенном виде для статистических целей.
+        </p>
+    </div>
+
+    <a href="login.html" class="back-link">← Вернуться к входу</a>
+</div>
+
+</body>
+</html>
