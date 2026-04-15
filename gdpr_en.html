@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Privacy Policy (GDPR)</title>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
+        h1, h2 { color: var(--primary); }
+        .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin-bottom: 25px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        .highlight { color: var(--primary); font-weight: bold; }
+        .warning-box { border: 1px dashed var(--primary); padding: 15px; background: rgba(0, 212, 255, 0.05); border-radius: 8px; }
+        .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
+        .back-link:hover { background: var(--primary); color: #000; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Data Processing Notice (GDPR)</h1>
+    <p class="last-updated">Last updated: April 2026 (v1.1)</p>
+
+    <div class="section">
+        <h2>1. Principles of Data Processing</h2>
+        <p>The StakeForge system follows the principle of minimal data collection. We only store data that is strictly necessary for the operation of the platform and user identification.</p>
+    </div>
+
+    <div class="section">
+        <h2>2. Scope of Collected Data</h2>
+        <p>During registration and usage, we collect the following data:</p>
+        <ul>
+            <li><strong>Identifiers:</strong> Username and email address.</li>
+            <li><strong>Security:</strong> Encrypted password (stored as a hash – we never see the raw password).</li>
+            <li><strong>Balances:</strong> Current DEMO and REAL balance values.</li>
+            <li><strong>Financial data:</strong> Unique BTC wallet address assigned to the account (if eligibility applies).</li>
+            <li><strong>Technical data:</strong> IP address and geographic location (for access control verification purposes).</li>
+        </ul>
+    </div>
+
+    <div class="section warning-box">
+        <h2>3. Restrictions (Geo-blocking)</h2>
+        <p>
+            The Service Provider applies geo-based restrictions in accordance with applicable laws.
+            <span class="highlight">Users connecting from Hungarian IP addresses are not allowed to access REAL (real-money) balance funding or BTC wallet generation features.</span>
+            Such users may only use DEMO functionality.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>4. Data Security and Third Parties</h2>
+        <p>
+            Your data is stored on the Supabase encrypted cloud platform.
+            We do not sell or share your personal data (email address, username) with third parties.
+            Data is used exclusively for authentication, account management, and service operation.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>5. Your Rights</h2>
+        <p>
+            You may request export, modification, or permanent deletion of your data at any time.
+            In case of deletion, all personal data (email, IP, wallet address) will be removed from our system,
+            except transaction logs, which may be retained in anonymized form for statistical and security purposes.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>6. Acceptance of Terms</h2>
+        <p>
+            By registering an account and using this service, you explicitly confirm that you have read, fully understood,
+            and unconditionally accepted this policy and all related rules. Your continued use of the service constitutes full agreement to these terms.
+        </p>
+        <p>
+            The service is provided strictly under these conditions. Any disputes, claims, or complaints will be handled exclusively
+            according to applicable legal regulations and internal platform policies. By using the service, you acknowledge and accept these limitations.
+        </p>
+    </div>
+
+    <a href="login.html" class="back-link">← Back to Login</a>
+</div>
+
+</body>
+</html>
