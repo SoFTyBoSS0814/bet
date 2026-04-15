@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Terms of Service</title>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
+        h1, h2 { color: var(--primary); }
+        .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin-bottom: 25px; }
+        .highlight { color: var(--primary); font-weight: bold; }
+        .fee-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: rgba(0,0,0,0.2); }
+        .fee-table th, .fee-table td { border: 1px solid var(--border); padding: 12px; text-align: left; }
+        .fee-table th { background: rgba(0,212,255,0.1); color: var(--primary); }
+        .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
+        .back-link:hover { background: var(--primary); color: #000; }
+        .warning-box { border-left: 4px solid #ff4444; background: rgba(255,68,68,0.1); padding: 15px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Terms of Service</h1>
+    <p class="last-updated">Last updated: April 2026 (Beta version - v2.1)</p>
+
+    <div class="section">
+        <h2>1. Registration and Communication</h2>
+        <p>
+            Users are required to provide a <span class="highlight">valid and functional email address</span> during registration.
+            If the provided email address is unreachable, non-existent, or not owned by the user, we reserve the right to restrict the account.
+            All communication and security verification will be conducted exclusively through this email address.
+        </p>
+    </div>
+
+    <div class="section warning-box">
+        <h2>2. Fraud Prevention and Sanctions</h2>
+        <p>In case of any fraud, abuse, or exploitation of system vulnerabilities, StakeForge will take the following actions:</p>
+        <ul>
+            <li>Immediate and permanent <span class="highlight">account suspension</span>.</li>
+            <li><span class="highlight">Indefinite holding of account balance</span> for investigation purposes.</li>
+            <li>Removal of any illegally obtained winnings.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>3. Withdrawal Policy and Fees</h2>
+        <p>
+            Withdrawals are processed manually. The system deducts a <span class="highlight">processing fee</span> from the requested amount,
+            and the remaining "net" amount is sent to the specified BTC address.
+        </p>
+
+        <table class="fee-table">
+            <thead>
+                <tr>
+                    <th>Requested Withdrawal Amount</th>
+                    <th>Processing Fee</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>20 € - 100 €</td>
+                    <td>2 €</td>
+                </tr>
+                <tr>
+                    <td>101 € - 500 €</td>
+                    <td>5 €</td>
+                </tr>
+                <tr>
+                    <td>501 € - 1000 €</td>
+                    <td>15 €</td>
+                </tr>
+                <tr>
+                    <td>Above 1000 €</td>
+                    <td>2% of the amount</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><i>Example: If you request a 100 € withdrawal, the fee is 2 €, so you will receive 98 € worth of BTC.</i></p>
+        <p><small>* We reserve the right to modify fees in case of extreme BTC network congestion.</small></p>
+    </div>
+
+    <div class="section">
+        <h2>4. Beta Phase and P2P Responsibility</h2>
+        <p>
+            The platform is classified as beta software. Markets are created and closed by users themselves.
+            While the Administrator has the right to override clearly erroneous market closures, StakeForge does not assume
+            direct financial responsibility for user-to-user transactions or software errors.
+        </p>
+    </div>
+
+    <a href="index.html" class="back-link">← Back to Dashboard</a>
+</div>
+
+</body>
+</html>
