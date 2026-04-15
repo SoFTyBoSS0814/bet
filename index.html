@@ -640,43 +640,100 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-    async function finalSubmitSettle() {
-        const errDiv = document.getElementById('settle-error-msg');
-        errDiv.style.display = 'none';
-        const selects = document.querySelectorAll('.settle-select');
-        selects.forEach(s => {
-            const gi = s.dataset.gi, oi = s.dataset.oi;
-            currentSettleGroups[gi].outcomes[oi].status = s.value;
-        });
-        for(let group of currentSettleGroups) {
-            if(!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
-                errDiv.innerText = i18n[currentLang].win_loss_err;
-                errDiv.style.display = 'block'; return;
-            }
+async function finalSubmitSettle() {
+    const errDiv = document.getElementById('settle-error-msg');
+    if (errDiv) errDiv.style.display = 'none';
+
+    const selects = document.querySelectorAll('.settle-select');
+    selects.forEach(s => {
+        const gi = s.dataset.gi, oi = s.dataset.oi;
+        currentSettleGroups[gi].outcomes[oi].status = s.value;
+    });
+
+    // Ellenőrzés: legyen legalább egy nyertes
+    let hasWinner = false;
+    currentSettleGroups.forEach(g => g.outcomes.forEach(o => { if(o.status === 'win') hasWinner = true; }));
+    
+    if(!hasWinner) {
+        if(errDiv) {
+            errDiv.innerText = "Legalább egy nyertest ki kell választani!";
+            errDiv.style.display = 'block';
         }
-        const btn = document.getElementById('finalize-btn');
-        btn.disabled = true; btn.innerText = "Processing...";
-        let winners = [];
-        currentSettleGroups.forEach(g => g.outcomes.forEach(o => { if(o.status === 'win') winners.push(o.n); }));
-        try {
-            const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
-            const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-            let hostTotal = parseFloat(mData.take) || 0;
-            const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            if(bets) {
-                for(let bet of bets) {
-                    const isWin = winners.includes(bet.outcome_name);
-                    if(isWin) await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: bet.amount * bet.odds, p_field: field });
-                    else hostTotal += parseFloat(bet.amount);
-                    await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
+        return;
+    }
+
+    const btn = document.getElementById('finalize-btn');
+    btn.disabled = true; 
+    btn.innerText = "Feldolgozás...";
+
+    // Nyertes kimenetelek neveinek összegyűjtése
+    let winningOutcomeNames = [];
+    currentSettleGroups.forEach(g => g.outcomes.forEach(o => { 
+        if(o.status === 'win') winningOutcomeNames.push(o.n || o.name); 
+    }));
+
+    try {
+        // 1. Piac adatainak lekérése
+        const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
+        const field = mData.type === 'REAL' ? 'balance' : 'demo_balance'; // Figyelj: korábban 'real_balance'-t írtál, de a profilokban általában 'balance'
+        
+        // A host kezdetben a saját letétjét (pool/take) kapja vissza
+        let hostTotal = parseFloat(mData.take || mData.pool) || 0;
+
+        // 2. Függőben lévő fogadások lekérése
+        const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
+
+        if(bets && bets.length > 0) {
+            for(let bet of bets) {
+                const isWin = winningOutcomeNames.includes(bet.outcome_name);
+                
+                if(isWin) {
+                    // FOGADÓ NYERT: Tét * Odds kifizetése
+                    const payoutAmount = parseFloat(bet.amount) * parseFloat(bet.odds);
+                    
+                    // Lekérjük a fogadó aktuális egyenlegét a biztonság kedvéért
+                    const { data: userProf } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
+                    const newBalance = (parseFloat(userProf[field]) || 0) + payoutAmount;
+                    
+                    // Egyenleg frissítése a fogadónál
+                    await _supabase.from('profiles').update({ [field]: newBalance }).eq('id', bet.user_id);
+                    
+                    // Bet státusz frissítése
+                    await _supabase.from('bets').update({ status: 'win' }).eq('id', bet.id);
+                } else {
+                    // FOGADÓ VESZÍTETT: A tétje a Host-é lesz
+                    hostTotal += parseFloat(bet.amount);
+                    
+                    // Bet státusz frissítése
+                    await _supabase.from('bets').update({ status: 'loss' }).eq('id', bet.id);
                 }
             }
-            const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-            if (host) await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
-            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', start_time: new Date().toISOString() }).eq('id', currentSettleId);
-            location.reload();
-        } catch(e) { console.error(e); btn.disabled = false; btn.innerText = "FINALIZE"; }
+        }
+
+        // 3. HOST kifizetése (Alap pool + összes vesztes tét)
+        const { data: host } = await _supabase.from('profiles').select(field).eq('username', mData.creator_name).single();
+        if (host) {
+            const newHostBalance = (parseFloat(host[field]) || 0) + hostTotal;
+            await _supabase.from('profiles').update({ [field]: newHostBalance }).eq('id', host.id);
+        }
+
+        // 4. PIAC lezárása az adatbázisban
+        await _supabase.from('markets').update({ 
+            note: JSON.stringify(currentSettleGroups), // Eredmények mentése
+            status: 'settled', 
+            settled_at: new Date().toISOString() 
+        }).eq('id', currentSettleId);
+
+        alert("Sikeres kifizetés és lezárás!");
+        location.reload();
+
+    } catch(e) { 
+        console.error("Hiba a lezárás során:", e); 
+        btn.disabled = false; 
+        btn.innerText = "FINALIZE"; 
+        alert("Hiba történt! Ellenőrizd a konzolt.");
     }
+}
 
     async function claimDailyDemo() {
         const dict = i18n[currentLang];
