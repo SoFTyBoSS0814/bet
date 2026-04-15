@@ -640,37 +640,47 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-    async function finalSubmitSettle() {
-        const errDiv = document.getElementById('settle-error-msg');
-        errDiv.style.display = 'none';
+       async function finalSubmitSettle() {
+        const { data: m } = await _supabase.from('markets').select('*').eq('id', settleMid).single();
         const selects = document.querySelectorAll('.settle-select');
+        
         selects.forEach(s => {
-            const gi = s.dataset.gi, oi = s.dataset.oi;
-            currentSettleGroups[gi].outcomes[oi].status = s.value;
+            m.groups[s.dataset.gi].outcomes[s.dataset.oi].status = s.value;
         });
-        for(let group of currentSettleGroups) {
-            if(!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
-                errDiv.innerText = i18n[currentLang].win_loss_err;
-                errDiv.style.display = 'block'; return;
+
+        // 1. Piac lezárása
+        await _supabase.from('markets').update({ groups: m.groups, settled_at: new Date().toISOString() }).eq('id', settleMid);
+
+        // 2. Fogadások feldolgozása
+        const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', settleMid);
+        
+        for (let bet of bets) {
+            let result = 'LOSS';
+            m.groups.forEach(g => {
+                g.outcomes.forEach(o => {
+                    if (o.name === bet.outcome_name && o.status === 'WINNER') result = 'WINNER';
+                });
+            });
+
+            // Bet státusz frissítés
+            await _supabase.from('bets').update({ status: result }).eq('id', bet.id);
+
+            // Ha nyert, pénz jóváírás a fogadónak
+            if (result === 'WINNER') {
+                const payout = bet.amount * bet.odds;
+                const field = bet.type === 'REAL' ? 'balance' : 'demo_balance';
+                const { data: prof } = await _supabase.from('profiles').select(field).eq('id', bet.user_id).single();
+                await _supabase.from('profiles').update({ [field]: prof[field] + payout }).eq('id', bet.user_id);
             }
         }
-        const btn = document.getElementById('finalize-btn');
-        btn.disabled = true; btn.innerText = "Processing...";
-        let winners = [];
-        currentSettleGroups.forEach(g => g.outcomes.forEach(o => { if(o.status === 'win') winners.push(o.n); }));
-        try {
-            const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
-            const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-            let hostTotal = parseFloat(mData.take) || 0;
-            const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            if(bets) {
-                for(let bet of bets) {
-                    const isWin = winners.includes(bet.outcome_name);
-                    if(isWin) await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: bet.amount * bet.odds, p_field: field });
-                    else hostTotal += parseFloat(bet.amount);
-                    await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
-                }
-            }
+
+        // 3. Pool visszatérítése a Hostnak (itt az RPC helyett manuálisan, hogy biztos legyen)
+        const field = m.type === 'REAL' ? 'balance' : 'demo_balance';
+        const { data: hostProf } = await _supabase.from('profiles').select(field).eq('id', m.creator_id).single();
+        await _supabase.from('profiles').update({ [field]: hostProf[field] + m.pool }).eq('id', m.creator_id);
+
+        closeModal('settleModal'); fetchProfile(); fetchMarkets();
+    }
             const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
             if (host) await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
             await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', start_time: new Date().toISOString() }).eq('id', currentSettleId);
