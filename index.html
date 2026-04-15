@@ -445,11 +445,13 @@
     }
 
     async function loadMarkets() {
-        const { data: userBets } = await _supabase
+ // 🔥 USER BET FILTER
+const { data: userBets } = await _supabase
     .from('bets')
     .select('market_id')
     .eq('user_id', currentUser.id);
 
+const userMarketIds = (userBets || []).map(b => b.market_id);
 const betIds = (userBets || []).map(b => b.market_id);
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const mList = document.getElementById('market-list');
@@ -492,6 +494,8 @@ if (betIds.includes(m.id)) {
                     </div></div>`).join('')}`;
                 mList.appendChild(card);
             } else {
+                // ❗ CSAK AZOK A MARKETEK AMIRE FOGADTÁL
+                if (!userMarketIds.includes(m.id)) return;
                 const card = document.createElement('div');
                 card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
