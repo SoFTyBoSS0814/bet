@@ -15,6 +15,14 @@
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         
+        /* BETTING HISTORY SPECIFIKUS STÍLUS - CSAK HOZZÁADVA */
+        .bet-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .bet-table th { text-align: left; padding: 12px; color: #888; font-size: 12px; border-bottom: 1px solid var(--border); }
+        .bet-table td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .bet-won { background: rgba(40, 167, 69, 0.1) !important; border-left: 5px solid var(--success); }
+        .bet-lost { background: rgba(255, 68, 68, 0.1) !important; border-left: 5px solid var(--danger); }
+        .type-tag { font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
+
         .right-panel { display: flex; align-items: center; gap: 15px; }
         .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
         .wallet-sep { width: 1px; height: 18px; background: #334756; }
@@ -26,14 +34,6 @@
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
         
-        /* Betting History Extra CSS */
-        .bet-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .bet-table th { text-align: left; padding: 12px; color: #888; font-size: 12px; border-bottom: 1px solid var(--border); }
-        .bet-table td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .bet-won { background: rgba(40, 167, 69, 0.1) !important; border-left: 4px solid var(--success); }
-        .bet-lost { background: rgba(255, 68, 68, 0.1) !important; border-left: 4px solid var(--danger); }
-        .type-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 5px; text-transform: uppercase; }
-
         .balance-container { display: flex; flex-direction: row; justify-content: center; align-items: center; gap: 15px; margin: 30px 0; flex-wrap: nowrap; }
         .balance-item { 
             flex: 1; min-width: 140px; max-width: 250px; padding: 35px 15px 25px 15px; 
@@ -130,14 +130,14 @@
                 <thead>
                     <tr>
                         <th data-i18n="th_market">Market</th>
-                        <th data-i18n="th_selection">Selection</th>
+                        <th data-i18n="th_pick">Pick</th>
                         <th>Odds</th>
                         <th data-i18n="th_stake">Stake</th>
                         <th data-i18n="th_payout">Payout</th>
                         <th data-i18n="th_status">Status</th>
                     </tr>
                 </thead>
-                <tbody id="my-bets-list"></tbody>
+                <tbody id="betting-history-list"></tbody>
             </table>
         </div>
     </div>
@@ -157,6 +157,7 @@
                     <span class="balance-unit">DEMO</span>
                 </div>
             </div>
+
             <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; border:1px solid var(--border);">
                 <h3 data-i18n="withdraw_title">Withdrawal</h3>
                 <input type="number" id="wit-amount" placeholder="Amount (€)">
@@ -164,6 +165,7 @@
                 <button class="btn-primary" onclick="requestWithdrawal()" data-i18n="btn_withdraw">Request Withdrawal</button>
                 <div id="wit-error"></div>
             </div>
+
             <div class="reward-box">
                 <h3 style="color:var(--demo); margin:0;" data-i18n="daily_reward">Daily Demo Reward</h3>
                 <p id="reward-msg" style="font-size:13px; color:#aaa; margin-top:10px;" data-i18n="claim_desc">Claim 100-1000 DEMO every 24 hours!</p>
@@ -205,7 +207,7 @@
     <div class="modal-box">
         <h3 data-i18n="create_market">Create Market</h3>
         <input type="text" id="m-name" placeholder="Market Name">
-        <textarea id="m-desc" placeholder="Description" rows="3"></textarea>
+        <textarea id="m-desc" placeholder="Description/Rules" rows="3"></textarea>
         <label style="font-size:12px; color:#aaa;" data-i18n="deadline">Settlement Deadline</label>
         <input type="datetime-local" id="m-deadline">
         <div id="groups-container"></div>
@@ -238,10 +240,9 @@
             username: "Felhasználónév", email: "Email cím", logout: "Kijelentkezés",
             create_market: "Piac Létrehozása", deadline: "Lezárási Határidő", add_group: "+ Csoport Hozzáadása", btn_launch: "PIAC INDÍTÁSA",
             cancel: "Mégse", settle_market: "Piac Lezárása", btn_place_bet: "FOGADÁS MEGTÉTELE",
-            th_market: "Piac", th_selection: "Tipp", th_stake: "Tét", th_payout: "Kifizetés", th_status: "Állapot",
+            th_market: "Piac", th_pick: "Tipp", th_stake: "Tét", th_payout: "Kifizetés", th_status: "Állapot",
             withdraw_success: "Sikeres kérés! Az admin 24órán belül felülvizsgálja!",
-            withdraw_error: "Nincs elég egyenleged!",
-            claim_wait: "Még várnod kell: ", won: "Gratulálunk! Nyertél: "
+            withdraw_error: "Nincs elég egyenleged!", claim_wait: "Még várnod kell: ", won: "Gratulálunk! Nyertél: "
         },
         en: {
             nav_markets: "Markets", nav_history: "Events", nav_betting: "Betting History", nav_wallet: "Wallet", nav_account: "Account",
@@ -251,10 +252,8 @@
             username: "Username", email: "Email Address", logout: "Logout",
             create_market: "Create Market", deadline: "Settlement Deadline", add_group: "+ Add Group", btn_launch: "LAUNCH MARKET",
             cancel: "Cancel", settle_market: "Settle Market", btn_place_bet: "PLACE BET",
-            th_market: "Market", th_selection: "Pick", th_stake: "Stake", th_payout: "Payout", th_status: "Status",
-            withdraw_success: "Request successful!",
-            withdraw_error: "Insufficient balance!",
-            claim_wait: "Wait: ", won: "Congrats! You won: "
+            th_market: "Market", th_pick: "Pick", th_stake: "Stake", th_payout: "Payout", th_status: "Status",
+            withdraw_success: "Request successful!", withdraw_error: "Insufficient balance!", claim_wait: "Wait: ", won: "Congrats! You won: "
         }
     };
 
@@ -300,22 +299,11 @@
                 });
                 groupsHtml += `</div></div>`;
             });
-
             let adminHtml = '';
             if(userProfile.role === 'admin') {
-                adminHtml = `<div class="admin-controls">
-                    <button class="btn-admin btn-settle" onclick="openSettleModal('${m.id}', '${m.name}')">Settle</button>
-                    <button class="btn-admin btn-delete" onclick="deleteMarket('${m.id}')">Delete</button>
-                </div>`;
+                adminHtml = `<div class="admin-controls"><button class="btn-admin btn-settle" onclick="openSettleModal('${m.id}', '${m.name}')">Settle</button><button class="btn-admin btn-delete" onclick="deleteMarket('${m.id}')">Delete</button></div>`;
             }
-
-            card.innerHTML = `
-                <div class="market-header">
-                    <h3 class="market-title">${m.name}</h3>
-                    <span class="market-deadline">Ends: ${new Date(m.deadline).toLocaleString()}</span>
-                </div>
-                <p class="market-desc">${m.description || ''}</p>
-                ${groupsHtml}${adminHtml}`;
+            card.innerHTML = `<div class="market-header"><h3 class="market-title">${m.name}</h3><span class="market-deadline">Ends: ${new Date(m.deadline).toLocaleString()}</span></div><p class="market-desc">${m.description || ''}</p>${groupsHtml}${adminHtml}`;
             list.appendChild(card);
         });
     }
@@ -332,9 +320,10 @@
         });
     }
 
+    // FOGADÁSI ELŐZMÉNYEK LOGIKÁJA
     async function loadBettingHistory() {
         const { data } = await _supabase.from('bets').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-        const list = document.getElementById('my-bets-list');
+        const list = document.getElementById('betting-history-list');
         list.innerHTML = '';
         data.forEach(b => {
             const tr = document.createElement('tr');
@@ -342,14 +331,14 @@
             else if(b.status === 'lost') tr.className = 'bet-lost';
 
             const typeColor = b.type === 'REAL' ? 'var(--primary)' : 'var(--demo)';
-            const payout = b.status === 'won' ? (b.amount * b.odds).toFixed(2) : (b.status === 'lost' ? "0.00" : "---");
-
+            const winAmt = (b.amount * b.odds).toFixed(2);
+            
             tr.innerHTML = `
                 <td>${b.market_name}</td>
-                <td>${b.selection} <span class="type-badge" style="background:${typeColor}; color:#000;">${b.type}</span></td>
+                <td>${b.selection} <span class="type-tag" style="background:${typeColor}; color:#000;">${b.type}</span></td>
                 <td>${b.odds.toFixed(2)}</td>
                 <td>${b.amount.toFixed(2)}</td>
-                <td>${payout}</td>
+                <td>${b.status === 'won' ? winAmt : (b.status === 'lost' ? '0.00' : winAmt)}</td>
                 <td style="font-weight:bold; text-transform:uppercase;">${b.status}</td>
             `;
             list.appendChild(tr);
@@ -379,33 +368,23 @@
         if(!amt || amt <= 0) return;
         const balKey = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         if(amt > userProfile[balKey]) { alert("Insufficient funds!"); return; }
-
-        const { error } = await _supabase.from('profiles').update({ [balKey]: userProfile[balKey] - amt }).eq('id', currentUser.id);
-        if(!error) {
-            await _supabase.from('bets').insert([{
-                user_id: currentUser.id, username: currentUser.username, market_id: activeBet.id,
-                market_name: activeBet.n, selection: activeBet.c, odds: activeBet.o, amount: amt, type: activeBet.t, status: 'pending'
-            }]);
-            closeModal('betModal');
-            fetchProfile();
-            loadBettingHistory();
-        }
+        await _supabase.from('profiles').update({ [balKey]: userProfile[balKey] - amt }).eq('id', currentUser.id);
+        await _supabase.from('bets').insert([{
+            user_id: currentUser.id, username: currentUser.username, market_id: activeBet.id,
+            market_name: activeBet.n, selection: activeBet.c, odds: activeBet.o, amount: amt, type: activeBet.t, status: 'pending'
+        }]);
+        closeModal('betModal'); fetchProfile(); loadBettingHistory();
     }
 
     async function requestWithdrawal() {
         const amount = parseFloat(document.getElementById('wit-amount').value);
         const address = document.getElementById('wit-addr').value;
+        const dict = i18n[currentLang];
         if (isMessageActive || isNaN(amount) || amount <= 0 || !address) return;
-
-        if(amount > userProfile.real_balance) {
-            displayStatus(i18n[currentLang].withdraw_error, 'rgba(255, 68, 68, 0.1)', 'var(--danger)');
-            return;
-        }
-
+        if(amount > userProfile.real_balance) { displayStatus(dict.withdraw_error, 'rgba(255, 68, 68, 0.1)', 'var(--danger)'); return; }
         await _supabase.from('profiles').update({ real_balance: userProfile.real_balance - amount }).eq('id', currentUser.id);
         await _supabase.from('withdrawals').insert([{ user_id: currentUser.id, username: currentUser.username, amount, btc_address: address, status: 'pending' }]);
-        fetchProfile();
-        displayStatus(i18n[currentLang].withdraw_success, 'rgba(40, 167, 69, 0.15)', 'var(--success)');
+        fetchProfile(); displayStatus(dict.withdraw_success, 'rgba(40, 167, 69, 0.15)', 'var(--success)');
     }
 
     function displayStatus(text, bg, color) {
@@ -418,9 +397,7 @@
     function addGroup() {
         const div = document.createElement('div');
         div.className = 'market-group';
-        div.innerHTML = `<input type="text" placeholder="Group Name" class="g-name">
-            <div class="outcomes-grid"></div>
-            <button class="btn-demo" style="width:100%; font-size:11px;" onclick="addOption(this)">+ Add Option</button>`;
+        div.innerHTML = `<input type="text" placeholder="Group Name" class="g-name"><div class="outcomes-grid"></div><button class="btn-demo" style="width:100%; font-size:11px;" onclick="addOption(this)">+ Add Option</button>`;
         document.getElementById('groups-container').appendChild(div);
         addOption(div.querySelector('button'));
     }
@@ -429,9 +406,7 @@
         const grid = btn.previousElementSibling;
         const div = document.createElement('div');
         div.style.display = 'flex'; div.style.gap = '5px';
-        div.innerHTML = `<input type="text" placeholder="Outcome" class="o-name" style="margin:0;">
-            <input type="number" step="0.01" placeholder="Odds" class="o-val" style="margin:0; width:80px;">
-            <button class="btn-demo" style="margin:0; background:var(--danger); color:#fff;" onclick="this.parentElement.remove()">X</button>`;
+        div.innerHTML = `<input type="text" placeholder="Outcome" class="o-name" style="margin:0;"><input type="number" step="0.01" placeholder="Odds" class="o-val" style="margin:0; width:80px;"><button class="btn-demo" style="margin:0; background:var(--danger); color:#fff;" onclick="this.parentElement.remove()">X</button>`;
         grid.appendChild(div);
     }
 
@@ -486,17 +461,18 @@
     async function deleteMarket(id) { if(confirm('Delete?')) { await _supabase.from('markets').delete().eq('id', id); loadMarkets(); } }
 
     async function claimReward() {
+        const dict = i18n[currentLang];
         if(userProfile.last_claim) {
             const diff = Date.now() - new Date(userProfile.last_claim).getTime();
             if(diff < 86400000) {
                 const hours = Math.floor((86400000 - diff) / 3600000);
-                document.getElementById('reward-msg').innerText = i18n[currentLang].claim_wait + hours + "h";
+                document.getElementById('reward-msg').innerText = dict.claim_wait + hours + "h";
                 return;
             }
         }
         const win = Math.floor(Math.random() * 901) + 100;
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = i18n[currentLang].won + win + " DEMO!"; fetchProfile();
+        document.getElementById('reward-msg').innerText = dict.won + win + " DEMO!"; fetchProfile();
     }
 
     function showSection(id) {
@@ -504,6 +480,7 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
+        if(id === 'betting') loadBettingHistory();
     }
     function calcWin() { 
         const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
