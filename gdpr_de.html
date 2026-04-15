@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Datenschutzrichtlinie (DSGVO)</title>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
+        h1, h2 { color: var(--primary); }
+        .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin-bottom: 25px; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        .highlight { color: var(--primary); font-weight: bold; }
+        .warning-box { border: 1px dashed var(--primary); padding: 15px; background: rgba(0, 212, 255, 0.05); border-radius: 8px; }
+        .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
+        .back-link:hover { background: var(--primary); color: #000; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Datenschutzrichtlinie (DSGVO)</h1>
+    <p class="last-updated">Zuletzt aktualisiert: April 2026 (v1.1)</p>
+
+    <div class="section">
+        <h2>1. Grundsätze der Datenverarbeitung</h2>
+        <p>Das StakeForge-System folgt dem Prinzip der minimalen Datenerhebung. Es werden nur Daten gespeichert, die für den Betrieb der Plattform und die Identifikation der Nutzer zwingend erforderlich sind.</p>
+    </div>
+
+    <div class="section">
+        <h2>2. Umfang der erhobenen Daten</h2>
+        <p>Während der Registrierung und Nutzung werden folgende Daten erfasst:</p>
+        <ul>
+            <li><strong>Identifikatoren:</strong> Benutzername und E-Mail-Adresse.</li>
+            <li><strong>Sicherheit:</strong> Verschlüsseltes Passwort (als Hash gespeichert – das Klartext-Passwort ist nicht einsehbar).</li>
+            <li><strong>Kontostände:</strong> Aktuelle DEMO- und REAL-Guthabenstände.</li>
+            <li><strong>Finanzdaten:</strong> Eindeutige BTC-Wallet-Adresse, die dem Konto zugeordnet ist (falls berechtigt).</li>
+            <li><strong>Technische Daten:</strong> IP-Adresse und geografischer Standort (zur Prüfung der Zugriffsrechte).</li>
+        </ul>
+    </div>
+
+    <div class="section warning-box">
+        <h2>3. Einschränkungen (Geo-Blocking)</h2>
+        <p>
+            Der Dienstanbieter wendet geografische Einschränkungen gemäß den geltenden Gesetzen an.
+            <span class="highlight">Nutzer mit ungarischer IP-Adresse können keine Einzahlungen für REAL-Guthaben vornehmen und keine BTC-Wallets generieren.</span>
+            Diese Nutzer können ausschließlich die DEMO-Funktionen verwenden.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>4. Datensicherheit und Drittanbieter</h2>
+        <p>
+            Ihre Daten werden auf der verschlüsselten Cloud-Plattform Supabase gespeichert.
+            Persönliche Daten (E-Mail-Adresse, Benutzername) werden nicht an Dritte weitergegeben oder verkauft.
+            Die Daten werden ausschließlich zur Authentifizierung, Kontoverwaltung und für den Betrieb der Plattform verwendet.
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>5. Ihre Rechte</h2>
+        <p>
+            Sie können jederzeit die Exportierung, Änderung oder endgültige Löschung Ihrer Daten verlangen.
+            Im Falle einer Löschung werden alle personenbezogenen Daten (E-Mail, IP-Adresse, Wallet-Adresse) aus unserem System entfernt.
+            Transaktionsprotokolle können jedoch anonymisiert zu statistischen Zwecken gespeichert bleiben.
+        </p>
+    </div>
+
+    <a href="login.html" class="back-link">← Zurück zum Login</a>
+</div>
+
+</body>
+</html>
