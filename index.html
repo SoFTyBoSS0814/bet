@@ -81,6 +81,7 @@
         <span id="link-history" onclick="showSection('history')" data-i18n="nav_history">History</span>
         <span id="link-wallet" onclick="showSection('wallet')" data-i18n="nav_wallet">Wallet</span>
         <span id="link-account" onclick="showSection('account')" data-i18n="nav_account">Account</span>
+        <span id="link-bets" onclick="showSection('bets')">My Bets</span>
     </div>
     <div class="right-panel">
         <div class="wallet-display">
@@ -155,6 +156,11 @@
             <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold;" data-i18n="logout">LOG OUT</button>
         </div>
     </div>
+</div>
+
+    <div id="section-bets" class="section">
+    <h2>My Betting History</h2>
+    <div id="bets-list"></div>
 </div>
 
 <div id="betModal" class="modal hidden">
@@ -439,6 +445,12 @@
     }
 
     async function loadMarkets() {
+        const { data: userBets } = await _supabase
+    .from('bets')
+    .select('market_id')
+    .eq('user_id', currentUser.id);
+
+const betIds = (userBets || []).map(b => b.market_id);
         const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
@@ -455,6 +467,10 @@
             if(m.status === 'active') {
                 const card = document.createElement('div');
                 card.className = 'market-card';
+
+if (betIds.includes(m.id)) {
+    card.style.border = '2px solid yellow';
+}
                 card.innerHTML = `
                     <div class="market-header">
                         <div class="header-left">
@@ -503,6 +519,31 @@
             }
         });
     }
+
+async function loadMyBets() {
+    const { data: bets } = await _supabase
+        .from('bets')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('created_at', { ascending: false });
+
+    const container = document.getElementById('bets-list');
+
+    if (!bets || bets.length === 0) {
+        container.innerHTML = "<div class='market-card'>No bets yet</div>";
+        return;
+    }
+
+    container.innerHTML = bets.map(b => `
+        <div class="market-card">
+            <b>${b.outcome_name}</b><br>
+            Market ID: ${b.market_id}<br>
+            Stake: ${b.amount}<br>
+            Odds: x${b.odds}<br>
+            Status: ${b.status}
+        </div>
+    `).join('');
+}
 
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
@@ -688,6 +729,7 @@ async function placeBet() {
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
+        if(id === 'bets') loadMyBets();
     }
     function calcWin() { 
         const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
