@@ -15,13 +15,13 @@
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
         
-        /* BETTING HISTORY SPECIFIKUS STÍLUS - CSAK HOZZÁADVA */
-        .bet-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .bet-table th { text-align: left; padding: 12px; color: #888; font-size: 12px; border-bottom: 1px solid var(--border); }
-        .bet-table td { padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .bet-won { background: rgba(40, 167, 69, 0.1) !important; border-left: 5px solid var(--success); }
-        .bet-lost { background: rgba(255, 68, 68, 0.1) !important; border-left: 5px solid var(--danger); }
-        .type-tag { font-size: 10px; padding: 2px 5px; border-radius: 4px; font-weight: bold; margin-left: 5px; }
+        /* BETTING HISTORY STÍLUSOK - CSAK HOZZÁADVA */
+        .bet-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .bet-table th { text-align: left; padding: 12px; color: #aaa; border-bottom: 1px solid var(--border); font-size: 12px; }
+        .bet-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+        .status-won { color: #28a745 !important; font-weight: bold; }
+        .status-lost { color: #ff4444 !important; font-weight: bold; }
+        .status-pending { color: #ffcc00; }
 
         .right-panel { display: flex; align-items: center; gap: 15px; }
         .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
@@ -207,7 +207,7 @@
     <div class="modal-box">
         <h3 data-i18n="create_market">Create Market</h3>
         <input type="text" id="m-name" placeholder="Market Name">
-        <textarea id="m-desc" placeholder="Description/Rules" rows="3"></textarea>
+        <textarea id="m-desc" placeholder="Description" rows="3"></textarea>
         <label style="font-size:12px; color:#aaa;" data-i18n="deadline">Settlement Deadline</label>
         <input type="datetime-local" id="m-deadline">
         <div id="groups-container"></div>
@@ -270,7 +270,6 @@
         await fetchProfile();
         loadMarkets();
         loadSettledMarkets();
-        loadBettingHistory();
     };
 
     async function fetchProfile() {
@@ -320,28 +319,36 @@
         });
     }
 
-    // FOGADÁSI ELŐZMÉNYEK LOGIKÁJA
-    async function loadBettingHistory() {
-        const { data } = await _supabase.from('bets').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+    // ÚJ: FOGADÁSI ELŐZMÉNYEK LEKÉRÉSE
+    async function fetchBettingHistory() {
+        const { data: bets, error } = await _supabase
+            .from('bets')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        if (error) return;
+
         const list = document.getElementById('betting-history-list');
         list.innerHTML = '';
-        data.forEach(b => {
-            const tr = document.createElement('tr');
-            if(b.status === 'won') tr.className = 'bet-won';
-            else if(b.status === 'lost') tr.className = 'bet-lost';
 
-            const typeColor = b.type === 'REAL' ? 'var(--primary)' : 'var(--demo)';
-            const winAmt = (b.amount * b.odds).toFixed(2);
-            
-            tr.innerHTML = `
-                <td>${b.market_name}</td>
-                <td>${b.selection} <span class="type-tag" style="background:${typeColor}; color:#000;">${b.type}</span></td>
-                <td>${b.odds.toFixed(2)}</td>
-                <td>${b.amount.toFixed(2)}</td>
-                <td>${b.status === 'won' ? winAmt : (b.status === 'lost' ? '0.00' : winAmt)}</td>
-                <td style="font-weight:bold; text-transform:uppercase;">${b.status}</td>
+        bets.forEach(bet => {
+            let statusClass = 'status-pending';
+            if (bet.status === 'won') statusClass = 'status-won';
+            if (bet.status === 'lost') statusClass = 'status-lost';
+
+            const payout = bet.status === 'won' ? (bet.amount * bet.odds).toFixed(2) : "0.00";
+
+            list.innerHTML += `
+                <tr>
+                    <td>${bet.market_name}</td>
+                    <td>${bet.selection}</td>
+                    <td>${bet.odds.toFixed(2)}</td>
+                    <td>${bet.amount} ${bet.type}</td>
+                    <td class="${statusClass}">${payout}</td>
+                    <td class="${statusClass}">${bet.status.toUpperCase()}</td>
+                </tr>
             `;
-            list.appendChild(tr);
         });
     }
 
@@ -368,12 +375,14 @@
         if(!amt || amt <= 0) return;
         const balKey = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         if(amt > userProfile[balKey]) { alert("Insufficient funds!"); return; }
-        await _supabase.from('profiles').update({ [balKey]: userProfile[balKey] - amt }).eq('id', currentUser.id);
-        await _supabase.from('bets').insert([{
-            user_id: currentUser.id, username: currentUser.username, market_id: activeBet.id,
-            market_name: activeBet.n, selection: activeBet.c, odds: activeBet.o, amount: amt, type: activeBet.t, status: 'pending'
-        }]);
-        closeModal('betModal'); fetchProfile(); loadBettingHistory();
+        const { error } = await _supabase.from('profiles').update({ [balKey]: userProfile[balKey] - amt }).eq('id', currentUser.id);
+        if(!error) {
+            await _supabase.from('bets').insert([{
+                user_id: currentUser.id, username: currentUser.username, market_id: activeBet.id,
+                market_name: activeBet.n, selection: activeBet.c, odds: activeBet.o, amount: amt, type: activeBet.t, status: 'pending'
+            }]);
+            closeModal('betModal'); fetchProfile();
+        }
     }
 
     async function requestWithdrawal() {
@@ -455,7 +464,7 @@
             }
             await _supabase.from('bets').update({ status }).eq('id', b.id);
         }
-        closeModal('settleModal'); loadMarkets(); loadSettledMarkets(); loadBettingHistory();
+        closeModal('settleModal'); loadMarkets(); loadSettledMarkets();
     }
 
     async function deleteMarket(id) { if(confirm('Delete?')) { await _supabase.from('markets').delete().eq('id', id); loadMarkets(); } }
@@ -480,7 +489,9 @@
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
-        if(id === 'betting') loadBettingHistory();
+        
+        // MÓDOSÍTÁS: HA A BETTING SZEKCIÓRA LÉP, TÖLTSÖN BE
+        if (id === 'betting') fetchBettingHistory();
     }
     function calcWin() { 
         const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
