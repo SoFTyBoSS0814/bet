@@ -6,19 +6,64 @@
     <title>StakeForge | Login & Register</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --card: #1d2d3a; --text: #fff; --input: #0b1218; }
+        :root { --primary: #00d4ff; --bg: #0f171e; --card: #1d2d3a; --text: #fff; --input: #0b1218; --border: #2c4f60; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .auth-box { background: var(--card); padding: 40px; border-radius: 20px; width: 380px; border: 1px solid #2c4f60; box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
+        
+        .auth-box { background: var(--card); padding: 40px; border-radius: 20px; width: 380px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; position: relative; z-index: 2; }
+        
         h2 { color: var(--primary); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px; font-weight: 900; }
         p { color: #8899a6; font-size: 14px; margin-bottom: 30px; }
+        
         .form-group { text-align: left; margin-bottom: 15px; }
         label { font-size: 11px; color: #888; font-weight: bold; text-transform: uppercase; margin-left: 5px; }
-        input { width: 100%; padding: 14px; margin-top: 5px; background: var(--input); border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        .btn-auth { background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 15px; text-transform: uppercase; }
+        
+        input { width: 100%; padding: 14px; margin-top: 5px; background: var(--input); border: 1px solid #334756; color: #fff; border-radius: 8px; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; }
+        
+        .btn-auth { background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 15px; text-transform: uppercase; transition: 0.3s; }
+        .btn-auth:hover { opacity: 0.9; transform: translateY(-2px); }
+        
         .toggle-link { margin-top: 25px; font-size: 13px; color: #8899a6; }
         .toggle-link span { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
+        
         .hidden { display: none !important; }
         #msg { color: #ff4444; font-size: 12px; margin-top: 15px; display: none; padding: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.05); }
+
+        /* --- JOGI LÁBLÉC STÍLUS --- */
+        .login-footer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 11px;
+            color: #666;
+            background: rgba(29, 45, 58, 0.6);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .login-footer a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+        .login-footer .sep {
+            margin: 0 5px;
+            color: #444;
+        }
+
+        @media (max-width: 600px) {
+            .login-footer {
+                right: 0; left: 0; bottom: 0;
+                text-align: center;
+                border-radius: 0;
+                border-left: none; border-right: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -60,6 +105,12 @@
     <div id="msg"></div>
 </div>
 
+<footer class="login-footer">
+    <a href="tos.html" target="_blank">Terms of Service (ÁSZF)</a>
+    <span class="sep">|</span>
+    <a href="gdpr.html" target="_blank">Privacy Policy (GDPR)</a>
+</footer>
+
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
@@ -89,7 +140,6 @@
 
         let emailToAuth = loginVal;
 
-        // 1. Ha nem emailt írt be, keressük meg az emailt a felhasználónév alapján
         if (!loginVal.includes('@')) {
             const { data: profile, error: pError } = await _supabase
                 .from('profiles')
@@ -101,7 +151,6 @@
             emailToAuth = profile.email;
         }
 
-        // 2. Tényleges beléptetés
         const { data, error } = await _supabase.auth.signInWithPassword({ 
             email: emailToAuth, 
             password: password 
@@ -110,7 +159,6 @@
         if (error) {
             showMsg("Hiba: " + error.message);
         } else {
-            // Profil adat lekérése az index.html számára
             const { data: prof } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
             localStorage.setItem("user", JSON.stringify({ 
                 id: data.user.id, 
@@ -127,13 +175,11 @@
 
         if(!user || !email || !pw) return showMsg("Minden mezőt tölts ki!");
 
-        // 1. Auth regisztráció
         const { data, error } = await _supabase.auth.signUp({ email, password: pw });
 
         if (error) return showMsg(error.message);
 
         if (data.user) {
-            // 2. Profil mentése a saját táblába (MINDEN mezővel)
             const { error: dbErr } = await _supabase.from('profiles').insert([
                 { 
                     id: data.user.id, 
