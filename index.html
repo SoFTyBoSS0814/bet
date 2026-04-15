@@ -640,7 +640,7 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-       async function finalSubmitSettle() {
+    async function finalSubmitSettle() {
         const { data: m } = await _supabase.from('markets').select('*').eq('id', settleMid).single();
         const selects = document.querySelectorAll('.settle-select');
         
@@ -681,39 +681,56 @@
 
         closeModal('settleModal'); fetchProfile(); fetchMarkets();
     }
-            const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-            if (host) await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
-            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', start_time: new Date().toISOString() }).eq('id', currentSettleId);
-            location.reload();
-        } catch(e) { console.error(e); btn.disabled = false; btn.innerText = "FINALIZE"; }
-    }
-
-    async function claimDailyDemo() {
-        const dict = i18n[currentLang];
-        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert(dict.wait_24);
-        const win = Math.floor(Math.random() * 8000 + 1000);
-        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = dict.won + win + " DEMO!"; fetchProfile();
-    }
 
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById('section-' + id).classList.add('active');
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
+        if (id === 'mybets') fetchUserBets();
     }
+
+    function openBetModal(mid, mname, oname, odds, type) {
+        activeBet = { id: mid, o: odds, t: type };
+        document.getElementById('bet-on').innerText = oname;
+        document.getElementById('bet-odds').innerText = odds.toFixed(2);
+        document.getElementById('betModal').classList.remove('hidden');
+        calcWin();
+    }
+
+    async function placeBet() {
+        const amt = parseFloat(document.getElementById('bet-amount').value);
+        const balField = activeBet.t === 'REAL' ? 'balance' : 'demo_balance';
+        if (amt > userProfile[balField]) return alert("Nincs elég egyenleg!");
+
+        await _supabase.from('bets').insert({
+            user_id: currentUser.id, market_id: activeBet.id, amount: amt, odds: activeBet.o, type: activeBet.t, outcome_name: document.getElementById('bet-on').innerText
+        });
+
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - amt }).eq('id', currentUser.id);
+        await _supabase.rpc('increment_market_pool', { m_id: activeBet.id, amt: amt });
+
+        closeModal('betModal'); fetchProfile(); fetchMarkets();
+    }
+
     function calcWin() { 
-        const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
-        document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
+        const val = parseFloat(document.getElementById('bet-amount').value) || 0;
+        document.getElementById('bet-win-text').innerText = "Payout: " + (val * (activeBet?.o || 0)).toFixed(2); 
     }
+
+    function changeLang(l) {
+        currentLang = l;
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            el.innerText = i18n[l][key] || key;
+        });
+    }
+
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openCreateModal() { 
-        document.getElementById('createModal').classList.remove('hidden');
-        const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
-        if(!document.getElementById('groups-container').innerHTML) addGroup();
-    }
-    function logout() { localStorage.clear(); window.location.href="login.html"; }
+    function logout() { _supabase.auth.signOut(); location.reload(); }
+
+    checkAuth();
+    changeLang('hu');
 </script>
 </body>
 </html>
