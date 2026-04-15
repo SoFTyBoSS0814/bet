@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Terms of Service</title>
+    <style>
+        :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
+        h1, h2 { color: var(--primary); }
+        .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
+        .section { margin-bottom: 25px; }
+        .highlight { color: var(--primary); font-weight: bold; }
+        .fee-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: rgba(0,0,0,0.2); }
+        .fee-table th, .fee-table td { border: 1px solid var(--border); padding: 12px; text-align: left; }
+        .fee-table th { background: rgba(0,212,255,0.1); color: var(--primary); }
+        .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
+        .back-link:hover { background: var(--primary); color: #000; }
+        .warning-box { border-left: 4px solid #ff4444; background: rgba(255,68,68,0.1); padding: 15px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Terms of Service</h1>
+    <p class="last-updated">Utoljára frissítve: 2026. április (Béta verzió - v2.1)</p>
+
+    <div class="section">
+        <h2>1. Regisztráció és Kapcsolattartás</h2>
+        <p>A felhasználó köteles a regisztráció során <span class="highlight">valós és működő e-mail címet</span> megadni. Amennyiben a megadott e-mail cím nem elérhető, nem létezik vagy nem a felhasználó sajátja, fenntartjuk a jogot a fiók korlátozására. Kapcsolatfelvétel és biztonsági ellenőrzés kizárólag ezen az e-mail címen keresztül történik.</p>
+    </div>
+
+    <div class="section warning-box">
+        <h2>2. Csalás elleni védelem és Szankciók</h2>
+        <p>Bármilyen típusú csalás, visszaélés vagy a rendszer sebezhetőségének kihasználása esetén a StakeForge az alábbi lépéseket teszi meg:</p>
+        <ul>
+            <li>A felhasználói fiók azonnali és végleges <span class="highlight">tiltása</span>.</li>
+            <li>A fiókon lévő <span class="highlight">egyenleg határozatlan ideig tartó visszatartása</span> kivizsgálás céljából.</li>
+            <li>A jogtalanul szerzett nyeremények törlése.</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>3. Kifizetési (Withdraw) Szabályzat és Díjak</h2>
+        <p>A kifizetések feldolgozása manuálisan történik. A kifizetett összegből a rendszer <span class="highlight">levonja a kezelési költséget</span>, és a fennmaradó "nettó" összeget küldjük el a megadott BTC címre.</p>
+        
+        <table class="fee-table">
+            <thead>
+                <tr>
+                    <th>Kért kifizetési összeg</th>
+                    <th>Levont kezelési költség</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>20 € - 100 €</td>
+                    <td>2 €</td>
+                </tr>
+                <tr>
+                    <td>101 € - 500 €</td>
+                    <td>5 €</td>
+                </tr>
+                <tr>
+                    <td>501 € - 1000 €</td>
+                    <td>15 €</td>
+                </tr>
+                <tr>
+                    <td>1000 € felett</td>
+                    <td>az összeg 2%-a</td>
+                </tr>
+            </tbody>
+        </table>
+        <p><i>Példa: Ha 100 € kifizetést kérsz, a levont díj 2 €, így 98 € értékű BTC-t kapsz meg.</i></p>
+        <p><small>* Fenntartjuk a jogot a díjak módosítására a BTC hálózat extrém terheltsége esetén.</small></p>
+    </div>
+
+    <div class="section">
+        <h2>4. Béta fázis és P2P Felelősség</h2>
+        <p>A platform béta szoftvernek minősül. A piacokat maguk a felhasználók hozzák létre és zárják le. Bár az Adminisztrátornak joga van felülbírálni a nyilvánvalóan hibás lezárásokat, a StakeForge nem vállal közvetlen anyagi felelősséget a felhasználók közötti tranzakciókért vagy szoftveres hibákért.</p>
+    </div>
+
+    <a href="index.html" class="back-link">← Vissza a Dashboardra</a>
+</div>
+
+</body>
+</html>
