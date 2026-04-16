@@ -14,27 +14,16 @@
         .nav-links { display: flex; gap: 20px; align-items: center; }
         .nav-links span { color: #aaa; font-size: 13px; cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 10px 0; transition: 0.2s; }
         .nav-links span.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
-        
-        .right-panel { display: flex; align-items: center; gap: 15px; }
-        
-        /* Navbar egyenleg - Egymás mellett */
-        .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
-        .wallet-sep { width: 1px; height: 18px; background: #334756; }
+        .wallet-display { display: flex; gap: 12px; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; }
 
-        .lang-select { background: #0b1218; color: var(--primary); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; outline: none; height: 38px; font-weight: bold; }
+        /* Nyelvválasztó stílus */
+        .lang-select { background: #0b1218; color: var(--primary); border: 1px solid var(--border); border-radius: 4px; padding: 4px; font-size: 12px; cursor: pointer; outline: none; }
 
         .container { max-width: 1000px; margin: auto; padding: 30px; }
         .section { display: none; }
         .section.active { display: block; }
 
         .market-card { background: var(--card); border-radius: 16px; padding: 25px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; }
-        
-        /* Középső egyenleg kártyák - JAVÍTVA: Szám és DEMO/€ egymás mellett */
-        .balance-item { flex: 1; padding: 20px; border: 1px solid var(--border); border-radius: 15px; display: flex; flex-direction: column; align-items: center; }
-        .balance-value-row { display: flex; align-items: center; gap: 8px; margin-top: 5px; }
-        .balance-value-row h2 { margin: 0; line-height: 1; }
-        .balance-unit { font-size: 16px; font-weight: bold; opacity: 0.9; }
-
         .market-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; gap: 15px; }
         .header-left { flex: 1; }
         .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
@@ -81,13 +70,6 @@
         <span id="link-history" onclick="showSection('history')" data-i18n="nav_history">History</span>
         <span id="link-wallet" onclick="showSection('wallet')" data-i18n="nav_wallet">Wallet</span>
         <span id="link-account" onclick="showSection('account')" data-i18n="nav_account">Account</span>
-    </div>
-    <div class="right-panel">
-        <div class="wallet-display">
-            <span style="color:var(--primary)"><span id="nav-real">0.00</span> €</span>
-            <div class="wallet-sep"></div>
-            <span style="color:var(--demo)"><span id="nav-demo">0.00</span> DEMO</span>
-        </div>
         <select id="lang-switcher" class="lang-select" onchange="changeLang(this.value)">
             <option value="en">EN</option>
             <option value="hu">HU</option>
@@ -95,6 +77,10 @@
             <option value="ru">RU</option>
             <option value="zh">ZH</option>
         </select>
+    </div>
+    <div class="wallet-display">
+        <span id="nav-real" style="color:var(--primary)">0.00 €</span>
+        <span id="nav-demo" style="color:var(--demo)">0.00 D</span>
     </div>
 </div>
 
@@ -116,22 +102,14 @@
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2 data-i18n="balances">Balances</h2>
             <div id="geo-restriction" data-i18n="geo_msg">⚠️ Magyarország területéről a BE/KI fizetés tiltva van.</div>
-            
             <div style="display:flex; gap:10px; margin:20px 0;">
-                <div class="balance-item">
-                    <small>REAL</small>
-                    <div class="balance-value-row" style="color:var(--primary)">
-                        <h2 id="w-real">0.00</h2><span class="balance-unit">€</span>
-                    </div>
+                <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
+                    <small>REAL</small><h2 id="w-real" style="color:var(--primary)">0.00 €</h2>
                 </div>
-                <div class="balance-item">
-                    <small>DEMO</small>
-                    <div class="balance-value-row" style="color:var(--demo)">
-                        <h2 id="w-demo">0.00</h2><span class="balance-unit">DEMO</span>
-                    </div>
+                <div style="flex:1; padding:20px; border:1px solid var(--border); border-radius:15px;">
+                    <small>DEMO</small><h2 id="w-demo" style="color:var(--demo)">0.00 D</h2>
                 </div>
             </div>
-
             <div id="btc-wallet-area"></div>
             <div class="reward-box">
                 <h3 style="margin:0; color:var(--demo)" data-i18n="mystery_box">Daily Mystery Box</h3>
@@ -203,6 +181,7 @@
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
+    // --- Többnyelvű szótár ---
     const i18n = {
         hu: {
             nav_markets: "Piacok", nav_history: "Előzmények", nav_wallet: "Tárca", nav_account: "Fiók",
@@ -218,9 +197,7 @@
             insufficient: "Nincs elég fedezet!", min_deadline_err: "Legalább 1 perccel későbbi időpont kell!",
             max_deadline_err: "Maximum 3 nap lehet előre!", fill_all: "Minden mezőt tölts ki!", 
             cat_err: "Minden kategóriának adj nevet!", outcome_err: "Minden kimenetelnek adj nevet!",
-            odds_err: "Odds 1.01 és 1000 között lehet!", win_loss_err: "Kell legalább 1 WINNER és 1 LOSS!",
-            btc_title: "BTC Befizetés / Kifizetés", btc_addr_label: "Saját BTC befizetési címed:", btc_copy: "(Kattints a címre a másoláshoz)",
-            btc_withdraw_title: "Kifizetés indítása", btc_amount_ph: "Összeg (€)", btc_dest_ph: "Cél BTC cím (bc1q...)", btn_withdraw: "KIFIZETÉS KÉRVÉNYEZÉSE"
+            odds_err: "Odds 1.01 és 1000 között lehet!", win_loss_err: "Kell legalább 1 WINNER és 1 LOSS!"
         },
         en: {
             nav_markets: "Markets", nav_history: "History", nav_wallet: "Wallet", nav_account: "Account",
@@ -236,9 +213,7 @@
             insufficient: "Insufficient funds!", min_deadline_err: "Deadline must be at least 1 min in future!",
             max_deadline_err: "Maximum 3 days ahead!", fill_all: "Fill all fields!", 
             cat_err: "Name all categories!", outcome_err: "Name all outcomes!",
-            odds_err: "Odds between 1.01 and 1000!", win_loss_err: "Need at least 1 WINNER and 1 LOSS!",
-            btc_title: "BTC Deposit / Withdraw", btc_addr_label: "Your BTC deposit address:", btc_copy: "(Click to copy address)",
-            btc_withdraw_title: "Start Withdrawal", btc_amount_ph: "Amount (€)", btc_dest_ph: "Destination BTC address", btn_withdraw: "REQUEST WITHDRAWAL"
+            odds_err: "Odds between 1.01 and 1000!", win_loss_err: "Need at least 1 WINNER and 1 LOSS!"
         },
         de: {
             nav_markets: "Märkte", nav_history: "Verlauf", nav_wallet: "Brieftasche", nav_account: "Konto",
@@ -254,9 +229,7 @@
             insufficient: "Unzureichende Mittel!", min_deadline_err: "Deadline muss mindestens 1 Min. in der Zukunft liegen!",
             max_deadline_err: "Maximal 3 Tage im Voraus!", fill_all: "Alle Felder ausfüllen!", 
             cat_err: "Alle Kategorien benennen!", outcome_err: "Alle Ergebnisse benennen!",
-            odds_err: "Quoten zwischen 1.01 und 1000!", win_loss_err: "Mindestens 1 GEWINNER und 1 VERLIERER!",
-            btc_title: "BTC Einzahlung / Auszahlung", btc_addr_label: "Ihre BTC-Einzahlungsadresse:", btc_copy: "(Zum Kopieren auf die Adresse klicken)",
-            btc_withdraw_title: "Auszahlung starten", btc_amount_ph: "Betrag (€)", btc_dest_ph: "Ziel-BTC-Adresse", btn_withdraw: "AUSZAHLUNG BEANTRAGEN"
+            odds_err: "Quoten zwischen 1.01 und 1000!", win_loss_err: "Mindestens 1 GEWINNER und 1 VERLIERER!"
         },
         ru: {
             nav_markets: "Рынки", nav_history: "История", nav_wallet: "Кошелек", nav_account: "Аккаунт",
@@ -272,9 +245,7 @@
             insufficient: "Недостаточно средств!", min_deadline_err: "Минимум 1 минута в будущем!",
             max_deadline_err: "Максимум 3 дня вперед!", fill_all: "Заполните все поля!", 
             cat_err: "Назовите все категории!", outcome_err: "Назовите все результаты!",
-            odds_err: "Коэффициент от 1.01 до 1000!", win_loss_err: "Нужен минимум 1 WINNER и 1 LOSS!",
-            btc_title: "BTC Депозит / Вывод", btc_addr_label: "Ваш BTC адрес для депозита:", btc_copy: "(Нажмите, чтобы скопировать)",
-            btc_withdraw_title: "Начать вывод", btc_amount_ph: "Сумма (€)", btc_dest_ph: "BTC адрес получателя", btn_withdraw: "ЗАПРОСИТЬ ВЫВОД"
+            odds_err: "Коэффициент от 1.01 до 1000!", win_loss_err: "Нужен минимум 1 WINNER и 1 LOSS!"
         },
         zh: {
             nav_markets: "市场", nav_history: "历史", nav_wallet: "钱包", nav_account: "账户",
@@ -290,9 +261,7 @@
             insufficient: "余额不足！", min_deadline_err: "截止日期必须至少晚 1 分钟！",
             max_deadline_err: "最多提前 3 天！", fill_all: "请填写所有字段！", 
             cat_err: "请命名所有类别！", outcome_err: "请命名所有结果！",
-            odds_err: "赔率在 1.01 到 1000 之间！", win_loss_err: "至少需要 1 个赢家和 1 个输家！",
-            btc_title: "BTC 充值 / 提现", btc_addr_label: "您的 BTC 充值地址：", btc_copy: "（点击地址复制）",
-            btc_withdraw_title: "开始提现", btc_amount_ph: "金额 (€)", btc_dest_ph: "目标 BTC 地址", btn_withdraw: "请求提现"
+            odds_err: "赔率在 1.01 到 1000 之间！", win_loss_err: "至少需要 1 个赢家和 1 个输家！"
         }
     };
 
@@ -308,8 +277,7 @@
         currentLang = lang;
         localStorage.setItem("lang", lang);
         updatePageText();
-        loadMarkets();
-        if(!isHungarian && userProfile) renderBTCPanel(userProfile.btc_address);
+        loadMarkets(); // Frissíti a dinamikus tartalmakat is
     }
 
     function updatePageText() {
@@ -360,10 +328,10 @@
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(!data) return;
         userProfile = data;
-        document.getElementById("nav-real").innerText = data.real_balance.toFixed(2);
-        document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2);
-        document.getElementById("w-real").innerText = data.real_balance.toFixed(2);
-        document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2);
+        document.getElementById("nav-real").innerText = data.real_balance.toFixed(2) + " €";
+        document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2) + " D";
+        document.getElementById("w-real").innerText = data.real_balance.toFixed(2) + " €";
+        document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2) + " D";
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
@@ -375,19 +343,18 @@
     function renderBTCPanel(address) {
         const btcArea = document.getElementById('btc-wallet-area');
         if(!btcArea) return;
-        const d = i18n[currentLang];
+        const dict = i18n[currentLang];
         btcArea.innerHTML = `
             <div class="btc-box">
-                <h4 style="margin:0; text-align:center; color:var(--primary)">${d.btc_title}</h4>
-                <p style="font-size:12px; color:#aaa; margin-top:15px; margin-bottom:5px; text-align:center;">${d.btc_addr_label}</p>
+                <h4 style="margin:0; text-align:center; color:var(--primary)">BTC Deposit / Withdraw</h4>
+                <p style="font-size:12px; color:#aaa; margin-top:15px; margin-bottom:5px; text-align:center;">Your BTC address:</p>
                 <div class="btc-address" id="btc-addr-display" onclick="copyBTCAddress()">${address || "No address found"}</div>
-                <small style="display:block; text-align:center; color:#666; font-size:10px;">${d.btc_copy}</small>
+                <small style="display:block; text-align:center; color:#666; font-size:10px;">(Click to copy)</small>
                 <hr style="border:0; border-top:1px solid #334756; margin:20px 0;">
-                <h4 style="text-align:center; margin-bottom:10px;">${d.btc_withdraw_title}</h4>
-                <input type="number" id="wit-amount" placeholder="${d.btc_amount_ph}">
-                <input type="text" id="wit-addr" placeholder="${d.btc_dest_ph}">
-                <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">${d.btn_withdraw}</button>
-                <div id="wit-error">${d.insufficient}</div>
+                <input type="number" id="wit-amount" placeholder="Amount (€)">
+                <input type="text" id="wit-addr" placeholder="Destination BTC address">
+                <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">WITHDRAW</button>
+                <div id="wit-error">Insufficient funds!</div>
             </div>
         `;
     }
@@ -433,9 +400,8 @@
     function updateCreateBalanceDisplay() {
         if(!userProfile) return;
         const type = document.getElementById('m-type').value;
-        const val = type === 'REAL' ? userProfile.real_balance.toFixed(2) : userProfile.demo_balance.toFixed(2);
-        const unit = type === 'REAL' ? '€' : 'DEMO';
-        document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
+        const bal = type === 'REAL' ? userProfile.real_balance.toFixed(2) + " €" : userProfile.demo_balance.toFixed(2) + " D";
+        document.getElementById('create-balance-display').innerText = "Balance: " + bal;
     }
 
     async function loadMarkets() {
@@ -448,7 +414,7 @@
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
-            const symbol = m.type === 'REAL' ? '€' : 'DEMO';
+            const symbol = m.type === 'REAL' ? '€' : 'D';
             const dlDate = new Date(m.deadline);
             const isExpired = dlDate < new Date();
             
@@ -568,7 +534,6 @@
 
     function openBet(mId, n, o, t, dl) {
         activeBet = { mId, n, o, t, dl };
-        const symbol = t === 'REAL' ? '€' : 'DEMO';
         document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
         document.getElementById('betModal').classList.remove('hidden'); calcWin();
     }
@@ -645,7 +610,7 @@
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert(dict.wait_24);
         const win = Math.floor(Math.random() * 8000 + 1000);
         await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
-        document.getElementById('reward-msg').innerText = dict.won + win + " DEMO!"; fetchProfile();
+        document.getElementById('reward-msg').innerText = dict.won + win + " D!"; fetchProfile();
     }
 
     function showSection(id) {
@@ -654,10 +619,7 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
     }
-    function calcWin() { 
-        const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
-        document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
-    }
+    function calcWin() { document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { 
         document.getElementById('createModal').classList.remove('hidden');
