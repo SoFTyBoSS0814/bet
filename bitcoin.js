@@ -1,23 +1,25 @@
 /**
- * STAKEFORGE - BTC Module (Final Production Version)
+ * STAKEFORGE - BTC Module (Optimized Production Version)
  */
 
 async function checkIPAndRenderWallet() {
     const walletContainer = document.getElementById('btc-wallet-area');
     if (!walletContainer) return;
 
-    // Bevárjuk a profil adatokat (currentUser és userProfile)
+    // Bevárjuk a profil adatokat
     if (typeof userProfile === 'undefined' || !userProfile || typeof currentUser === 'undefined' || !currentUser) {
         setTimeout(() => checkIPAndRenderWallet(), 500);
         return;
     }
 
     // 1. IP ELLENŐRZÉS (Magyarországi tiltás)
+    let isHungarian = false;
     try {
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
         
         if (data.country_code === 'HU') {
+            isHungarian = true;
             walletContainer.innerHTML = `
                 <div style="padding:20px; border:1px solid #ff4646; background:rgba(255,70,70,0.1); border-radius:8px; text-align:center; margin-top:20px;">
                     <p style="color:#ff4646; font-size:13px; font-weight:bold; margin:0;">
@@ -27,43 +29,28 @@ async function checkIPAndRenderWallet() {
             return; 
         }
     } catch (e) {
-        console.warn("IP ellenőrzés sikertelen.");
+        console.warn("IP ellenőrzés sikertelen, de folytatjuk...");
     }
 
-    // 2. WALLET LOGIKA
+    // 2. WALLET LOGIKA (Csak ha NEM magyar)
     try {
-        const { data: btcRow } = await _supabase
-            .from('btc_pool')
-            .select('address')
-            .eq('user_id', currentUser.id)
-            .maybeSingle();
+        // Megnézzük, van-e már címe a profiljában
+        if (!userProfile.btc_address || userProfile.btc_address === '') {
+            
+            // Ha nincs címe és NEM magyar, akkor kérünk egyet az SQL-től (RPC)
+            if (!isHungarian) {
+                console.log("Cím igénylése a szervertől...");
+                const { data: newAddress, error } = await _supabase
+                    .rpc('assign_btc_to_user', { target_user_id: currentUser.id });
 
-        if (btcRow) {
-            userProfile.btc_address = btcRow.address;
-        } else {
-            const { data: freeRows } = await _supabase
-                .from('btc_pool')
-                .select('id, address')
-                .is('user_id', null)
-                .limit(1);
-
-            if (freeRows && freeRows.length > 0) {
-                const target = freeRows[0];
-                const { data: updated } = await _supabase
-                    .from('btc_pool')
-                    .update({ 
-                        user_id: currentUser.id, 
-                        is_allocated: true 
-                    })
-                    .eq('id', target.id)
-                    .select();
-
-                if (updated) {
-                    userProfile.btc_address = target.address;
-                    await _supabase.from('profiles').update({ btc_address: target.address }).eq('id', currentUser.id);
+                if (error) {
+                    console.error("RPC Hiba:", error);
+                } else if (newAddress) {
+                    userProfile.btc_address = newAddress;
                 }
             }
         }
+        
         renderCryptoCard(walletContainer);
     } catch (e) {
         console.error("Hiba a BTC modulban:", e);
@@ -72,7 +59,8 @@ async function checkIPAndRenderWallet() {
 }
 
 function renderCryptoCard(container) {
-    const addr = userProfile.btc_address || "Nincs elérhető cím (Pool Error)";
+    // Ha magyar, ide el se jut a kód a return miatt, de biztonsági tartaléknak:
+    const addr = userProfile.btc_address || "No address found (Region Restricted)";
     
     container.innerHTML = `
         <div class="market-card" style="border: 1px solid var(--primary); background: rgba(0,212,255,0.05); padding: 15px; border-radius: 8px; margin-top: 20px;">
@@ -95,9 +83,8 @@ function renderCryptoCard(container) {
     `;
 
     document.getElementById('btc-copy').onclick = () => {
-        if (userProfile.btc_address) {
+        if (userProfile.btc_address && userProfile.btc_address !== "No address found (Region Restricted)") {
             navigator.clipboard.writeText(addr);
-            // Itt maradhat az alert, mert ez egy pozitív visszajelzés (vagy lecserélheted)
             alert("BTC cím másolva!");
         }
     };
@@ -107,26 +94,19 @@ async function handleWithdraw() {
     const amtInput = document.getElementById('w-amt');
     const adrInput = document.getElementById('w-adr');
     const status = document.getElementById('withdraw-status');
-    const walletErr = document.getElementById('wallet-error-msg'); // A HTML-ben lévő piros sáv
     
     const amt = parseFloat(amtInput.value);
     const adr = adrInput.value.trim();
 
-    // Reset hibaüzenetek
     if(status) status.innerText = "";
-    if(walletErr) walletErr.innerText = "";
 
-    // 1. Alapadatok ellenőrzése
     if (!amt || amt <= 0 || !adr) {
-        if(walletErr) walletErr.innerText = "❌ Hiba: Adj meg összeget és címet!";
+        if(status) status.innerText = "❌ Hiba: Adj meg összeget és címet!";
         return;
     }
 
-    // 2. Egyenleg ellenőrzése - ITT VOLT AZ ALERT TÖRLÉSE
     if (amt > userProfile.real_balance) {
-        if(walletErr) {
-            walletErr.innerText = "❌ Hiba: Nincs elég fedezet a számládon!";
-        } else if(status) {
+        if(status) {
             status.innerText = "❌ Hiba: Nincs elég fedezet!";
             status.style.color = "#ff4646";
         }
@@ -154,7 +134,6 @@ async function handleWithdraw() {
 
         if (upErr) throw upErr;
 
-        // Sikeres kifizetésnél maradhat egy utolsó alert vagy egy státusz üzenet
         status.innerText = "✅ Kérelem sikeresen rögzítve!";
         status.style.color = "var(--success)";
         
@@ -162,8 +141,10 @@ async function handleWithdraw() {
 
     } catch (err) {
         console.error(err);
-        status.innerText = "❌ Hiba történt a kérés során.";
-        status.style.color = "#ff4646";
+        if(status) {
+            status.innerText = "❌ Hiba történt.";
+            status.style.color = "#ff4646";
+        }
     }
 }
 
