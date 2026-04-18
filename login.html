@@ -6,9 +6,15 @@
     <title>StakeForge | Login & Register</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #00d4ff; --bg: #0f171e; --card: #1d2d3a; --text: #fff; --input: #0b1218; }
-        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .auth-box { background: var(--card); padding: 40px; border-radius: 20px; width: 380px; border: 1px solid #2c4f60; box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
+        :root { --primary: #00d4ff; --bg: #0f171e; --card: #1d2d3a; --text: #fff; --input: #0b1218; --border: #2c4f60; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; position: relative; }
+        
+        /* Nyelvválasztó a sarokban */
+        .lang-selector { position: absolute; top: 20px; right: 20px; display: flex; gap: 10px; z-index: 1001; }
+        .lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 14px; transition: 0.3s; }
+        .lang-btn:hover { background: var(--primary); color: #000; }
+
+        .auth-box { background: var(--card); padding: 40px; border-radius: 20px; width: 380px; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-align: center; }
         h2 { color: var(--primary); margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 3px; font-weight: 900; }
         p { color: #8899a6; font-size: 14px; margin-bottom: 30px; }
         .form-group { text-align: left; margin-bottom: 15px; }
@@ -19,9 +25,23 @@
         .toggle-link span { color: var(--primary); cursor: pointer; font-weight: bold; text-decoration: underline; }
         .hidden { display: none !important; }
         #msg { color: #ff4444; font-size: 12px; margin-top: 15px; display: none; padding: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.05); }
+
+        /* Jogi lábléc */
+        .login-footer { position: fixed; bottom: 20px; right: 20px; font-size: 11px; color: #666; background: rgba(29, 45, 58, 0.8); padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border); z-index: 1000; backdrop-filter: blur(5px); }
+        .login-footer a { color: var(--primary); text-decoration: none; font-weight: bold; }
+        .login-footer .sep { margin: 0 5px; color: #444; }
+        @media (max-width: 600px) { .login-footer { right: 0; left: 0; bottom: 0; text-align: center; border-radius: 0; border-left: none; border-right: none; } }
     </style>
 </head>
 <body>
+
+<div class="lang-selector">
+    <button class="lang-btn" onclick="changeLoginLang('hu')">HU</button>
+    <button class="lang-btn" onclick="changeLoginLang('en')">EN</button>
+    <button class="lang-btn" onclick="changeLoginLang('de')">DE</button>
+    <button class="lang-btn" onclick="changeLoginLang('ru')">RU</button>
+    <button class="lang-btn" onclick="changeLoginLang('zn')">ZN</button>
+</div>
 
 <div class="auth-box">
     <h2>STAKEFORGE</h2>
@@ -29,47 +49,205 @@
 
     <div id="login-form">
         <div class="form-group">
-            <label>Email vagy Felhasználónév</label>
+            <label id="lbl-login-user">Email vagy Felhasználónév</label>
             <input type="text" id="login-input" placeholder="email@cim.hu vagy felhasznalonev">
         </div>
         <div class="form-group">
-            <label>Jelszó</label>
+            <label id="lbl-login-pw">Jelszó</label>
             <input type="password" id="login-password" placeholder="••••••••">
         </div>
-        <button class="btn-auth" onclick="handleLogin()">Bejelentkezés</button>
-        <div class="toggle-link">Nincs még fiókod? <span onclick="toggleAuth()">Regisztráció</span></div>
+        <button class="btn-auth" id="btn-login-action" onclick="handleLogin()">Bejelentkezés</button>
+        <div class="toggle-link"><span id="txt-no-account">Nincs még fiókod?</span> <span id="btn-toggle-reg" onclick="toggleAuth()">Regisztráció</span></div>
     </div>
 
     <div id="register-form" class="hidden">
         <div class="form-group">
-            <label>Felhasználónév</label>
+            <label id="lbl-reg-user">Felhasználónév</label>
             <input type="text" id="reg-user" placeholder="username">
         </div>
         <div class="form-group">
-            <label>Email cím</label>
+            <label id="lbl-reg-email">Email cím</label>
             <input type="email" id="reg-email" placeholder="mail@mail.com">
         </div>
         <div class="form-group">
-            <label>Jelszó</label>
+            <label id="lbl-reg-pw">Jelszó</label>
             <input type="password" id="reg-password" placeholder="Minimum 6 karakter">
         </div>
-        <button class="btn-auth" onclick="handleRegister()">Fiók létrehozása</button>
-        <div class="toggle-link">Van már fiókod? <span onclick="toggleAuth()">Jelentkezz be</span></div>
+        <button class="btn-auth" id="btn-reg-action" onclick="handleRegister()">Fiók létrehozása</button>
+        <div class="toggle-link"><span id="txt-has-account">Van már fiókod?</span> <span id="btn-toggle-login" onclick="toggleAuth()">Jelentkezz be</span></div>
     </div>
     
     <div id="msg"></div>
 </div>
+
+<footer class="login-footer">
+    <a id="lnk-tos" href="tos.html" target="_blank">Terms of Service (ÁSZF)</a>
+    <span class="sep">|</span>
+    <a id="lnk-gdpr" href="gdpr.html" target="_blank">Privacy Policy (GDPR)</a>
+</footer>
 
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
+    const loginDicts = {
+        hu: {
+            desc_login: "Lépj be az arénába!",
+            desc_reg: "Hozd létre a profilod!",
+            lbl_user: "Email vagy Felhasználónév",
+            lbl_pw: "Jelszó",
+            lbl_reg_user: "Felhasználónév",
+            lbl_email: "Email cím",
+            ph_user: "email@cim.hu vagy felhasznalonev",
+            ph_pw: "Minimum 6 karakter",
+            btn_login: "Bejelentkezés",
+            btn_reg: "Fiók létrehozása",
+            no_acc: "Nincs még fiókod?",
+            has_acc: "Van már fiókod?",
+            link_reg: "Regisztráció",
+            link_login: "Jelentkezz be",
+            tos: "Felhasználási Feltételek (ÁSZF)",
+            gdpr: "Adatvédelem (GDPR)",
+            tos_url: "tos.html",
+            gdpr_url: "gdpr.html",
+            err_fill: "Töltsd ki a mezőket!",
+            err_user: "Hibás felhasználónév!",
+            msg_success: "Sikeres regisztráció!"
+        },
+        en: {
+            desc_login: "Enter the arena!",
+            desc_reg: "Create your profile!",
+            lbl_user: "Email or Username",
+            lbl_pw: "Password",
+            lbl_reg_user: "Username",
+            lbl_email: "Email address",
+            ph_user: "email@mail.com or username",
+            ph_pw: "Minimum 6 characters",
+            btn_login: "Login",
+            btn_reg: "Create Account",
+            no_acc: "Don't have an account?",
+            has_acc: "Already have an account?",
+            link_reg: "Register",
+            link_login: "Sign In",
+            tos: "Terms of Service",
+            gdpr: "Privacy Policy",
+            tos_url: "tos_en.html",
+            gdpr_url: "gdpr_en.html",
+            err_fill: "Please fill all fields!",
+            err_user: "Invalid username!",
+            msg_success: "Registration successful!"
+        },
+        de: {
+            desc_login: "Betreten Sie den Bereich!",
+            desc_reg: "Erstellen Sie Ihr Profil!",
+            lbl_user: "E-Mail oder Benutzername",
+            lbl_pw: "Passwort",
+            lbl_reg_user: "Benutzername",
+            lbl_email: "E-Mail",
+            ph_user: "email@mail.com oder Benutzername",
+            ph_pw: "Mindestens 6 Zeichen",
+            btn_login: "Anmelden",
+            btn_reg: "Konto erstellen",
+            no_acc: "Haben Sie noch kein Konto?",
+            has_acc: "Haben Sie bereits ein Konto?",
+            link_reg: "Registrieren",
+            link_login: "Anmelden",
+            tos: "Nutzungsbedingungen",
+            gdpr: "Datenschutzrichtlinie",
+            tos_url: "tos_de.html",
+            gdpr_url: "gdpr_de.html",
+            err_fill: "Bitte füllen Sie alle Felder aus!",
+            err_user: "Ungültiger Benutzername!",
+            msg_success: "Registrierung erfolgreich!"
+        },
+         ru: {
+            desc_login: "Войдите в зону!",
+            desc_reg: "Создайте свой профиль!",
+            lbl_user: "Электронная почта или имя пользователя",
+            lbl_pw: "Пароль",
+            lbl_reg_user: "Имя пользователя",
+            lbl_email: "Электронная почта",
+            ph_user: "email@mail.com или имя пользователя",
+            ph_pw: "Минимум 6 символов",
+            btn_login: "Войти",
+            btn_reg: "Создать аккаунт",
+            no_acc: "У вас ещё нет аккаунта?",
+            has_acc: "У вас уже есть аккаунт?",
+            link_reg: "Зарегистрироваться",
+            link_login: "Войти",
+            tos: "Условия использования",
+            gdpr: "Политика конфиденциальности",
+            tos_url: "tos_ru.html",
+            gdpr_url: "gdpr_ru.html",
+            err_fill: "Пожалуйста, заполните все поля!",
+            err_user: "Недопустимое имя пользователя!",
+            msg_success: "Регистрация успешно завершена!"
+        },
+         zn: {
+            desc_login: "进入区域",
+            desc_reg: "创建您的个人资料",
+            lbl_user: "电子邮件或用户名",
+            lbl_pw: "密码",
+            lbl_reg_user: "用户名",
+            lbl_email: "电子邮件",
+            ph_user: "email@mail.com 或用户名",
+            ph_pw: "至少6个字符",
+            btn_login: "登录",
+            btn_reg: "创建账户",
+            no_acc: "您还没有账号吗",
+            has_acc: "您已经有账号了吗？",
+            link_reg: "注册",
+            link_login: "登录",
+            tos: "使用条款",
+            gdpr: "隐私政策",
+            tos_url: "tos_zn.html",
+            gdpr_url: "gdpr_zn.html",
+            err_fill: "请填写所有字段！",
+            err_user: "无效的用户名",
+            msg_success: "注册成功完成"
+        }
+    };
+
+    let currentLang = 'hu';
+
+    function changeLoginLang(lang) {
+        currentLang = lang;
+        const d = loginDicts[lang];
+        const isLogin = !document.getElementById('login-form').classList.contains('hidden');
+        
+        document.getElementById('auth-desc').innerText = isLogin ? d.desc_login : d.desc_reg;
+        
+        // Login form
+        document.getElementById('lbl-login-user').innerText = d.lbl_user;
+        document.getElementById('lbl-login-pw').innerText = d.lbl_pw;
+        document.getElementById('login-input').placeholder = d.ph_user;
+        document.getElementById('btn-login-action').innerText = d.btn_login;
+        document.getElementById('txt-no-account').innerText = d.no_acc;
+        document.getElementById('btn-toggle-reg').innerText = d.link_reg;
+
+        // Reg form
+        document.getElementById('lbl-reg-user').innerText = d.lbl_reg_user;
+        document.getElementById('lbl-reg-email').innerText = d.lbl_email;
+        document.getElementById('lbl-reg-pw').innerText = d.lbl_pw;
+        document.getElementById('reg-password').placeholder = d.ph_pw;
+        document.getElementById('btn-reg-action').innerText = d.btn_reg;
+        document.getElementById('txt-has-account').innerText = d.has_acc;
+        document.getElementById('btn-toggle-login').innerText = d.link_login;
+
+        // Footer links
+        const tos = document.getElementById('lnk-tos');
+        const gdpr = document.getElementById('lnk-gdpr');
+        tos.innerText = d.tos; tos.href = d.tos_url;
+        gdpr.innerText = d.gdpr; gdpr.href = d.gdpr_url;
+    }
+
     function toggleAuth() {
+        const d = loginDicts[currentLang];
         document.getElementById('login-form').classList.toggle('hidden');
         document.getElementById('register-form').classList.toggle('hidden');
         const isLogin = !document.getElementById('login-form').classList.contains('hidden');
-        document.getElementById('auth-desc').innerText = isLogin ? "Lépj be az arénába!" : "Hozd létre a profilod!";
+        document.getElementById('auth-desc').innerText = isLogin ? d.desc_login : d.desc_reg;
         document.getElementById('msg').style.display = 'none';
     }
 
@@ -82,14 +260,13 @@
     }
 
     async function handleLogin() {
+        const d = loginDicts[currentLang];
         const loginVal = document.getElementById('login-input').value.trim();
         const password = document.getElementById('login-password').value;
 
-        if(!loginVal || !password) return showMsg("Töltsd ki a mezőket!");
+        if(!loginVal || !password) return showMsg(d.err_fill);
 
         let emailToAuth = loginVal;
-
-        // 1. Ha nem emailt írt be, keressük meg az emailt a felhasználónév alapján
         if (!loginVal.includes('@')) {
             const { data: profile, error: pError } = await _supabase
                 .from('profiles')
@@ -97,20 +274,18 @@
                 .eq('username', loginVal)
                 .single();
 
-            if (pError || !profile) return showMsg("Hibás felhasználónév!");
+            if (pError || !profile) return showMsg(d.err_user);
             emailToAuth = profile.email;
         }
 
-        // 2. Tényleges beléptetés
         const { data, error } = await _supabase.auth.signInWithPassword({ 
             email: emailToAuth, 
             password: password 
         });
 
         if (error) {
-            showMsg("Hiba: " + error.message);
+            showMsg(error.message);
         } else {
-            // Profil adat lekérése az index.html számára
             const { data: prof } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
             localStorage.setItem("user", JSON.stringify({ 
                 id: data.user.id, 
@@ -121,19 +296,17 @@
     }
 
     async function handleRegister() {
+        const d = loginDicts[currentLang];
         const user = document.getElementById('reg-user').value.trim();
         const email = document.getElementById('reg-email').value.trim();
         const pw = document.getElementById('reg-password').value;
 
-        if(!user || !email || !pw) return showMsg("Minden mezőt tölts ki!");
+        if(!user || !email || !pw) return showMsg(d.err_fill);
 
-        // 1. Auth regisztráció
         const { data, error } = await _supabase.auth.signUp({ email, password: pw });
-
         if (error) return showMsg(error.message);
 
         if (data.user) {
-            // 2. Profil mentése a saját táblába (MINDEN mezővel)
             const { error: dbErr } = await _supabase.from('profiles').insert([
                 { 
                     id: data.user.id, 
@@ -146,10 +319,10 @@
             ]);
 
             if (dbErr) {
-                showMsg("Adatbázis hiba: " + dbErr.message);
+                showMsg(dbErr.message);
             } else {
                 localStorage.setItem("user", JSON.stringify({ id: data.user.id, username: user }));
-                showMsg("Sikeres regisztráció!", false);
+                showMsg(d.msg_success, false);
                 setTimeout(() => { window.location.href = "index.html"; }, 1000);
             }
         }
