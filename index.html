@@ -716,7 +716,6 @@ async function loadUsers(mode) {
     const container = document.getElementById('user-list-container');
     container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--primary);">Betöltés...</p>';
 
-    // Most már lekérjük a total_bets-et is
     let query = _supabase
         .from('profiles')
         .select('username, created_at, real_balance, total_bets');
@@ -724,8 +723,8 @@ async function loadUsers(mode) {
     if (mode === 'newest') {
         query = query.order('created_at', { ascending: false });
     } else if (mode === 'active') {
-        // Aki a legtöbb eseményt rakta ki
-        query = query.order('total_bets', { ascending: false });
+        // A NULL értékeket a Supabase a lista végére rakja, ha így használod:
+        query = query.order('total_bets', { ascending: false, nullsFirst: false });
     } else {
         query = query.order('username', { ascending: true });
     }
@@ -734,7 +733,7 @@ async function loadUsers(mode) {
 
     if (error) {
         console.error(error);
-        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:red;">Hiba történt az adatok lekérésekor.</p>';
+        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:red;">Hiba történt.</p>';
         return;
     }
 
@@ -748,7 +747,7 @@ async function loadUsers(mode) {
         card.style.border = '1px solid var(--border)';
         card.style.textAlign = 'center';
 
-        // Ha a Legaktívabb módban vagyunk, mutassuk a számot, amúgy a dátumot
+        // Itt a trükk: a (u.total_bets || 0) garantálja, hogy ha NULL, akkor 0 legyen
         let subText = "";
         if (mode === 'active') {
             subText = `Események: ${u.total_bets || 0}`;
