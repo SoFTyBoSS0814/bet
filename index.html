@@ -685,7 +685,7 @@
         document.getElementById('link-' + id).classList.add('active');
     }
 
-    async function loadUsers(mode) {
+async function loadUsers(mode) {
     const container = document.getElementById('user-list-container');
     
     // Vizuális visszajelzés a betöltésről
@@ -723,18 +723,21 @@
     // Felhasználói kártyák generálása
     users.forEach(u => {
         const card = document.createElement('div');
-        // Olyan stílust adunk neki, ami illik a sötét témához
+        // Kártya stílus beállítása
         card.style.background = 'rgba(255,255,255,0.03)';
-        card.style.padding = '15px';
-        card.style.borderRadius = '10px';
+        card.style.padding = '20px'; // Kicsit több hely belül
+        card.style.borderRadius = '12px';
         card.style.border = '1px solid var(--border)';
         card.style.textAlign = 'center';
+        card.style.transition = '0.3s';
 
         card.innerHTML = `
-            <div style="font-size: 24px; margin-bottom: 10px;">👤</div>
-            <div style="font-weight: bold; color: var(--primary);">${u.username}</div>
-            <div style="font-size: 10px; color: #666; margin-top: 5px;">
-                Regisztráció: ${new Date(u.created_at).toLocaleDateString()}
+            <div style="font-size: 32px; margin-bottom: 12px;">👤</div>
+            <div style="font-weight: 900; color: var(--primary); font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">
+                ${u.username}
+            </div>
+            <div style="font-size: 13px; color: #ffffff; margin-top: 10px; background: rgba(255,255,255,0.05); padding: 5px; border-radius: 6px;">
+                Regisztráció: <span style="font-weight: bold;">${new Date(u.created_at).toLocaleDateString()}</span>
             </div>
         `;
         container.appendChild(card);
