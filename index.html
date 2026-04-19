@@ -671,7 +671,7 @@ async function finalSubmitSettle() {
 
     for (let group of currentSettleGroups) {
         if (!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
-            errDiv.innerText = i18n[currentLang].win_loss_err;
+            errDiv.innerText = "Hiba: Minden csoporthoz kell nyertes és vesztes!";
             errDiv.style.display = 'block';
             return;
         }
@@ -695,9 +695,12 @@ async function finalSubmitSettle() {
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-        // 1. Kiszámoljuk a Host "visszajáró" pénzét a nulláról indulva
-        // Kezdünk az eredeti likviditással
-        let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
+        // ✅ BIZTONSÁGI JAVÍTÁS: 
+        // Megpróbáljuk az initial_liquidity-t, de ha az 0 vagy null, 
+        // akkor a meccs 'liquidity' oszlopát vesszük alapul.
+        let settlementAmount = parseFloat(mData.initial_liquidity) || parseFloat(mData.liquidity) || 0;
+
+        console.log("Kiinduló likviditás az elszámoláshoz:", settlementAmount);
 
         const { data: bets } = await _supabase
             .from('bets')
@@ -713,16 +716,9 @@ async function finalSubmitSettle() {
                 if (isWin) {
                     const payout = betAmt * parseFloat(bet.odds);
                     const netLoss = payout - betAmt; 
-                    // A Host bukta a nyereményt a poolból
                     settlementAmount -= netLoss;
-
-                    await _supabase.rpc('settle_bet_payout', {
-                        p_user_id: bet.user_id,
-                        p_amount: payout,
-                        p_field: field
-                    });
                 } else {
-                    // A Host nyert, megkapja a fogadó tétjét profitként
+                    // Itt jön hozzá a profit
                     settlementAmount += betAmt;
                 }
 
@@ -730,7 +726,7 @@ async function finalSubmitSettle() {
             }
         }
 
-        // 2. Lekérjük a Host aktuális egyenlegét
+        // Host profil lekérése
         const { data: hostProfile } = await _supabase
             .from('profiles')
             .select('*')
@@ -738,17 +734,21 @@ async function finalSubmitSettle() {
             .single();
 
         if (hostProfile) {
-            // ✅ Itt a lényeg: Az aktuális egyenlegéhez hozzáadjuk a kiszámolt elszámolást
             const currentBalance = parseFloat(hostProfile[field]) || 0;
-            const newBalance = currentBalance + settlementAmount;
+            const finalBalance = currentBalance + settlementAmount;
 
-            await _supabase
+            console.log("Visszautalandó összesen:", settlementAmount);
+            console.log("Új egyenleg:", finalBalance);
+
+            const { error: upError } = await _supabase
                 .from('profiles')
-                .update({ [field]: newBalance })
+                .update({ [field]: finalBalance })
                 .eq('id', hostProfile.id);
+            
+            if (upError) throw upError;
         }
 
-        // 3. Piac lezárása
+        // Piac lezárása
         await _supabase
             .from('markets')
             .update({
@@ -761,9 +761,10 @@ async function finalSubmitSettle() {
         location.reload();
 
     } catch (e) {
-        console.error(e);
+        console.error("Hiba az elszámolásnál:", e);
         btn.disabled = false;
         btn.innerText = "FINALIZE";
+        alert("Hiba történt: " + e.message);
     }
 }
     async function claimDailyDemo() {
