@@ -619,7 +619,19 @@
             grp.push({ title: categoryTitle, outcomes });
         }
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ title: t, type, take: b, stake: b, deadline: deadline.toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
+        await _supabase.from('markets').insert([{
+    title: t,
+    type,
+    take: b,
+    stake: b,
+
+    initial_liquidity: b, // 👈 EZ KELL
+
+    deadline: deadline.toISOString(),
+    note: JSON.stringify(grp),
+    creator_name: currentUser.username,
+    status: 'active'
+}]);
         location.reload();
     }
 
