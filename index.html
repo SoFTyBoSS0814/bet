@@ -718,13 +718,13 @@ async function loadUsers(mode) {
 
     let query = _supabase
         .from('profiles')
-        .select('username, created_at, real_balance, total_bets');
+        .select('username, created_at, real_balance, total_activity');
 
     if (mode === 'newest') {
         query = query.order('created_at', { ascending: false });
     } else if (mode === 'active') {
         // A NULL értékeket a Supabase a lista végére rakja, ha így használod:
-        query = query.order('total_bets', { ascending: false, nullsFirst: false });
+        query = query.order('total_activity', { ascending: false, nullsFirst: false });
     } else {
         query = query.order('username', { ascending: true });
     }
@@ -747,10 +747,10 @@ async function loadUsers(mode) {
         card.style.border = '1px solid var(--border)';
         card.style.textAlign = 'center';
 
-        // Itt a trükk: a (u.total_bets || 0) garantálja, hogy ha NULL, akkor 0 legyen
+        // Itt a trükk: a (u.total_activity || 0) garantálja, hogy ha NULL, akkor 0 legyen
         let subText = "";
         if (mode === 'active') {
-            subText = `Események: ${u.total_bets || 0}`;
+            subText = `Aktivitás (Fogadás/Host): ${u.total_activity || 0}`;
         } else {
             subText = `Regisztráció: ${new Date(u.created_at).toLocaleDateString()}`;
         }
