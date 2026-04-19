@@ -17,9 +17,36 @@
         
         .right-panel { display: flex; align-items: center; gap: 15px; }
         
-        /* Navbar egyenleg - Egymás mellett */
-        .wallet-display { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 15px; border-radius: 8px; border: 1px solid #334756; font-size: 14px; font-weight: bold; gap: 12px; }
-        .wallet-sep { width: 1px; height: 18px; background: #334756; }
+/* Navbar egyenleg - Fixen egymás mellett, törés nélkül */
+.wallet-display { 
+    display: flex; 
+    align-items: center; 
+    background: rgba(0,0,0,0.3); 
+    padding: 8px 15px; 
+    border-radius: 8px; 
+    border: 1px solid #334756; 
+    font-size: 14px; 
+    font-weight: bold; 
+    gap: 12px;
+    white-space: nowrap; /* Megakadályozza a sortörést */
+    flex-wrap: nowrap;   /* Flexbox szinten is tiltja a törést */
+    min-width: max-content; /* Biztosítja, hogy a doboz felvegye a tartalom szélességét */
+}
+
+.wallet-sep { 
+    width: 1px; 
+    height: 18px; 
+    background: #334756; 
+    flex-shrink: 0; /* Ne engedje a vonalat összenyomni */
+}
+
+/* Az egyenleg csoportok (szám + felirat) belső stílusa */
+.wallet-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.2;
+}
 
         .lang-select { background: #0b1218; color: var(--primary); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-size: 12px; cursor: pointer; outline: none; height: 38px; font-weight: bold; }
 
