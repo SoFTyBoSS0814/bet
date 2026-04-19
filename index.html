@@ -659,7 +659,7 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-    async function finalSubmitSettle() {
+  async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
     errDiv.style.display = 'none';
 
@@ -700,8 +700,8 @@
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-        // ✅ CSAK PROFITOT SZÁMOLUNK
-        let hostTotal = 0;
+        // ✅ KIINDULÁS: teljes eredeti likviditás
+        let hostTotal = parseFloat(mData.initial_liquidity) || 0;
 
         const { data: bets } = await _supabase
             .from('bets')
@@ -716,7 +716,7 @@
                 if (isWin) {
                     const payout = bet.amount * bet.odds;
 
-                    // host fizet → mínusz
+                    // host fizet
                     hostTotal -= payout;
 
                     await _supabase.rpc('settle_bet_payout', {
@@ -725,7 +725,7 @@
                         p_field: field
                     });
                 } else {
-                    // host nyer → plusz
+                    // host nyer
                     hostTotal += parseFloat(bet.amount);
                 }
 
@@ -761,13 +761,13 @@
             .eq('id', currentSettleId);
 
         location.reload();
+
     } catch (e) {
         console.error(e);
         btn.disabled = false;
         btn.innerText = "FINALIZE";
     }
 }
-
     async function claimDailyDemo() {
         const dict = i18n[currentLang];
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert(dict.wait_24);
