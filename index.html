@@ -81,7 +81,7 @@
         <span id="link-history" onclick="showSection('history')" data-i18n="nav_history">History</span>
         <span id="link-wallet" onclick="showSection('wallet')" data-i18n="nav_wallet">Wallet</span>
         <span id="link-account" onclick="showSection('account')" data-i18n="nav_account">Account</span>
-        <span id="link-support" onclick="showSection('support')" data-i18n="nav_support">Support</span>
+        <span id="link-users" onclick="showSection('support')" data-i18n="nav_users">Users</span>
     </div>
     <div class="right-panel">
         <div class="wallet-display">
@@ -168,22 +168,6 @@
     </div>
 </div>
 
-    <div id="section-support" class="section">
-    <div class="market-card" style="max-width:450px; margin:auto;">
-        <h2 style="text-align:center" data-i18n="contact_us">Contact Us</h2>
-        
-        <div style="background:rgba(0,0,0,0.2); padding:30px; border-radius:12px; margin:20px 0; text-align:center;">
-            <p style="margin:0 0 10px 0; color:#aaa; font-size:14px;" data-i18n="support_reach">You can reach us there:</p>
-            
-            <p id="support-link" style="font-weight:bold; font-size:20px; color:var(--primary); margin:0;">
-                support@stakeforge.com
-            </p>
-        </div>
-
-        <a href="mailto:support@stakeforge.com" style="text-decoration:none;">
-        </a>
-    </div>
-</div>
 
 <div id="betModal" class="modal hidden">
     <div class="modal-box" style="width:320px; text-align:center">
@@ -237,7 +221,7 @@
             live_markets: "Élő Piacok", btn_create: "+ Létrehozás", loading: "Betöltés...",
             settled_markets_title: "Lezárt Piacok", balances: "Egyenlegek", geo_msg: "⚠️ Magyarország területéről a BE/KI fizetés tiltva van.",
             mystery_box: "Napi Meglepetés", btn_luck: "SZERENCSE PRÓBA", acc_profile: "Fiók Adatok",
-            username: "Felhasználónév", email: "E-mail cím", acc_id: "Fiók Azonosító", support: "Support", logout: "KIJELENTKEZÉS",
+            username: "Felhasználónév", email: "E-mail cím", acc_id: "Fiók Azonosító", logout: "KIJELENTKEZÉS",
             btn_place_bet: "FOGADÁS", cancel: "Mégse", new_market: "Új Piac", event_placeholder: "Esemény neve",
             budget_placeholder: "Költségvetés (Likviditás)", add_category: "+ Kategória", publish: "KÖZZÉTÉTEL",
             finalize: "VÉGLEGESÍTÉS", deadline: "HATÁRIDŐ", host: "Házigazda", pool: "Pool", final_pool: "Végső Pool",
@@ -255,7 +239,7 @@
             live_markets: "Live Markets", btn_create: "+ Create", loading: "Loading...",
             settled_markets_title: "Settled Markets", balances: "Balances", geo_msg: "⚠️ Deposits/Withdrawals are restricted in Hungary.",
             mystery_box: "Daily Mystery Box", btn_luck: "TRY MY LUCK", acc_profile: "Account Profile",
-            username: "Username", email: "Email Address", acc_id: "Account ID", support: "Support", logout: "LOG OUT",
+            username: "Username", email: "Email Address", acc_id: "Account ID", logout: "LOG OUT",
             btn_place_bet: "PLACE BET", cancel: "Cancel", new_market: "New Market", event_placeholder: "Event Name",
             budget_placeholder: "Initial Liquidity Pool", add_category: "+ Add Category", publish: "PUBLISH",
             finalize: "FINALIZE", deadline: "DEADLINE", host: "Host", pool: "Pool", final_pool: "Final Pool",
@@ -273,7 +257,7 @@
             live_markets: "Live-Märkte", btn_create: "+ Erstellen", loading: "Laden...",
             settled_markets_title: "Abgeschlossene Märkte", balances: "Guthaben", geo_msg: "⚠️ Einzahlungen/Auszahlungen sind in Ungarn eingeschränkt.",
             mystery_box: "Tägliche Mystery Box", btn_luck: "MEIN GLÜCK VERSUCHEN", acc_profile: "Kontoprofil",
-            username: "Benutzername", email: "E-Mail-Adresse", acc_id: "Konto-ID", support: "Support", logout: "AUSLOGGEN",
+            username: "Benutzername", email: "E-Mail-Adresse", acc_id: "Konto-ID", logout: "AUSLOGGEN",
             btn_place_bet: "WETTE PLATZIEREN", cancel: "Abbrechen", new_market: "Neuer Markt", event_placeholder: "Ereignisname",
             budget_placeholder: "Anfänglicher Liquiditätspool", add_category: "+ Kategorie", publish: "VERÖFFENTLICHEN",
             finalize: "FINALISIEREN", deadline: "DEADLINE", host: "Gastgeber", pool: "Pool", final_pool: "Endgültiger Pool",
@@ -291,7 +275,7 @@
             live_markets: "Живые рынки", btn_create: "+ Создать", loading: "Загрузка...",
             settled_markets_title: "Завершенные рынки", balances: "Балансы", geo_msg: "⚠️ Депозиты/выводы ограничены в Венгрии.",
             mystery_box: "Ежедневный Mystery Box", btn_luck: "ИСПЫТАТЬ УДАЧУ", acc_profile: "Профиль",
-            username: "Имя пользователя", email: "Email", acc_id: "ID аккаунта", support: "Support", logout: "ВЫЙТИ",
+            username: "Имя пользователя", email: "Email", acc_id: "ID аккаунта", logout: "ВЫЙТИ",
             btn_place_bet: "СДЕЛАТЬ СТАВКУ", cancel: "Отмена", new_market: "Новый рынок", event_placeholder: "Название события",
             budget_placeholder: "Начальный пул", add_category: "+ Категория", publish: "ОПУБЛИКОВАТЬ",
             finalize: "ЗАВЕРШИТЬ", deadline: "СРОК", host: "Организатор", pool: "Пул", final_pool: "Итоговый пул",
@@ -309,7 +293,7 @@
             live_markets: "进行中市场", btn_create: "+ 创建", loading: "加载中...",
             settled_markets_title: "已结算市场", balances: "余额", geo_msg: "⚠️ 匈牙利境内的充值/提现受限。",
             mystery_box: "每日神秘宝箱", btn_luck: "碰碰运气", acc_profile: "个人资料",
-            username: "用户名", email: "电子邮件", acc_id: "账户 ID", support: "Support", logout: "登出",
+            username: "用户名", email: "电子邮件", acc_id: "账户 ID", logout: "登出",
             btn_place_bet: "下注", cancel: "取消", new_market: "新市场", event_placeholder: "活动名称",
             budget_placeholder: "初始流动性池", add_category: "+ 添加类别", publish: "发布",
             finalize: "结算", deadline: "截止日期", host: "主持人", pool: "奖池", final_pool: "最终奖池",
