@@ -659,43 +659,114 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-    async function finalSubmitSettle() {
-        const errDiv = document.getElementById('settle-error-msg');
-        errDiv.style.display = 'none';
-        const selects = document.querySelectorAll('.settle-select');
-        selects.forEach(s => {
-            const gi = s.dataset.gi, oi = s.dataset.oi;
-            currentSettleGroups[gi].outcomes[oi].status = s.value;
-        });
-        for(let group of currentSettleGroups) {
-            if(!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
-                errDiv.innerText = i18n[currentLang].win_loss_err;
-                errDiv.style.display = 'block'; return;
+async function finalSubmitSettle() {
+    const errDiv = document.getElementById('settle-error-msg');
+    errDiv.style.display = 'none';
+
+    const selects = document.querySelectorAll('.settle-select');
+    selects.forEach(s => {
+        const gi = s.dataset.gi, oi = s.dataset.oi;
+        currentSettleGroups[gi].outcomes[oi].status = s.value;
+    });
+
+    for (let group of currentSettleGroups) {
+        if (
+            !group.outcomes.some(o => o.status === 'win') ||
+            !group.outcomes.some(o => o.status === 'loss')
+        ) {
+            errDiv.innerText = i18n[currentLang].win_loss_err;
+            errDiv.style.display = 'block';
+            return;
+        }
+    }
+
+    const btn = document.getElementById('finalize-btn');
+    btn.disabled = true;
+    btn.innerText = "Processing...";
+
+    let winners = [];
+    currentSettleGroups.forEach(g =>
+        g.outcomes.forEach(o => {
+            if (o.status === 'win') winners.push(o.n);
+        })
+    );
+
+    try {
+        const { data: mData } = await _supabase
+            .from('markets')
+            .select('*')
+            .eq('id', currentSettleId)
+            .single();
+
+        const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+        // 🔥 FIX: mindig az eredeti likviditásból indulunk
+        let hostTotal = parseFloat(mData.initial_liquidity) || 0;
+
+        const { data: bets } = await _supabase
+            .from('bets')
+            .select('*')
+            .eq('market_id', currentSettleId)
+            .eq('status', 'pending');
+
+        if (bets) {
+            for (let bet of bets) {
+                const isWin = winners.includes(bet.outcome_name);
+
+                if (isWin) {
+                    const payout = bet.amount * bet.odds;
+
+                    // host fizet
+                    hostTotal -= payout;
+
+                    await _supabase.rpc('settle_bet_payout', {
+                        p_user_id: bet.user_id,
+                        p_amount: payout,
+                        p_field: field
+                    });
+                } else {
+                    // host nyer a vesztes fogadásból
+                    hostTotal += parseFloat(bet.amount);
+                }
+
+                await _supabase
+                    .from('bets')
+                    .update({ status: isWin ? 'win' : 'loss' })
+                    .eq('id', bet.id);
             }
         }
-        const btn = document.getElementById('finalize-btn');
-        btn.disabled = true; btn.innerText = "Processing...";
-        let winners = [];
-        currentSettleGroups.forEach(g => g.outcomes.forEach(o => { if(o.status === 'win') winners.push(o.n); }));
-        try {
-            const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
-            const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-            let hostTotal = parseFloat(mData.take) || 0;
-            const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
-            if(bets) {
-                for(let bet of bets) {
-                    const isWin = winners.includes(bet.outcome_name);
-                    if(isWin) await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: bet.amount * bet.odds, p_field: field });
-                    else hostTotal += parseFloat(bet.amount);
-                    await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
-                }
-            }
-            const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
-            if (host) await _supabase.from('profiles').update({ [field]: (parseFloat(host[field]) || 0) + hostTotal }).eq('id', host.id);
-            await _supabase.from('markets').update({ note: JSON.stringify(currentSettleGroups), status: 'settled', start_time: new Date().toISOString() }).eq('id', currentSettleId);
-            location.reload();
-        } catch(e) { console.error(e); btn.disabled = false; btn.innerText = "FINALIZE"; }
+
+        const { data: host } = await _supabase
+            .from('profiles')
+            .select('*')
+            .eq('username', mData.creator_name)
+            .single();
+
+        if (host) {
+            await _supabase
+                .from('profiles')
+                .update({
+                    [field]: (parseFloat(host[field]) || 0) + hostTotal
+                })
+                .eq('id', host.id);
+        }
+
+        await _supabase
+            .from('markets')
+            .update({
+                note: JSON.stringify(currentSettleGroups),
+                status: 'settled',
+                start_time: new Date().toISOString()
+            })
+            .eq('id', currentSettleId);
+
+        location.reload();
+    } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.innerText = "FINALIZE";
     }
+}
 
     async function claimDailyDemo() {
         const dict = i18n[currentLang];
