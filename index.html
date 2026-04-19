@@ -684,6 +684,62 @@
         document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
         document.getElementById('link-' + id).classList.add('active');
     }
+
+    async function loadUsers(mode) {
+    const container = document.getElementById('user-list-container');
+    
+    // Vizuális visszajelzés a betöltésről
+    container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--primary);">Betöltés...</p>';
+
+    // Alap lekérdezés a Supabase-ből
+    let query = _supabase
+        .from('profiles')
+        .select('username, created_at, real_balance');
+
+    // Rendezés a gomb típusa szerint
+    if (mode === 'newest') {
+        query = query.order('created_at', { ascending: false });
+    } else if (mode === 'active') {
+        query = query.order('real_balance', { ascending: false });
+    } else {
+        query = query.order('username', { ascending: true });
+    }
+
+    const { data: users, error } = await query.limit(20);
+
+    if (error) {
+        console.error(error);
+        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:red;">Hiba történt az adatok lekérésekor.</p>';
+        return;
+    }
+
+    container.innerHTML = ''; // Konténer ürítése
+
+    if (users.length === 0) {
+        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Nincsenek felhasználók.</p>';
+        return;
+    }
+
+    // Felhasználói kártyák generálása
+    users.forEach(u => {
+        const card = document.createElement('div');
+        // Olyan stílust adunk neki, ami illik a sötét témához
+        card.style.background = 'rgba(255,255,255,0.03)';
+        card.style.padding = '15px';
+        card.style.borderRadius = '10px';
+        card.style.border = '1px solid var(--border)';
+        card.style.textAlign = 'center';
+
+        card.innerHTML = `
+            <div style="font-size: 24px; margin-bottom: 10px;">👤</div>
+            <div style="font-weight: bold; color: var(--primary);">${u.username}</div>
+            <div style="font-size: 10px; color: #666; margin-top: 5px;">
+                Tag mióta: ${new Date(u.created_at).toLocaleDateString()}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
     function calcWin() { 
         const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
         document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
