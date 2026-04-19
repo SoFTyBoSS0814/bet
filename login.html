@@ -259,7 +259,7 @@
         m.style.background = isError ? 'rgba(255,68,68,0.1)' : 'rgba(0,255,136,0.1)';
     }
 
-    async function handleLogin() {
+async function handleLogin() {
         const d = loginDicts[currentLang];
         const loginVal = document.getElementById('login-input').value.trim();
         const password = document.getElementById('login-password').value;
@@ -287,11 +287,20 @@
             showMsg(error.message);
         } else {
             const { data: prof } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
+            
+            // Sikeres bejelentkezés üzenet megjelenítése (Zölden)
+            const successMsg = currentLang === 'hu' ? "Sikeres bejelentkezés!" : "Login successful!";
+            showMsg(successMsg, false);
+
             localStorage.setItem("user", JSON.stringify({ 
                 id: data.user.id, 
                 username: prof?.username || "Felhasználó" 
             }));
-            window.location.href = "index.html";
+
+            // Kis várakozás, hogy látszódjon az üzenet
+            setTimeout(() => {
+                window.location.href = "index.html";
+            }, 800);
         }
     }
 
