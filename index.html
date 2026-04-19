@@ -429,25 +429,44 @@
         updateRewardUI();
     }
 
-    function renderBTCPanel(address) {
-        const btcArea = document.getElementById('btc-wallet-area');
-        if(!btcArea) return;
-        const d = i18n[currentLang];
-        btcArea.innerHTML = `
-            <div class="btc-box">
-                <h4 style="margin:0; text-align:center; color:var(--primary)">${d.btc_title}</h4>
-                <p style="font-size:12px; color:#aaa; margin-top:15px; margin-bottom:5px; text-align:center;">${d.btc_addr_label}</p>
-                <div class="btc-address" id="btc-addr-display" onclick="copyBTCAddress()">${address || "No address found"}</div>
-                <small style="display:block; text-align:center; color:#666; font-size:10px;">${d.btc_copy}</small>
-                <hr style="border:0; border-top:1px solid #334756; margin:20px 0;">
-                <h4 style="text-align:center; margin-bottom:10px;">${d.btc_withdraw_title}</h4>
-                <input type="number" id="wit-amount" placeholder="${d.btc_amount_ph}">
-                <input type="text" id="wit-addr" placeholder="${d.btc_dest_ph}">
-                <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">${d.btn_withdraw}</button>
-                <div id="wit-error">${d.insufficient}</div>
-            </div>
-        `;
+ async function renderBTCPanel(address) {
+    const btcArea = document.getElementById('btc-wallet-area');
+    if (!btcArea) return;
+    const d = i18n[currentLang];
+
+    // 1. IP ELLENŐRZÉS - Itt kényszerítjük ki a tiltást
+    try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        
+        if (data.country_code === 'HU') {
+            btcArea.innerHTML = `
+                <div class="btc-box" style="text-align:center; padding: 30px 15px; border: 1px solid #ff4646;">
+                    <h4 style="color:#ff4646;">⚠️ Korlátozás</h4>
+                    <p style="font-size:12px; color:#aaa;">Magyarország területéről a kriptovaluta funkciók nem érhetőek el.</p>
+                </div>`;
+            return; // Megállítjuk a függvényt, nem rajzolja ki a többit!
+        }
+    } catch (e) {
+        console.warn("Geo-IP check failed, skipping restriction.");
     }
+
+    // 2. HA NEM MAGYAR, AKKOR A SZOKÁSOS DIZÁJN
+    btcArea.innerHTML = `
+        <div class="btc-box">
+            <h4 style="margin:0; text-align:center; color:var(--primary)">${d.btc_title}</h4>
+            <p style="font-size:12px; color:#aaa; margin-top:15px; margin-bottom:5px; text-align:center;">${d.btc_addr_label}</p>
+            <div class="btc-address" id="btc-addr-display" onclick="copyBTCAddress()">${address || "No address found"}</div>
+            <small style="display:block; text-align:center; color:#666; font-size:10px;">${d.btc_copy}</small>
+            <hr style="border:0; border-top:1px solid #334756; margin:20px 0;">
+            <h4 style="text-align:center; margin-bottom:10px;">${d.btc_withdraw_title}</h4>
+            <input type="number" id="wit-amount" placeholder="${d.btc_amount_ph}">
+            <input type="text" id="wit-addr" placeholder="${d.btc_dest_ph}">
+            <button class="btn-primary" style="margin-top:10px; width:100%;" onclick="requestWithdrawal()">${d.btn_withdraw}</button>
+            <div id="wit-error" style="display:none;">${d.insufficient}</div>
+        </div>
+    `;
+}
 
     async function requestWithdrawal() {
         const amount = parseFloat(document.getElementById('wit-amount').value);
