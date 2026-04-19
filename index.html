@@ -168,6 +168,24 @@
     </div>
 </div>
 
+    <div id="section-users" class="section">
+    <div class="market-card" style="max-width:800px; margin:auto;">
+        <h2 style="text-align:center; margin-bottom:20px;" data-i18n="users_list">Community</h2>
+        
+        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:25px;">
+            <button class="lang-btn" onclick="loadUsers('all')" style="flex:1" data-i18n="browse">Böngészés</button>
+            <button class="lang-btn" onclick="loadUsers('newest')" style="flex:1" data-i18n="newest">Legújabb</button>
+            <button class="lang-btn" onclick="loadUsers('active')" style="flex:1" data-i18n="most_active">Legaktívabb</button>
+        </div>
+
+        <div id="user-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
+            <p style="text-align:center; grid-column: 1/-1; color:#666; padding: 20px;">
+                Válassz egy kategóriát a tagok megtekintéséhez.
+            </p>
+        </div>
+    </div>
+</div>
+
 
 <div id="betModal" class="modal hidden">
     <div class="modal-box" style="width:320px; text-align:center">
