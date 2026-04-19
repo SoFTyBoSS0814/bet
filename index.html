@@ -659,7 +659,7 @@
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
-  async function finalSubmitSettle() {
+async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
     errDiv.style.display = 'none';
 
@@ -700,7 +700,7 @@
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-        // ✅ KIINDULÁS: teljes eredeti likviditás
+        // ✅ A Host visszakapja az eredeti teljes likviditást kiindulásként
         let hostTotal = parseFloat(mData.initial_liquidity) || 0;
 
         const { data: bets } = await _supabase
@@ -712,12 +712,13 @@
         if (bets) {
             for (let bet of bets) {
                 const isWin = winners.includes(bet.outcome_name);
+                const betAmt = parseFloat(bet.amount);
 
                 if (isWin) {
-                    const payout = bet.amount * bet.odds;
+                    const payout = betAmt * parseFloat(bet.odds);
+                    const netLossForHost = payout - betAmt; // 💡 Csak a tiszta nyereményt vonjuk le a poolból!
 
-                    // host fizet
-                    hostTotal -= payout;
+                    hostTotal -= netLossForHost;
 
                     await _supabase.rpc('settle_bet_payout', {
                         p_user_id: bet.user_id,
@@ -725,8 +726,8 @@
                         p_field: field
                     });
                 } else {
-                    // host nyer
-                    hostTotal += parseFloat(bet.amount);
+                    // ✅ Ha a fogadó veszít, a tétje tiszta haszon a Hostnak
+                    hostTotal += betAmt;
                 }
 
                 await _supabase
@@ -743,6 +744,7 @@
             .single();
 
         if (host) {
+            // Itt adjuk hozzá a Host egyenlegéhez a végelszámolt összeget
             await _supabase
                 .from('profiles')
                 .update({
