@@ -714,17 +714,18 @@
 
 async function loadUsers(mode) {
     const container = document.getElementById('user-list-container');
-    
     container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--primary);">Betöltés...</p>';
 
+    // Most már lekérjük a total_bets-et is
     let query = _supabase
         .from('profiles')
-        .select('username, created_at, real_balance');
+        .select('username, created_at, real_balance, total_bets');
 
     if (mode === 'newest') {
         query = query.order('created_at', { ascending: false });
     } else if (mode === 'active') {
-        query = query.order('real_balance', { ascending: false });
+        // Aki a legtöbb eseményt rakta ki
+        query = query.order('total_bets', { ascending: false });
     } else {
         query = query.order('username', { ascending: true });
     }
@@ -733,32 +734,35 @@ async function loadUsers(mode) {
 
     if (error) {
         console.error(error);
-        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:red;">Hiba történt.</p>';
+        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:red;">Hiba történt az adatok lekérésekor.</p>';
         return;
     }
 
     container.innerHTML = '';
 
-    if (users.length === 0) {
-        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1;">Nincsenek felhasználók.</p>';
-        return;
-    }
-
     users.forEach(u => {
         const card = document.createElement('div');
         card.style.background = 'rgba(255,255,255,0.03)';
-        card.style.padding = '20px 10px'; // Oldalt kicsit kevesebb padding, hogy több legyen a hely
+        card.style.padding = '20px 10px';
         card.style.borderRadius = '12px';
         card.style.border = '1px solid var(--border)';
         card.style.textAlign = 'center';
+
+        // Ha a Legaktívabb módban vagyunk, mutassuk a számot, amúgy a dátumot
+        let subText = "";
+        if (mode === 'active') {
+            subText = `Események: ${u.total_bets || 0}`;
+        } else {
+            subText = `Regisztráció: ${new Date(u.created_at).toLocaleDateString()}`;
+        }
 
         card.innerHTML = `
             <div style="font-size: 32px; margin-bottom: 12px;">👤</div>
             <div style="font-weight: 900; color: var(--primary); font-size: 18px; text-transform: uppercase; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis;">
                 ${u.username}
             </div>
-            <div style="font-size: 12px; color: #ffffff; background: rgba(255,255,255,0.05); padding: 8px 5px; border-radius: 6px; white-space: nowrap; width: 90%; margin: 0 auto;">
-                Regisztráció: <span style="font-weight: bold;">${new Date(u.created_at).toLocaleDateString()}</span>
+            <div style="font-size: 12px; color: #ffffff; background: rgba(255,255,255,0.05); padding: 8px 5px; border-radius: 6px; white-space: nowrap; width: 92%; margin: 0 auto;">
+                <span style="font-weight: bold;">${subText}</span>
             </div>
         `;
         container.appendChild(card);
