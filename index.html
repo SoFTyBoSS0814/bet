@@ -429,29 +429,34 @@
         updateRewardUI();
     }
 
- async function renderBTCPanel(address) {
+async function renderBTCPanel(address) {
     const btcArea = document.getElementById('btc-wallet-area');
     if (!btcArea) return;
     const d = i18n[currentLang];
 
-    // 1. IP ELLENŐRZÉS - Itt kényszerítjük ki a tiltást
+    // --- KRITIKUS IP ELLENŐRZÉS ---
     try {
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
         
         if (data.country_code === 'HU') {
+            console.log("Magyar IP észlelve, blokkolás...");
             btcArea.innerHTML = `
-                <div class="btc-box" style="text-align:center; padding: 30px 15px; border: 1px solid #ff4646;">
-                    <h4 style="color:#ff4646;">⚠️ Korlátozás</h4>
-                    <p style="font-size:12px; color:#aaa;">Magyarország területéről a kriptovaluta funkciók nem érhetőek el.</p>
+                <div class="btc-box" style="text-align:center; padding: 30px 15px; border: 1px solid #ff4646; background: rgba(255,70,70,0.05);">
+                    <h4 style="color:#ff4646; margin:0;">⚠️ Korlátozás</h4>
+                    <p style="font-size:12px; color:#aaa; margin-top:15px;">
+                        Magyarország területéről a kriptovaluta funkciók (BE/KI fizetés) jelenleg nem érhetőek el.
+                    </p>
                 </div>`;
-            return; // Megállítjuk a függvényt, nem rajzolja ki a többit!
+            return; // Itt KILÉPÜNK, nem fut le az alatta lévő rész!
         }
     } catch (e) {
-        console.warn("Geo-IP check failed, skipping restriction.");
+        console.error("Geo-IP hiba, biztonsági blokkolás.");
+        btcArea.innerHTML = `<p style="text-align:center; color:#666;">Helymeghatározási hiba. Kérjük frissítsen!</p>`;
+        return;
     }
 
-    // 2. HA NEM MAGYAR, AKKOR A SZOKÁSOS DIZÁJN
+    // Ha idáig eljut a kód, az azt jelenti, NEM magyar az IP
     btcArea.innerHTML = `
         <div class="btc-box">
             <h4 style="margin:0; text-align:center; color:var(--primary)">${d.btc_title}</h4>
