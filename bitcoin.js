@@ -1,13 +1,18 @@
+/**
+ * STAKEFORGE - BTC Module (Final Production Version)
+ */
+
 async function checkIPAndRenderWallet() {
     const walletContainer = document.getElementById('btc-wallet-area');
     if (!walletContainer) return;
 
+    // Bevárjuk a profil adatokat (currentUser és userProfile)
     if (typeof userProfile === 'undefined' || !userProfile || typeof currentUser === 'undefined' || !currentUser) {
         setTimeout(() => checkIPAndRenderWallet(), 500);
         return;
     }
 
-    // 1. IP ELLENŐRZÉS
+    // 1. IP ELLENŐRZÉS (Magyarországi tiltás)
     try {
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
@@ -19,15 +24,15 @@ async function checkIPAndRenderWallet() {
                         ⚠️ Figyelem: Magyarország területéről a kriptovaluta BE/KI fizetés nem lehetséges.
                     </p>
                 </div>`;
-            return; 
+            return; // Megállítjuk a folyamatot, nem tölt be a wallet
         }
     } catch (e) {
-        console.warn("IP ellenőrzés sikertelen.");
+        console.warn("IP ellenőrzés sikertelen, de a rendszer folytatja a betöltést.");
     }
 
-    // 2. WALLET LOGIKA (Cím lekérése)
-    let finalAddress = "";
+    // 2. WALLET LOGIKA (Cím lekérése/kiosztása)
     try {
+        // Megnézzük, van-e már a user_id-hoz rendelt cím a btc_pool-ban
         const { data: btcRow } = await _supabase
             .from('btc_pool')
             .select('address')
@@ -35,8 +40,9 @@ async function checkIPAndRenderWallet() {
             .maybeSingle();
 
         if (btcRow) {
-            finalAddress = btcRow.address;
+            userProfile.btc_address = btcRow.address;
         } else {
+            // Ha nincs, keresünk egy olyan sort, ahol a user_id MÉG NULL
             const { data: freeRows } = await _supabase
                 .from('btc_pool')
                 .select('id, address')
@@ -45,6 +51,7 @@ async function checkIPAndRenderWallet() {
 
             if (freeRows && freeRows.length > 0) {
                 const target = freeRows[0];
+                // Lefoglaljuk a címet
                 const { data: updated } = await _supabase
                     .from('btc_pool')
                     .update({ 
@@ -53,24 +60,9 @@ async function checkIPAndRenderWallet() {
                     })
                     .eq('id', target.id)
                     .select();
-                
-                if (updated && updated.length > 0) {
-                    finalAddress = updated[0].address;
-                }
-            }
-        }
 
-        // ✅ ITT A LÉNYEG: Most meghívjuk az index.html-ben lévő szép dizájnt!
-        if (finalAddress) {
-            renderBTCPanel(finalAddress); 
-        } else {
-            renderBTCPanel("No address found");
-        }
-
-    } catch (e) {
-        console.error("Wallet hiba:", e);
-    }
-}                    userProfile.btc_address = target.address;
+                if (updated) {
+                    userProfile.btc_address = target.address;
                     // Szinkronizáljuk a profil táblával is
                     await _supabase.from('profiles').update({ btc_address: target.address }).eq('id', currentUser.id);
                 }
