@@ -670,10 +670,7 @@ async function finalSubmitSettle() {
     });
 
     for (let group of currentSettleGroups) {
-        if (
-            !group.outcomes.some(o => o.status === 'win') ||
-            !group.outcomes.some(o => o.status === 'loss')
-        ) {
+        if (!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
             errDiv.innerText = i18n[currentLang].win_loss_err;
             errDiv.style.display = 'block';
             return;
@@ -686,9 +683,7 @@ async function finalSubmitSettle() {
 
     let winners = [];
     currentSettleGroups.forEach(g =>
-        g.outcomes.forEach(o => {
-            if (o.status === 'win') winners.push(o.n);
-        })
+        g.outcomes.forEach(o => { if (o.status === 'win') winners.push(o.n); })
     );
 
     try {
@@ -700,8 +695,9 @@ async function finalSubmitSettle() {
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-        // ✅ A Host visszakapja az eredeti teljes likviditást kiindulásként
-        let hostTotal = parseFloat(mData.initial_liquidity) || 0;
+        // 1. Kiszámoljuk a Host "visszajáró" pénzét a nulláról indulva
+        // Kezdünk az eredeti likviditással
+        let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
 
         const { data: bets } = await _supabase
             .from('bets')
@@ -716,9 +712,9 @@ async function finalSubmitSettle() {
 
                 if (isWin) {
                     const payout = betAmt * parseFloat(bet.odds);
-                    const netLossForHost = payout - betAmt; // 💡 Csak a tiszta nyereményt vonjuk le a poolból!
-
-                    hostTotal -= netLossForHost;
+                    const netLoss = payout - betAmt; 
+                    // A Host bukta a nyereményt a poolból
+                    settlementAmount -= netLoss;
 
                     await _supabase.rpc('settle_bet_payout', {
                         p_user_id: bet.user_id,
@@ -726,33 +722,33 @@ async function finalSubmitSettle() {
                         p_field: field
                     });
                 } else {
-                    // ✅ Ha a fogadó veszít, a tétje tiszta haszon a Hostnak
-                    hostTotal += betAmt;
+                    // A Host nyert, megkapja a fogadó tétjét profitként
+                    settlementAmount += betAmt;
                 }
 
-                await _supabase
-                    .from('bets')
-                    .update({ status: isWin ? 'win' : 'loss' })
-                    .eq('id', bet.id);
+                await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
             }
         }
 
-        const { data: host } = await _supabase
+        // 2. Lekérjük a Host aktuális egyenlegét
+        const { data: hostProfile } = await _supabase
             .from('profiles')
             .select('*')
             .eq('username', mData.creator_name)
             .single();
 
-        if (host) {
-            // Itt adjuk hozzá a Host egyenlegéhez a végelszámolt összeget
+        if (hostProfile) {
+            // ✅ Itt a lényeg: Az aktuális egyenlegéhez hozzáadjuk a kiszámolt elszámolást
+            const currentBalance = parseFloat(hostProfile[field]) || 0;
+            const newBalance = currentBalance + settlementAmount;
+
             await _supabase
                 .from('profiles')
-                .update({
-                    [field]: (parseFloat(host[field]) || 0) + hostTotal
-                })
-                .eq('id', host.id);
+                .update({ [field]: newBalance })
+                .eq('id', hostProfile.id);
         }
 
+        // 3. Piac lezárása
         await _supabase
             .from('markets')
             .update({
