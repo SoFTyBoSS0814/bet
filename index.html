@@ -449,18 +449,74 @@
         `;
     }
 
-    async function requestWithdrawal() {
-        const amount = parseFloat(document.getElementById('wit-amount').value);
-        const address = document.getElementById('wit-addr').value;
-        const errorDiv = document.getElementById('wit-error');
-        errorDiv.style.display = 'none';
-        if(isNaN(amount) || amount <= 0 || !address) return;
-        if(amount > userProfile.real_balance) { errorDiv.style.display = 'block'; return; }
-        const { error: updateError } = await _supabase.from('profiles').update({ real_balance: userProfile.real_balance - amount }).eq('id', currentUser.id);
-        if(updateError) return;
-        await _supabase.from('withdrawals').insert([{ user_id: currentUser.id, username: currentUser.username, amount: amount, btc_address: address, status: 'pending' }]);
-        location.reload();
+async function requestWithdrawal() {
+    const amountInput = document.getElementById('wit-amount');
+    const addrInput = document.getElementById('wit-addr');
+    const errorDiv = document.getElementById('wit-error');
+    
+    const amount = parseFloat(amountInput.value);
+    const address = addrInput.value.trim();
+
+    // Alaphelyzetbe állítás
+    errorDiv.style.display = 'none';
+    errorDiv.style.color = '#ff4646'; // Alapból maradjon piros a hibákhoz
+
+    // 1. Ellenőrzések
+    if (isNaN(amount) || amount <= 0 || !address) {
+        errorDiv.innerText = "Kérlek, töltsd ki az összes mezőt!";
+        errorDiv.style.display = 'block';
+        return;
     }
+
+    if (amount > userProfile.real_balance) {
+        errorDiv.innerText = "Nincs elegendő egyenleged a kifizetéshez!";
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    try {
+        // 2. Levonás az egyenlegből
+        const { error: updateError } = await _supabase
+            .from('profiles')
+            .update({ real_balance: userProfile.real_balance - amount })
+            .eq('id', currentUser.id);
+
+        if (updateError) throw updateError;
+
+        // 3. Kérelem mentése a táblába
+        const { error: insertError } = await _supabase
+            .from('withdrawals')
+            .insert([{ 
+                user_id: currentUser.id, 
+                username: userProfile.username, 
+                amount: amount, 
+                btc_address: address, 
+                status: 'pending' 
+            }]);
+
+        if (insertError) throw insertError;
+
+        // --- ITT TÖRTÉNIK A SIKER KIÍRÁSA ---
+        errorDiv.style.color = "#44ff44"; // Átváltunk zöldre
+        errorDiv.innerHTML = `<strong>Sikeres kérés! 1-48 órán belül jóváírásra kerül a megadott tárcacímen!</strong>`;
+        errorDiv.style.display = 'block';
+
+        // Mezők ürítése
+        amountInput.value = "";
+        addrInput.value = "";
+
+        // 4. Várunk 5 másodpercet, hogy biztosan elolvassa
+        setTimeout(() => {
+            location.reload();
+        }, 5000);
+
+    } catch (err) {
+        console.error("Kifizetési hiba:", err);
+        errorDiv.style.color = "#ff4646";
+        errorDiv.innerText = "Hiba történt a művelet során. Próbáld újra!";
+        errorDiv.style.display = 'block';
+    }
+}
 
     function copyBTCAddress() {
         const addr = document.getElementById('btc-addr-display').innerText;
