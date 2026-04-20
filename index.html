@@ -959,6 +959,8 @@ async function loadUsers(mode) {
     }
     function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
     function openCreateModal() { 
+        if (window.userIsRestricted) return; // Egyszerűen nem nyílik meg az ablak.
+    document.getElementById('createModal').classList.remove('hidden');
         document.getElementById('createModal').classList.remove('hidden');
         const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
