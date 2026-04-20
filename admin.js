@@ -5,6 +5,7 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Inicializálás
 async function init() {
+    console.log("Admin felület inicializálása...");
     const { data: { session } } = await _supabase.auth.getSession();
     if (!session) { window.location.href = "index.html"; return; }
 
@@ -20,24 +21,36 @@ async function init() {
 }
 
 async function loadData() {
-    loadWithdrawals();
-    loadUsers();
+    await loadWithdrawals();
+    await loadUsers();
 }
 
-// Lista betöltése
+// Lista betöltése (Csak a függő kifizetések)
 async function loadWithdrawals() {
-    const { data: ws, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending');
+    console.log("Kifizetések lekérése...");
+    const { data: ws, error } = await _supabase
+        .from('withdrawals')
+        .select('*')
+        .eq('status', 'pending');
+    
     const div = document.getElementById('withdrawal-list');
     
-    if (error) { console.error("Hiba:", error); return; }
-    if (!ws || ws.length === 0) { div.innerHTML = "Nincs függő kérelem."; return; }
+    if (error) { console.error("Lekérési hiba:", error); return; }
+    
+    if (!ws || ws.length === 0) { 
+        div.innerHTML = "<p style='text-align:center; color:gray; padding:20px;'>Nincs függő kérelem.</p>"; 
+        return; 
+    }
 
     div.innerHTML = ws.map(w => `
         <div class="user-card">
-            <div><strong>${w.username || 'Ismeretlen'}</strong>: ${w.amount}€ <br><code>${w.btc_address}</code></div>
-            <div style="display:flex; gap:5px;">
-                <button class="btn-approve" onclick="updateWithdrawal('${w.id}', 'completed')">Jóváhagyás</button>
-                <button class="btn-reject" onclick="rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Elutasítás</button>
+            <div>
+                <strong>${w.username || 'Ismeretlen'}</strong>: <span style="color:var(--primary); font-weight:bold;">${w.amount}€</span>
+                <br><small style="color:gray;">Cím: ${w.btc_address}</small>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-approve" onclick="window.updateWithdrawal('${w.id}', 'completed')">Jóváhagyás</button>
+                <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Elutasítás</button>
             </div>
         </div>
     `).join('');
@@ -47,7 +60,7 @@ async function loadUsers() {
     const { data: users, error } = await _supabase.from('profiles').select('*').order('username');
     const div = document.getElementById('user-list');
     
-    if (error) { console.error("Hiba:", error); return; }
+    if (error) { console.error("Hiba a felhasználók lekérésekor:", error); return; }
     
     div.innerHTML = users.map(u => `
         <div class="user-card ${u.is_restricted ? 'restricted' : ''}">
@@ -56,14 +69,14 @@ async function loadUsers() {
                 <br><small>${u.is_restricted ? '🔴 KORLÁTOZVA' : '🟢 AKTÍV'}</small>
             </div>
             <button class="${u.is_restricted ? 'btn-unrestrict' : 'btn-restrict'}" 
-                    onclick="toggleRestrict('${u.id}', ${u.is_restricted})">
+                    onclick="window.toggleRestrict('${u.id}', ${u.is_restricted})">
                 ${u.is_restricted ? 'Feloldás' : 'Korlátozás'}
             </button>
         </div>
     `).join('');
 }
 
-// --- GLOBÁLISRA TETT MŰVELETEK (Ez a kulcs!) ---
+// --- GLOBÁLIS MŰVELETEK ---
 
 window.toggleRestrict = async function(uid, current) {
     const { error } = await _supabase.from('profiles').update({ is_restricted: !current }).eq('id', uid);
@@ -74,29 +87,49 @@ window.toggleRestrict = async function(uid, current) {
 window.updateWithdrawal = async function(id, status) {
     if (!confirm("Biztosan JÓVÁHAGYOD ezt a kifizetést?")) return;
     
-    const { error } = await _supabase.from('withdrawals').update({ status }).eq('id', id);
+    console.log("Státusz frissítése COMPLETED-re, ID:", id);
+    const { error } = await _supabase
+        .from('withdrawals')
+        .update({ status: 'completed' }) 
+        .eq('id', id)
+        .select();
+
     if (error) {
-        alert("Hiba: " + error.message);
+        alert("Hiba a jóváhagyáskor: " + error.message);
     } else {
-        alert("Kifizetés sikeresen lezárva!");
-        loadWithdrawals();
+        alert("Kifizetés sikeresen JÓVÁHAGYVA!");
+        await loadWithdrawals(); // Frissítés, hogy eltűnjön a listából
     }
 };
 
 window.rejectWithdrawal = async function(wid, uid, amount) {
-    if (!confirm("Biztosan ELUTASÍTOD a kifizetést?")) return;
+    if (!confirm("Biztosan ELUTASÍTOD a kifizetést? Az összeg visszakerül a felhasználóhoz.")) return;
 
     try {
+        // 1. Egyenleg lekérése
         const { data: p, error: pErr } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
         if (pErr) throw pErr;
 
-        await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
-        await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
+        // 2. Egyenleg visszaadása
+        const newBalance = parseFloat(p.real_balance) + parseFloat(amount);
+        const { error: upErr } = await _supabase.from('profiles').update({ real_balance: newBalance }).eq('id', uid);
+        if (upErr) throw upErr;
 
-        alert("Kifizetés elutasítva, az összeg visszakerült a userhez!");
-        loadData();
+        // 3. Státusz átírása REJECTED-re
+        const { error: wErr } = await _supabase
+            .from('withdrawals')
+            .update({ status: 'rejected' })
+            .eq('id', wid)
+            .select();
+        
+        if (wErr) throw wErr;
+
+        alert("Kifizetés elutasítva és visszatérítve!");
+        await loadData();
+        
     } catch (err) {
-        alert("Hiba történt!");
+        console.error("Elutasítási hiba:", err);
+        alert("Hiba történt az elutasítás során: " + err.message);
     }
 };
 
