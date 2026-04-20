@@ -73,6 +73,34 @@ async function rejectWithdrawal(wid, uid, amount) {
     await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
     await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
     loadData();
+
+    async function handleWithdraw(withdrawId, newStatus) {
+    const actionText = newStatus === 'approved' ? "JÓVÁHAGYOD" : "ELUTASÍTOD";
+    
+    // 1. Megkérdezzük, biztos-e benne
+    if (!confirm(`Biztosan ${actionText} ezt a kifizetést?`)) return;
+
+    try {
+        // 2. Frissítjük az adatbázist (VÁLTOZTASD MEG _supabase-re ha nálad az van!)
+        const { error } = await supabase 
+            .from('withdrawals')
+            .update({ status: newStatus })
+            .eq('id', withdrawId);
+
+        if (error) throw error;
+
+        // 3. Visszajelzés és frissítés
+        alert("Sikeres módosítás!");
+        
+        // Itt hívd meg azt a függvényt, ami újratölti az adatokat a képernyőn
+        // Például: fetchWithdrawals(); vagy location.reload();
+        location.reload(); 
+
+    } catch (err) {
+        console.error("Hiba történt:", err);
+        alert("Hiba: " + err.message);
+    }
+}
 }
 
 init();
