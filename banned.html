@@ -117,14 +117,14 @@
 
             // Ha az admin feloldotta (is_banned immár false)
             if (profile && profile.is_banned === false) {
-                window.location.href = "index.html";
+                window.location.href = "login.html";
             }
         }
 
         // 3. Kijelentkezés kezelése
         async function handleLogout() {
             await _supabase.auth.signOut();
-            window.location.href = "index.html";
+            window.location.href = "login.html";
         }
 
         // Futtatás betöltéskor
