@@ -151,7 +151,7 @@
     <div id="section-markets" class="section active">
         <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
             <h2 data-i18n="live_markets">Live Markets</h2>
-            <button id="create-market-btn" class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
+            <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
         </div>
         <div id="market-list" data-i18n="loading">Loading...</div>
     </div>
@@ -247,7 +247,7 @@
         <input type="number" id="bet-amount" value="10" oninput="calcWin()">
         <p id="bet-win-text">Payout: 0.00</p>
         <button class="btn-primary" onclick="placeBet()" data-i18n="btn_place_bet">PLACE BET</button>
-        <button type="button" class="btn-bet" style="background:#333;" onclick="closeModal('finalizeModal')" data-i18n="cancel">CANCEL</button>
+        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')" data-i18n="cancel">Cancel</button>
     </div>
 </div>
 
