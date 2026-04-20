@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>StakeForge | Admin Control</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #00e701; --danger: #ff4646; --bg: #0f212e; --card: #1a2c38; --text: #b1bad3; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; padding: 20px; display: none; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section { background: var(--card); padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--primary); }
+        .user-card { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #2f4553; }
+        .restricted { border-left-color: var(--danger); opacity: 0.8; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-approve { background: var(--primary); color: black; }
+        .btn-reject { background: var(--danger); color: white; }
+        .btn-restrict { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+        .btn-unrestrict { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        code { background: #000; color: #f1c40f; padding: 4px; display: block; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Adminisztrációs Központ</h1>
+        <button onclick="window.location.href='index.html'" style="margin-bottom: 20px;">← Vissza a játékba</button>
+
+        <div class="section">
+            <h2>💰 Függő kifizetések</h2>
+            <div id="withdrawal-list">Betöltés...</div>
+        </div>
+
+        <div class="section">
+            <h2>👥 Felhasználók és Korlátozások</h2>
+            <div id="user-list">Betöltés...</div>
+        </div>
+    </div>
+    <script src="admin.js"></script>
+</body>
+</html>
