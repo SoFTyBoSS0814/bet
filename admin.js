@@ -2,17 +2,19 @@ const SUPABASE_URL = "https://ldcrycuoynashsqlosae.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b"; 
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Közös stílus a felugró ablakoknak
+const swalConfig = {
+    background: '#1a2c38',
+    color: '#b1bad3',
+    confirmButtonColor: '#00e701',
+    cancelButtonColor: '#ff4646'
+};
+
 async function init() {
     const { data: { session } } = await _supabase.auth.getSession();
     if (!session) { window.location.href = "index.html"; return; }
-
     const { data: profile } = await _supabase.from('profiles').select('is_admin').eq('id', session.user.id).single();
-
-    if (!profile || !profile.is_admin) {
-        window.location.href = "index.html";
-        return;
-    }
-
+    if (!profile || !profile.is_admin) { window.location.href = "index.html"; return; }
     document.body.style.display = "block";
     loadData();
 }
@@ -41,7 +43,6 @@ async function loadWithdrawals() {
 async function loadUsers() {
     const { data: users } = await _supabase.from('profiles').select('*').order('username');
     const div = document.getElementById('user-list');
-    
     div.innerHTML = users.map(u => `
         <div class="user-card ${u.is_restricted ? 'restricted' : ''}">
             <div>
@@ -56,29 +57,46 @@ async function loadUsers() {
     `).join('');
 }
 
-// --- MŰVELETEK (Window-ba téve, hogy a HTML lássa őket) ---
-
 window.toggleRestrict = async function(uid, current) {
     await _supabase.from('profiles').update({ is_restricted: !current }).eq('id', uid);
+    Swal.fire({ ...swalConfig, title: 'Kész!', text: 'Státusz frissítve.', icon: 'success', timer: 1500, showConfirmButton: false });
     loadUsers();
 }
 
 window.updateWithdrawal = async function(id, status) {
-    // Kényszerített megerősítés
-    const confirmApprove = window.confirm("Biztosan jóváhagyod ezt a kifizetést?");
-    if (confirmApprove) {
-        await _supabase.from('withdrawals').update({ status: status }).eq('id', id);
+    const result = await Swal.fire({
+        ...swalConfig,
+        title: 'Jóváhagyás?',
+        text: "Biztosan kifizeted ezt az összeget?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Igen, mehet!',
+        cancelButtonText: 'Mégse'
+    });
+
+    if (result.isConfirmed) {
+        await _supabase.from('withdrawals').update({ status }).eq('id', id);
+        Swal.fire({ ...swalConfig, title: 'Siker!', text: 'Kifizetés jóváhagyva.', icon: 'success' });
         loadWithdrawals();
     }
 }
 
 window.rejectWithdrawal = async function(wid, uid, amount) {
-    // Kényszerített megerősítés tájékoztatóval
-    const confirmReject = window.confirm("Biztosan elutasítod? Az összeg (" + amount + "€) visszakerül a felhasználó egyenlegére.");
-    if (confirmReject) {
+    const result = await Swal.fire({
+        ...swalConfig,
+        title: 'Elutasítás?',
+        text: `Biztosan elutasítod? ${amount}€ visszakerül a felhasználóhoz.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Igen, utasítsd el!',
+        cancelButtonText: 'Mégse'
+    });
+
+    if (result.isConfirmed) {
         const { data: p } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
         await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
         await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
+        Swal.fire({ ...swalConfig, title: 'Elutasítva', text: 'Az összeg visszatérítve.', icon: 'info' });
         loadData();
     }
 }
