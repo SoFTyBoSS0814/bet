@@ -401,17 +401,19 @@
         updateGeoUI();
     }
 
-    function updateGeoUI() {
-        const geoMsg = document.getElementById('geo-restriction');
-        const btcArea = document.getElementById('btc-wallet-area');
-        if(isHungarian) {
-            if(geoMsg) geoMsg.style.display = 'block';
-            if(btcArea) btcArea.innerHTML = '';
-        } else {
-            if(geoMsg) geoMsg.style.display = 'none';
-            if(userProfile) renderBTCPanel(userProfile.btc_address);
-        }
+  function updateGeoUI() {
+    const geoMsg = document.getElementById('geo-restriction');
+    const btcArea = document.getElementById('btc-wallet-area');
+    
+    if(isHungarian) {
+        if(geoMsg) geoMsg.style.display = 'block';
+        if(btcArea) btcArea.innerHTML = '';
+    } else {
+        if(geoMsg) geoMsg.style.display = 'none';
+        // TÖRÖLD KI INNEN A renderBTCPanel hívást!
+        // A bitcoin.js majd elintézi, ha az IP rendben van.
     }
+}
 
     async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
