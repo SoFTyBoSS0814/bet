@@ -64,15 +64,21 @@ async function toggleRestrict(uid, current) {
 }
 
 async function updateWithdrawal(id, status) {
-    await _supabase.from('withdrawals').update({ status }).eq('id', id);
-    loadWithdrawals();
+    // Megerősítő kérdés jóváhagyáshoz
+    if (confirm("Biztosan jóváhagyod ezt a kifizetést?")) {
+        await _supabase.from('withdrawals').update({ status }).eq('id', id);
+        loadWithdrawals();
+    }
 }
 
 async function rejectWithdrawal(wid, uid, amount) {
-    const { data: p } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
-    await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
-    await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
-    loadData();
+    // Megerősítő kérdés elutasításhoz tájékoztatóval
+    if (confirm("Biztosan elutasítod ezt a kifizetést? Az összeg (" + amount + "€) visszakerül a felhasználó egyenlegére.")) {
+        const { data: p } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
+        await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
+        await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
+        loadData();
+    }
 }
 
 init();
