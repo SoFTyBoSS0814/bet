@@ -967,6 +967,27 @@ async function loadUsers(mode) {
         if(!document.getElementById('groups-container').innerHTML) addGroup();
     }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
+
+    function showRestrictionToast() {
+    // Ha már kint van egy üzenet, ne csináljon újat
+    if (document.querySelector('.toast-notification')) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `
+        <strong>Hozzáférés megtagadva</strong><br>
+        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot a 
+        <span style="text-decoration:underline;">support@stakeforge.com</span> email címen!
+    `;
+
+    document.body.appendChild(toast);
+
+    // 5 másodperc után eltűnik
+    setTimeout(() => {
+        toast.style.animation = "slideIn 0.3s ease-in reverse forwards";
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
 </script>
 </body>
 </html>
