@@ -1,7 +1,9 @@
+// Konfiguráció
 const SUPABASE_URL = "https://ldcrycuoynashsqlosae.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Inicializálás
 async function init() {
     const { data: { session } } = await _supabase.auth.getSession();
     if (!session) { window.location.href = "index.html"; return; }
@@ -22,6 +24,7 @@ async function loadData() {
     loadUsers();
 }
 
+// Lista betöltése
 async function loadWithdrawals() {
     const { data: ws, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending');
     const div = document.getElementById('withdrawal-list');
@@ -60,52 +63,42 @@ async function loadUsers() {
     `).join('');
 }
 
-// --- MŰVELETEK (JAVÍTVA) ---
+// --- GLOBÁLISRA TETT MŰVELETEK (Ez a kulcs!) ---
 
-async function toggleRestrict(uid, current) {
+window.toggleRestrict = async function(uid, current) {
     const { error } = await _supabase.from('profiles').update({ is_restricted: !current }).eq('id', uid);
     if (error) alert("Hiba: " + error.message);
     else loadUsers();
-}
+};
 
-async function updateWithdrawal(id, status) {
+window.updateWithdrawal = async function(id, status) {
     if (!confirm("Biztosan JÓVÁHAGYOD ezt a kifizetést?")) return;
     
     const { error } = await _supabase.from('withdrawals').update({ status }).eq('id', id);
-    
     if (error) {
-        alert("Hiba a jóváhagyáskor: " + error.message);
+        alert("Hiba: " + error.message);
     } else {
         alert("Kifizetés sikeresen lezárva!");
         loadWithdrawals();
     }
-}
+};
 
-async function rejectWithdrawal(wid, uid, amount) {
-    if (!confirm("Biztosan ELUTASÍTOD a kifizetést? (A pénz visszakerül a user egyenlegére)")) return;
+window.rejectWithdrawal = async function(wid, uid, amount) {
+    if (!confirm("Biztosan ELUTASÍTOD a kifizetést?")) return;
 
     try {
-        // 1. Megnézzük a user jelenlegi egyenlegét
         const { data: p, error: pErr } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
         if (pErr) throw pErr;
 
-        // 2. Visszaadjuk a pénzt
-        const { error: upErr } = await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
-        if (upErr) throw upErr;
+        await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
+        await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
 
-        // 3. Elutasítjuk a kérelmet
-        const { error: wErr } = await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
-        if (wErr) throw wErr;
-
-        alert("Kifizetés elutasítva, az összeg visszatérítve!");
+        alert("Kifizetés elutasítva, az összeg visszakerült a userhez!");
         loadData();
     } catch (err) {
-        console.error(err);
-        alert("Hiba történt az elutasítás során!");
+        alert("Hiba történt!");
     }
-}
+};
 
-// Inicializálás indítása
-init();
-
+// Indítás
 init();
