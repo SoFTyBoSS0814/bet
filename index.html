@@ -747,6 +747,10 @@ async function requestWithdrawal() {
 
     async function placeBet() {
         if (window.userIsRestricted) return; // Se hibaüzenet, se flanc, egyszerűen nem fut tovább.
+        if (window.userIsRestricted) {
+        showRestrictionToast(); // Itt is!
+        return;
+    }
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         const profit = amt * (activeBet.o - 1);
@@ -957,15 +961,30 @@ async function loadUsers(mode) {
         const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
         document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
     }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openCreateModal() { 
-        if (window.userIsRestricted) return; // Egyszerűen nem nyílik meg az ablak.
-    document.getElementById('createModal').classList.remove('hidden');
-        document.getElementById('createModal').classList.remove('hidden');
-        const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
-        if(!document.getElementById('groups-container').innerHTML) addGroup();
+  function openCreateModal() { 
+    // 1. Ellenőrizzük a korlátozást
+    if (window.userIsRestricted) {
+        if (typeof showRestrictionToast === "function") {
+            showRestrictionToast();
+        } else {
+            alert("A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: support@stakeforge.com");
+        }
+        return; 
     }
+
+    // 2. Ha nem korlátozott, megnyitjuk a modalt
+    document.getElementById('createModal').classList.remove('hidden');
+    
+    // 3. Időpont beállítása (ne lehessen múltbeli dátumot megadni)
+    const now = new Date(); 
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('m-deadline').min = now.toISOString().slice(0,16);
+    
+    // 4. Alapértelmezett csoport hozzáadása, ha üres
+    if(!document.getElementById('groups-container').innerHTML) {
+        addGroup();
+    }
+}
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 
     function showRestrictionToast() {
