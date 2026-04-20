@@ -450,6 +450,7 @@
     }
 
 async function requestWithdrawal() {
+    const btn = document.querySelector('.btn-primary[onclick="requestWithdrawal()"]');
     const amountInput = document.getElementById('wit-amount');
     const addrInput = document.getElementById('wit-addr');
     const errorDiv = document.getElementById('wit-error');
@@ -457,64 +458,59 @@ async function requestWithdrawal() {
     const amount = parseFloat(amountInput.value);
     const address = addrInput.value.trim();
 
-    // Alaphelyzetbe állítás
+    if (isNaN(amount) || amount <= 0 || !address) return;
+
+    // --- BIZTONSÁG #1: Gomb azonnali letiltása ---
+    if (btn) btn.disabled = true; 
     errorDiv.style.display = 'none';
-    errorDiv.style.color = '#ff4646'; // Alapból maradjon piros a hibákhoz
-
-    // 1. Ellenőrzések
-    if (isNaN(amount) || amount <= 0 || !address) {
-        errorDiv.innerText = "Kérlek, töltsd ki az összes mezőt!";
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    if (amount > userProfile.real_balance) {
-        errorDiv.innerText = "Nincs elegendő egyenleged a kifizetéshez!";
-        errorDiv.style.display = 'block';
-        return;
-    }
 
     try {
-        // 2. Levonás az egyenlegből
+        // Frissítsük le a profil adatokat a szerverről, hogy a legfrissebb egyenleget lássuk
+        const { data: freshProfile } = await _supabase
+            .from('profiles')
+            .select('real_balance')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (amount > freshProfile.real_balance) {
+            errorDiv.innerText = "Hiba: Nincs elég egyenleged!";
+            errorDiv.style.display = 'block';
+            if (btn) btn.disabled = false;
+            return;
+        }
+
+        // --- BIZTONSÁG #2: Levonás ---
         const { error: updateError } = await _supabase
             .from('profiles')
-            .update({ real_balance: userProfile.real_balance - amount })
+            .update({ real_balance: freshProfile.real_balance - amount })
             .eq('id', currentUser.id);
 
         if (updateError) throw updateError;
 
-        // 3. Kérelem mentése a táblába
-        const { error: insertError } = await _supabase
-            .from('withdrawals')
-            .insert([{ 
-                user_id: currentUser.id, 
-                username: userProfile.username, 
-                amount: amount, 
-                btc_address: address, 
-                status: 'pending' 
-            }]);
+        // 3. Mentés a táblába
+        await _supabase.from('withdrawals').insert([{ 
+            user_id: currentUser.id, 
+            username: userProfile.username, 
+            amount: amount, 
+            btc_address: address, 
+            status: 'pending' 
+        }]);
 
-        if (insertError) throw insertError;
-
-        // --- ITT TÖRTÉNIK A SIKER KIÍRÁSA ---
-        errorDiv.style.color = "#44ff44"; // Átváltunk zöldre
+        // Siker üzenet
+        errorDiv.style.color = "#44ff44";
         errorDiv.innerHTML = `<strong>Sikeres kérés! 1-48 órán belül jóváírásra kerül a megadott tárcacímen!</strong>`;
         errorDiv.style.display = 'block';
 
-        // Mezők ürítése
         amountInput.value = "";
         addrInput.value = "";
 
-        // 4. Várunk 5 másodpercet, hogy biztosan elolvassa
-        setTimeout(() => {
-            location.reload();
-        }, 5000);
+        setTimeout(() => { location.reload(); }, 5000);
 
     } catch (err) {
-        console.error("Kifizetési hiba:", err);
-        errorDiv.style.color = "#ff4646";
-        errorDiv.innerText = "Hiba történt a művelet során. Próbáld újra!";
+        console.error("Hiba:", err);
+        errorDiv.innerText = "Hiba történt. Próbáld újra!";
         errorDiv.style.display = 'block';
+        if (btn) btn.disabled = false; // Hiba esetén újra engedélyezzük a gombot
     }
 }
 
