@@ -746,6 +746,8 @@ async function requestWithdrawal() {
     }
 
     async function placeBet() {
+        async function placeBet() {
+    if (window.userIsRestricted) return; // Se hibaüzenet, se flanc, egyszerűen nem fut tovább.
         const amt = parseFloat(document.getElementById('bet-amount').value);
         const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
         const profit = amt * (activeBet.o - 1);
