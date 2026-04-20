@@ -1,49 +1,49 @@
 /**
- * STAKEFORGE - ADMIN & BAN PANEL LOGIC
- * Ez a fájl kezeli a kifizetéseket, a tiltásokat és az egyenlegmódosítást.
+ * STAKEFORGE - ADMIN & BAN PANEL (JAVÍTOTT TELJES VERZIÓ)
  */
 
-// 1. Supabase Inicializálás (Feltételezve, hogy a konfiguráció már megvan)
-// Ha nincs külön config fájlod, ide illesztheted a _supabase inicializálást.
+let currentUser = null;
 
 async function checkAdminAndInit() {
-    try {
-        // Aktuális user lekérése
-        const { data: { user } } = await _supabase.auth.getUser();
-        
-        if (!user) {
-            window.location.href = "index.html";
-            return;
-        }
-
-        // Admin jogosultság ellenőrzése a profil táblában
-        const { data: profile, error } = await _supabase
-            .from('profiles')
-            .select('is_admin')
-            .eq('id', user.id)
-            .single();
-
-        if (error || !profile || !profile.is_admin) {
-            alert("Hozzáférés megtagadva! Csak adminisztrátorok léphetnek be.");
-            window.location.href = "index.html";
-            return;
-        }
-
-        // Ha admin, indíthatjuk a listák betöltését
-        console.log("Admin azonosítva, adatok betöltése...");
-        loadWithdrawals();
-        loadUsers();
-
-    } catch (err) {
-        console.error("Admin ellenőrzési hiba:", err);
+    console.log("Admin ellenőrzése folyamatban...");
+    
+    // 1. Megvárjuk a munkamenetet
+    const { data: { session }, error: sessionError } = await _supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+        console.error("Nincs bejelentkezett felhasználó.");
         window.location.href = "index.html";
+        return;
     }
+
+    currentUser = session.user;
+
+    // 2. Friss profil lekérése az adatbázisból (hogy biztosan lássuk az is_admin-t)
+    const { data: profile, error: profileError } = await _supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (profileError || !profile || !profile.is_admin) {
+        console.error("Hozzáférési hiba:", profileError);
+        alert("Nincs admin jogosultságod!");
+        window.location.href = "index.html";
+        return;
+    }
+
+    console.log("Admin azonosítva: " + profile.username);
+    
+    // Ha minden jó, betöltjük az adatokat
+    loadWithdrawals();
+    loadUsers();
 }
 
-// 2. FÜGGŐ KIFIZETÉSEK BETÖLTÉSE
+// --- KIFIZETÉSEK KEZELÉSE ---
 async function loadWithdrawals() {
     const container = document.getElementById('withdrawal-list-container');
-    
+    if (!container) return;
+
     const { data: withdrawals, error } = await _supabase
         .from('withdrawals')
         .select('*')
@@ -51,12 +51,12 @@ async function loadWithdrawals() {
         .order('created_at', { ascending: true });
 
     if (error) {
-        container.innerHTML = `<p style="color:red;">Hiba a kifizetések betöltésekor.</p>`;
+        container.innerHTML = "Hiba a kifizetések betöltésekor.";
         return;
     }
 
     if (withdrawals.length === 0) {
-        container.innerHTML = `<p style="color: #557086;">Nincsenek függő kifizetési kérelmek. 😊</p>`;
+        container.innerHTML = "<p>Nincs függő kifizetési kérelem.</p>";
         return;
     }
 
@@ -67,32 +67,31 @@ async function loadWithdrawals() {
                     <strong>${w.username || 'Ismeretlen'}</strong><br>
                     <span>ID: ${w.user_id}</span>
                 </div>
-                <div style="text-align: right;">
+                <div>
                     <span style="font-size: 1.4rem; color: #f1c40f; font-weight: bold;">${w.amount} €</span>
                 </div>
             </div>
-            <div style="margin-top: 10px;">
-                <p style="margin: 5px 0;">BTC Cím: <code>${w.btc_address}</code></p>
-            </div>
+            <p>BTC Cím: <code>${w.btc_address}</code></p>
             <div class="actions">
-                <button class="btn-unban" onclick="approveWithdrawal('${w.id}')">JÓVÁHAGYÁS (Kifizetve)</button>
-                <button class="btn-ban" onclick="rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">ELUTASÍTÁS (Visszatérítés)</button>
+                <button class="btn-unban" onclick="approveWithdrawal('${w.id}')">JÓVÁHAGYÁS</button>
+                <button class="btn-ban" onclick="rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">ELUTASÍTÁS</button>
             </div>
         </div>
     `).join('');
 }
 
-// 3. FELHASZNÁLÓK BETÖLTÉSE
+// --- FELHASZNÁLÓK KEZELÉSE ---
 async function loadUsers() {
     const container = document.getElementById('user-list-container');
-    
+    if (!container) return;
+
     const { data: users, error } = await _supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
     if (error) {
-        container.innerHTML = `<p style="color:red;">Hiba a felhasználók betöltésekor.</p>`;
+        container.innerHTML = "Hiba a felhasználók betöltésekor.";
         return;
     }
 
@@ -101,95 +100,65 @@ async function loadUsers() {
             <div class="card-header">
                 <div class="user-info">
                     <strong>${u.username || 'Névtelen'}</strong><br>
-                    <span>${u.email || 'Nincs email'}</span>
+                    <span>Egyenleg: ${u.real_balance.toFixed(2)} €</span>
                 </div>
-                <div style="text-align: right;">
+                <div>
                     <span class="status-badge ${u.is_banned ? 'status-banned' : 'status-active'}">
                         ${u.is_banned ? 'KITILTVA' : 'AKTÍV'}
                     </span>
-                    <div style="margin-top: 5px; font-weight: bold;">${u.real_balance.toFixed(2)} €</div>
                 </div>
             </div>
             <div class="actions">
                 <button class="${u.is_banned ? 'btn-unban' : 'btn-ban'}" onclick="toggleBan('${u.id}', ${u.is_banned})">
-                    ${u.is_banned ? '🔓 FELOLDÁS' : '🚫 KITILTÁS'}
+                    ${u.is_banned ? 'FELOLDÁS' : 'KITILTÁS'}
                 </button>
                 <button class="btn-bonus" onclick="modifyBalance('${u.id}', 10)">+10€</button>
                 <button class="btn-bonus" onclick="modifyBalance('${u.id}', 50)">+50€</button>
-                <button class="btn-bonus" style="background: #ff464622; color: #ff4646;" onclick="modifyBalance('${u.id}', -10)">-10€</button>
             </div>
         </div>
     `).join('');
 }
 
-// --- FUNKCIÓK ---
+// --- MŰVELETI FUNKCIÓK ---
 
-// Kifizetés Jóváhagyása
-async function approveWithdrawal(id) {
-    if (!confirm("Megerősíted, hogy a BTC-t elküldted a megadott címre?")) return;
-    
-    const { error } = await _supabase
-        .from('withdrawals')
-        .update({ status: 'completed' })
-        .eq('id', id);
-
-    if (error) alert("Hiba történt!");
-    else {
-        loadWithdrawals();
-    }
-}
-
-// Kifizetés Elutasítása és Pénz visszaadása
-async function rejectWithdrawal(wid, uid, amount) {
-    if (!confirm("Elutasítod a kérelmet? Az összeg visszakerül a felhasználóhoz.")) return;
-
-    // 1. Aktuális egyenleg lekérése
-    const { data: profile } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
-    
-    // 2. Egyenleg visszatöltése
-    const { error: updateErr } = await _supabase
-        .from('profiles')
-        .update({ real_balance: profile.real_balance + amount })
-        .eq('id', uid);
-
-    if (updateErr) {
-        alert("Hiba az egyenleg visszatöltésekor!");
-        return;
-    }
-
-    // 3. Státusz frissítése
-    await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
-    
-    loadWithdrawals();
-    loadUsers();
-}
-
-// Kitiltás ki/be kapcsolása
 async function toggleBan(uid, currentStatus) {
-    const action = currentStatus ? "feloldani" : "kitiltani";
-    if (!confirm(`Biztosan le akarod ${action} ezt a felhasználót?`)) return;
+    if (!confirm("Biztosan módosítod a tiltási állapotot?")) return;
 
     const { error } = await _supabase
         .from('profiles')
         .update({ is_banned: !currentStatus })
         .eq('id', uid);
 
-    if (error) alert("Hiba történt!");
+    if (error) alert("Hiba: " + error.message);
     else loadUsers();
 }
 
-// Manuális egyenleg módosítás
-async function modifyBalance(uid, amount) {
-    const { data: profile } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
+async function approveWithdrawal(wid) {
+    if (!confirm("Jóváhagyod a kifizetést?")) return;
     
-    const { error } = await _supabase
-        .from('profiles')
-        .update({ real_balance: profile.real_balance + amount })
-        .eq('id', uid);
-
-    if (error) alert("Hiba történt!");
-    else loadUsers();
+    await _supabase.from('withdrawals').update({ status: 'completed' }).eq('id', wid);
+    loadWithdrawals();
 }
 
-// OLDAL INDÍTÁSA
+async function rejectWithdrawal(wid, uid, amount) {
+    if (!confirm("Elutasítod? A pénz visszakerül a userhez.")) return;
+
+    // 1. Egyenleg lekérése
+    const { data: p } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
+    
+    // 2. Visszaadás + Státusz frissítés
+    await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
+    await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
+    
+    loadWithdrawals();
+    loadUsers();
+}
+
+async function modifyBalance(uid, amount) {
+    const { data: p } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
+    await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
+    loadUsers();
+}
+
+// INDÍTÁS
 checkAdminAndInit();
