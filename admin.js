@@ -2,7 +2,7 @@
 
 // --- 1. KONFIGURÁCIÓ ---
 const SUPABASE_URL = "https://ldcrycuoynashsqlosae.supabase.co"; // Ezt pótold!
-const SUPABASE_KEY = "sb_secret_wCUS6D_rwEfdSn0eRDgiMA_g7zGvWXZ"; // Az anon kulcsod
+const SUPABASE_KEY = "sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b"; // Az anon kulcsod
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // --- 2. BIZTONSÁGI ADMIN ELLENŐRZÉS ---
