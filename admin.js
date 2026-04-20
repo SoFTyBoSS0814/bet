@@ -3,9 +3,6 @@ const SUPABASE_URL = "https://ldcrycuoynashsqlosae.supabase.co";
 const SUPABASE_KEY = "sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-console.log("Admin JS elindult");
-alert("JS életjel!"); // Ha ez nem ugrik fel az oldal frissítésekor, be sem tölti a fájlt!
-
 // Inicializálás
 async function init() {
     const { data: { session } } = await _supabase.auth.getSession();
