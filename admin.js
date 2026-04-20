@@ -33,8 +33,8 @@ async function loadWithdrawals() {
         <div class="user-card">
             <div><strong>${w.username}</strong>: ${w.amount}€ <code>${w.btc_address}</code></div>
             <div>
-                <button class="btn-approve" onclick="window.updateWithdrawal('${w.id}', 'completed')">OK</button>
-                <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">X</button>
+                <button class="btn-approve" onclick="window.updateWithdrawal('${w.id}', 'completed')">Jóváhagyás</button>
+                <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Elutasítás</button>
             </div>
         </div>
     `).join('');
