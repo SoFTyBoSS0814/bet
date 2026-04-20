@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://ldcrycuoynashsqlosae.supabase.co";
-const SUPABASE_KEY = "IDE_AZ_ANON_KULCSODAT_MÁSOLD"; // sb_publishable_...
+const SUPABASE_KEY = "sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b"; // sb_publishable_...
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function init() {
