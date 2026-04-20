@@ -922,14 +922,6 @@ async function loadUsers(mode) {
         if(!document.getElementById('groups-container').innerHTML) addGroup();
     }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
-
-    if (userProfile && userProfile.is_banned === true) {
-    // Azonnali átirányítás a tiltó oldalra
-    window.location.replace("banned.html"); 
-    // A 'replace' azért jobb, mint a 'href', mert kitörli az indexet a böngészési előzményekből, 
-    // így a "Vissza" gombbal sem tud visszajönni.
-    return;
-}
 </script>
 </body>
 </html>
