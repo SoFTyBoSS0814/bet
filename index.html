@@ -419,10 +419,13 @@
         }
     }
 
-    async function fetchProfile() {
+async function fetchProfile() {
         const { data } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).single();
         if(!data) return;
+        
         userProfile = data;
+
+        // --- Meglévő egyenlegek és adatok frissítése ---
         document.getElementById("nav-real").innerText = data.real_balance.toFixed(2);
         document.getElementById("nav-demo").innerText = data.demo_balance.toFixed(2);
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2);
@@ -430,6 +433,22 @@
         document.getElementById("acc-username").innerText = currentUser.username;
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
+
+        // --- ÚJ: Admin Panel gomb megjelenítése ---
+        const adminBtn = document.getElementById('admin-nav-button');
+        if (adminBtn) {
+            // Csak ha is_admin értéke pontosan true
+            if (data.is_admin === true) {
+                adminBtn.style.display = "block";
+            } else {
+                adminBtn.style.display = "none";
+            }
+        }
+
+        // --- ÚJ: Korlátozás állapotának elmentése ---
+        // Ezt a változót fogjuk használni a placeBet-nél és a market creation-nél
+        window.userIsRestricted = data.is_restricted || false;
+
         updateGeoUI();
         updateCreateBalanceDisplay();
         updateRewardUI();
