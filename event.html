@@ -1,0 +1,20 @@
+<div class="bet-container">
+    <div class="tabs-header">
+        <button class="tab-btn active" onclick="openTab(event, 'komment')">Hozzászólások</button>
+        <button class="tab-btn" id="bets-tab-btn" onclick="openTab(event, 'fogadasok')">Fogadások</button>
+    </div>
+
+    <div id="komment" class="tab-content active">
+        <div id="comment-list"></div>
+        <div id="comment-input-area" style="margin-top: 20px;"></div>
+    </div>
+
+    <div id="fogadasok" class="tab-content">
+        <div id="bets-lock-message" style="text-align: center; padding: 40px; color: gray;">
+            <i class="fas fa-lock"></i><br>
+            A fogadások listája csak a mérkőzés kiértékelése után válik publikussá.
+        </div>
+        <div id="public-bets-list" style="display: none;">
+            </div>
+    </div>
+</div>
