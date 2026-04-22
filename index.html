@@ -631,7 +631,7 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
-// --- 1. FŐ BETÖLTŐ FÜGGVÉNY ---
+// --- 1. A FŐ BETÖLTŐ FÜGGVÉNY ---
 async function loadMarkets() {
     const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
     const mList = document.getElementById('market-list');
@@ -669,11 +669,11 @@ async function loadMarkets() {
 
         // KÖZÖS FEJLÉC (Cím, Dátum, Settle gomb)
         const headerHtml = `
-            <div class="market-header" style="padding: 15px 15px 5px 15px; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="market-header" style="padding: 15px 15px 5px 15px;">
                 <div class="header-left">
                     <h2 style="margin:0; color:white; font-size: 1.3rem;">${m.title}</h2>
                     <div class="deadline-badge" style="color:white; font-weight:bold; margin-top:5px; font-size: 0.85rem;">⏳ ${dict.deadline}: ${dlDate.toLocaleString()}</div>
-                    <small style="color:#aaa; display:block; margin-top:5px;">${dict.host}: ${m.creator_name} | <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
+                    <small style="color:#aaa; display:block; margin-top:5px;">Host: ${m.creator_name} | <b style="color:${typeColor}">Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
                 </div>
                 <div class="header-right">
                     <div class="market-type-label" style="color:${typeColor}; font-weight:bold; margin-bottom:5px;">${m.type}</div>
@@ -695,7 +695,6 @@ async function loadMarkets() {
                 </div>`;
             mList.appendChild(card);
         } else {
-            const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
             card.innerHTML = `
                 ${topInterfaceHtml}
                 <div class="settled-badge" style="margin: 10px 15px 0 15px; width: fit-content;">Settled</div>
@@ -710,7 +709,7 @@ async function loadMarkets() {
     });
 }
 
-// --- 2. PANEL KEZELŐ (VÁLTÁS KOMMENT ÉS EREDMÉNY KÖZÖTT) ---
+// --- 2. PANEL KEZELŐ ---
 window.toggleTopPanel = async function(id, type) {
     const panel = document.getElementById(`panel-${id}`);
     const content = document.getElementById(`content-${id}`);
@@ -754,7 +753,7 @@ async function loadComments(marketId) {
         return;
     }
     list.innerHTML = comments.map(c => `
-        <div style="background:#1d2d37; padding:10px; border-radius:8px; border-left:3px solid var(--primary);">
+        <div style="background:#1d2d37; padding:10px; border-radius:8px; border-left:3px solid var(--primary); margin-bottom:5px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:4px; align-items:center;">
                 <b style="color:var(--primary); font-size:13px;">${c.username}</b>
                 <span class="comment-date-white">${new Date(c.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
@@ -767,6 +766,7 @@ async function loadComments(marketId) {
 
 window.sendComment = async function(marketId) {
     const input = document.getElementById(`input-${marketId}`);
+    if (!input) return;
     const text = input.value.trim();
     if (!text || !window.currentUser) return;
 
@@ -780,23 +780,38 @@ window.sendComment = async function(marketId) {
     if (!error) { 
         input.value = ''; 
         loadComments(marketId); 
-    } else {
-        console.error("Hiba a küldéskor:", error);
     }
 };
 
-// --- 4. RÉSZLETES FOGADÁSOK BETÖLTÉSE (KI, MENNYIT, MIKOR) ---
+// --- 4. RÉSZLETES FOGADÁSOK (KI, MIRE, MENNYIT, MIKOR) ---
 async function loadSettledBets(marketId) {
     const container = document.getElementById(`settled-list-${marketId}`);
     if (!container) return;
 
-    // Lekérjük a fogadásokat az időponttal (created_at) együtt
     const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', marketId).order('created_at', { ascending: false });
 
     if (!bets || bets.length === 0) { 
-        container.innerHTML = "<div style='color:#556b7d; text-align:center; padding:10px;'>Nem érkezett fogadás erre az eseményre.</div>"; 
+        container.innerHTML = "<div style='color:#556b7d; text-align:center; padding:10px;'>Nem érkezett fogadás.</div>"; 
         return; 
     }
+
+    container.innerHTML = bets.map(b => {
+        const d = new Date(b.created_at);
+        const dateStr = `${d.getMonth()+1}.${d.getDate()} ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()}`;
+        return `
+            <div style="background:rgba(255,255,255,0.05); margin-bottom:6px; padding:10px; border-radius:6px; border-left: 3px solid ${b.status === 'won' ? 'var(--primary)' : '#2f4553'};">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <b style="color:white; font-size:13px;">${b.username}</b>
+                    <span style="color:#aaa; font-size:10px;">${dateStr}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                    <span style="color:var(--primary); font-size:12px;">${b.outcome_name}</span>
+                    <b style="color:white; font-size:13px;">${parseFloat(b.amount).toFixed(2)} €</b>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
     container.innerHTML = bets.map(b => {
         const betDate = new Date(b.created_at).toLocaleString([], {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'});
