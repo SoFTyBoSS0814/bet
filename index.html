@@ -631,216 +631,71 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
-// --- 1. A FŐ BETÖLTŐ FÜGGVÉNY ---
-async function loadMarkets() {
-    const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
-    const mList = document.getElementById('market-list');
-    const hList = document.getElementById('history-list');
-    const dict = i18n[currentLang];
-    
-    if (!mList || !hList) return;
-    mList.innerHTML = ""; hList.innerHTML = "";
-    
-    markets.forEach(m => {
-        const groups = JSON.parse(m.note || "[]");
-        const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
-        const symbol = m.type === 'REAL' ? '€' : 'DEMO';
-        const dlDate = new Date(m.deadline);
-        const isExpired = dlDate < new Date();
+    async function loadMarkets() {
+        const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const mList = document.getElementById('market-list');
+        const hList = document.getElementById('history-list');
+        const dict = i18n[currentLang];
+        mList.innerHTML = ""; hList.innerHTML = "";
         
-        const card = document.createElement('div');
-        card.className = 'market-card';
-        card.style.padding = "0"; 
-        
-        // FELSŐ INTERFÉSZ (FÜLEK ÉS PANEL)
-        const topInterfaceHtml = `
-            <div class="top-tab-container">
-                <button class="top-tab-btn" id="tab-chat-${m.id}" onclick="toggleTopPanel('${m.id}', 'chat')">
-                    <span>💬</span> KOMMENTEK
-                </button>
-                <button class="top-tab-btn" id="tab-res-${m.id}" onclick="toggleTopPanel('${m.id}', 'res')">
-                    <span>📊</span> FOGADÁSOK
-                </button>
-            </div>
-            <div id="panel-${m.id}" style="display:none; background:#0f212e; padding:15px; border-bottom:2px solid #2f4553;">
-                <div id="content-${m.id}"></div>
-            </div>
-        `;
-
-        // KÖZÖS FEJLÉC (Cím, Dátum, Settle gomb)
-        const headerHtml = `
-            <div class="market-header" style="padding: 15px 15px 5px 15px;">
-                <div class="header-left">
-                    <h2 style="margin:0; color:white; font-size: 1.3rem;">${m.title}</h2>
-                    <div class="deadline-badge" style="color:white; font-weight:bold; margin-top:5px; font-size: 0.85rem;">⏳ ${dict.deadline}: ${dlDate.toLocaleString()}</div>
-                    <small style="color:#aaa; display:block; margin-top:5px;">Host: ${m.creator_name} | <b style="color:${typeColor}">Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
-                </div>
-                <div class="header-right">
-                    <div class="market-type-label" style="color:${typeColor}; font-weight:bold; margin-bottom:5px;">${m.type}</div>
-                    ${m.creator_name === (window.currentUser?.username || '') && m.status === 'active' ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create" style="font-size:11px; padding:6px 12px;">SETTLE</button>` : ''}
-                </div>
-            </div>
-        `;
-
-        if(m.status === 'active') {
-            card.innerHTML = `
-                ${topInterfaceHtml}
-                ${headerHtml}
-                <div style="padding: 0 15px 15px 15px;">
-                    ${groups.map(g => `<div class="market-group"><small style="color:#556b7d">${g.title}</small>
-                        <div class="outcomes-grid" style="margin-top:8px;">
-                            ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
+        markets.forEach(m => {
+            const groups = JSON.parse(m.note || "[]");
+            const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
+            const symbol = m.type === 'REAL' ? '€' : 'DEMO';
+            const dlDate = new Date(m.deadline);
+            const isExpired = dlDate < new Date();
+            
+            if(m.status === 'active') {
+                const card = document.createElement('div');
+                card.className = 'market-card';
+                card.innerHTML = `
+                    <div class="market-header">
+                        <div class="header-left">
+                            <h2 style="margin:0;">${m.title}</h2>
+                            <div class="deadline-badge">⏳ ${dict.deadline}: ${dlDate.toLocaleString()}</div>
+                            <div style="margin-top:5px;">
+                                <small style="color:#aaa">${dict.host}: ${m.creator_name} | 
+                                    <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b>
+                                </small>
+                            </div>
                         </div>
-                    </div>`).join('')}
-                </div>`;
-            mList.appendChild(card);
-        } else {
-            card.innerHTML = `
-                ${topInterfaceHtml}
-                <div class="settled-badge" style="margin: 10px 15px 0 15px; width: fit-content;">Settled</div>
-                ${headerHtml}
-                <div style="padding: 0 15px 15px 15px;">
-                    ${groups.map(g => `<div class="market-group">
+                        <div class="header-right">
+                            <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
+                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                        </div>
+                    </div>
+                    ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
+                        ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
+                    </div></div>`).join('')}`;
+                mList.appendChild(card);
+            } else {
+                const card = document.createElement('div');
+                card.className = 'market-card';
+                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <div class="market-header">
+                        <div class="header-left">
+                            <h2 style="margin-top:15px; margin-bottom:5px;">
+                                ${m.title} <span style="color:${typeColor}; opacity:0.7">- ${dict.settled_at} ${sDate.toLocaleString()}.</span>
+                            </h2>
+                            <div style="margin-bottom:15px;">
+                                <small style="color:#aaa; display:block;">${dict.host}: ${m.creator_name}</small>
+                                <small style="color:var(--danger); display:block;">${dict.deadline}: ${dlDate.toLocaleString()}</small>
+                                <small style="color:${typeColor}; font-weight:bold;">${dict.final_pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            </div>
+                        </div>
+                        <div class="header-right">
+                            <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
+                        </div>
+                    </div>
+                    ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
                         ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
-                    </div>`).join('')}
-                </div>`;
-            hList.appendChild(card);
-        }
-    });
-}
-
-// --- 2. PANEL KEZELŐ ---
-window.toggleTopPanel = async function(id, type) {
-    const panel = document.getElementById(`panel-${id}`);
-    const content = document.getElementById(`content-${id}`);
-    const chatTab = document.getElementById(`tab-chat-${id}`);
-    const resTab = document.getElementById(`tab-res-${id}`);
-
-    if (panel.style.display === 'block' && panel.dataset.current === type) {
-        panel.style.display = 'none';
-        chatTab.classList.remove('active');
-        resTab.classList.remove('active');
-        return;
+                    </div>`).join('')}`;
+                hList.appendChild(card);
+            }
+        });
     }
-
-    panel.style.display = 'block';
-    panel.dataset.current = type;
-    chatTab.classList.toggle('active', type === 'chat');
-    resTab.classList.toggle('active', type === 'res');
-
-    if (type === 'chat') {
-        content.innerHTML = `
-            <div id="comment-list-${id}" class="comment-scroll" style="max-height:180px; overflow-y:auto; background:#0a1014; padding:10px; border-radius:8px; display:flex; flex-direction:column; gap:8px;"></div>
-            <div style="display:flex; gap:8px; margin-top:10px; background:#1a2c38; padding:5px; border-radius:8px;">
-                <input type="text" id="input-${id}" placeholder="Üzenet küldése..." style="flex:1; background:transparent; border:none; color:white; padding:8px; outline:none; font-size:14px;">
-                <button onclick="sendComment('${id}')" style="background:var(--primary); color:black; border:none; padding:0 15px; border-radius:6px; font-weight:bold; cursor:pointer;">KÜLDÉS</button>
-            </div>
-        `;
-        loadComments(id);
-    } else {
-        content.innerHTML = `<div id="settled-list-${id}" style="font-size:13px; color:white;">Betöltés...</div>`;
-        loadSettledBets(id);
-    }
-};
-
-// --- 3. KOMMENT KEZELÉS ---
-async function loadComments(marketId) {
-    const { data: comments } = await _supabase.from('comments').select('*').eq('market_id', marketId).order('created_at', { ascending: true });
-    const list = document.getElementById(`comment-list-${marketId}`);
-    if (!list) return;
-    if (!comments || comments.length === 0) {
-        list.innerHTML = '<p style="color:#556b7d; font-size:11px; text-align:center; padding:10px;">Nincsenek még üzenetek.</p>';
-        return;
-    }
-    list.innerHTML = comments.map(c => `
-        <div style="background:#1d2d37; padding:10px; border-radius:8px; border-left:3px solid var(--primary); margin-bottom:5px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px; align-items:center;">
-                <b style="color:var(--primary); font-size:13px;">${c.username}</b>
-                <span class="comment-date-white">${new Date(c.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-            </div>
-            <div style="color:white; font-size:13px; line-height:1.4;">${c.comment_text}</div>
-        </div>
-    `).join('');
-    list.scrollTop = list.scrollHeight;
-}
-
-window.sendComment = async function(marketId) {
-    const input = document.getElementById(`input-${marketId}`);
-    if (!input) return;
-    const text = input.value.trim();
-    if (!text || !window.currentUser) return;
-
-    const { error } = await _supabase.from('comments').insert([{ 
-        market_id: marketId, 
-        user_id: window.currentUser.id, 
-        username: window.currentUser.username, 
-        comment_text: text 
-    }]);
-
-    if (!error) { 
-        input.value = ''; 
-        loadComments(marketId); 
-    }
-};
-
-// --- 4. RÉSZLETES FOGADÁSOK (KI, MIRE, MENNYIT, MIKOR) ---
-async function loadSettledBets(marketId) {
-    const container = document.getElementById(`settled-list-${marketId}`);
-    if (!container) return;
-
-    const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', marketId).order('created_at', { ascending: false });
-
-    if (!bets || bets.length === 0) { 
-        container.innerHTML = "<div style='color:#556b7d; text-align:center; padding:10px;'>Nem érkezett fogadás.</div>"; 
-        return; 
-    }
-
-    container.innerHTML = bets.map(b => {
-        const d = new Date(b.created_at);
-        const dateStr = `${d.getMonth()+1}.${d.getDate()} ${d.getHours()}:${d.getMinutes() < 10 ? '0'+d.getMinutes() : d.getMinutes()}`;
-        return `
-            <div style="background:rgba(255,255,255,0.05); margin-bottom:6px; padding:10px; border-radius:6px; border-left: 3px solid ${b.status === 'won' ? 'var(--primary)' : '#2f4553'};">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <b style="color:white; font-size:13px;">${b.username}</b>
-                    <span style="color:#aaa; font-size:10px;">${dateStr}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-top:4px;">
-                    <span style="color:var(--primary); font-size:12px;">${b.outcome_name}</span>
-                    <b style="color:white; font-size:13px;">${parseFloat(b.amount).toFixed(2)} €</b>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-    container.innerHTML = bets.map(b => {
-        const betDate = new Date(b.created_at).toLocaleString([], {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'});
-        return `
-        <div style="background:rgba(255,255,255,0.05); margin-bottom:6px; padding:10px; border-radius:6px; border-left: 3px solid ${b.status === 'won' ? 'var(--success)' : '#2f4553'};">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b style="color:white; font-size:13px;">${b.username}</b>
-                <span style="color:#aaa; font-size:10px;">${betDate}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-top:5px; align-items: center;">
-                <span style="color:#00d4ff; font-size:12px;">${b.outcome_name}</span>
-                <b style="color:white; font-size:13px;">${parseFloat(b.amount).toFixed(2)} €</b>
-            </div>
-        </div>
-    `}).join('');
-}
-
-async function loadSettledBets(marketId) {
-    const container = document.getElementById(`settled-list-${marketId}`);
-    if (!container) return;
-    const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', marketId);
-    if (!bets || bets.length === 0) { container.innerHTML = "Nem érkezett fogadás."; return; }
-    container.innerHTML = bets.map(b => `
-        <div style="background:rgba(255,255,255,0.03); margin-bottom:4px; padding:8px; border-radius:6px; display:flex; justify-content:space-between;">
-            <span style="color:white;">${b.outcome_name}</span>
-            <b style="color:${b.status==='won'?'var(--primary)':'#ff4444'}">${parseFloat(b.amount).toFixed(2)}</b>
-        </div>
-    `).join('');
-}
 
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
