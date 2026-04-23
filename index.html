@@ -671,6 +671,19 @@ async function loadMarkets() {
         
         const card = document.createElement('div');
         card.className = 'market-card';
+        card.style.position = 'relative'; // Biztosítjuk a kártya alapját
+
+        // Közös gomb-szekció generálása
+        const buttonsHTML = `
+            <div class="top-extra-btns" style="position: relative; z-index: 1000; display: flex; gap: 10px; margin: 15px 0; width: 100%; clear: both;">
+                <button class="btn-top-extra" 
+                    style="flex: 1; cursor: pointer !important; pointer-events: all !important; position: relative; z-index: 1001; padding: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05);" 
+                    onclick="console.log('Klikk Komment'); event.preventDefault(); event.stopPropagation(); openComments('${m.id}')">💬 Kommentek</button>
+                <button class="btn-top-extra" 
+                    style="flex: 1; cursor: pointer !important; pointer-events: all !important; position: relative; z-index: 1001; padding: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05);" 
+                    onclick="console.log('Klikk Fogadás'); event.preventDefault(); event.stopPropagation(); openBets('${m.id}')">📊 Fogadások</button>
+            </div>
+        `;
 
         if(m.status === 'active') {
             card.innerHTML = `
@@ -690,10 +703,7 @@ async function loadMarkets() {
                     </div>
                 </div>
 
-                <div class="top-extra-btns" style="position: relative; z-index: 999; display: flex; gap: 8px; margin: 10px 0;">
-                    <button class="btn-top-extra" style="cursor: pointer; pointer-events: auto;" onclick="event.stopPropagation(); openComments('${m.id}')">💬 Kommentek</button>
-                    <button class="btn-top-extra" style="cursor: pointer; pointer-events: auto;" onclick="event.stopPropagation(); openBets('${m.id}')">📊 Fogadások</button>
-                </div>
+                ${buttonsHTML}
 
                 ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
                     ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
@@ -702,9 +712,8 @@ async function loadMarkets() {
         } else {
             const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
             card.innerHTML = `
-                <div class="settled-badge" style="position: absolute; top: 15px; left: 15px; margin: 0;">Settled</div>
-                
-                <div class="market-header" style="padding-top: 25px;">
+                <div class="settled-badge" style="position: absolute; top: 15px; left: 15px; z-index: 5;">Settled</div>
+                <div class="market-header" style="padding-top: 30px;">
                     <div class="header-left">
                         <h2 style="margin:0;">${m.title} <span style="color:${typeColor}; font-size: 0.8em; opacity: 0.8;">- Settled at ${sDate.toLocaleString()}.</span></h2>
                         <div style="margin-top:5px;">
@@ -718,10 +727,7 @@ async function loadMarkets() {
                     </div>
                 </div>
 
-                <div class="top-extra-btns" style="position: relative; z-index: 999; display: flex; gap: 8px; margin: 10px 0;">
-                    <button class="btn-top-extra" style="cursor: pointer; pointer-events: auto;" onclick="event.stopPropagation(); openComments('${m.id}')">💬 KOMMENTEK</button>
-                    <button class="btn-top-extra" style="cursor: pointer; pointer-events: auto;" onclick="event.stopPropagation(); openBets('${m.id}')">📊 FOGADÁSOK</button>
-                </div>
+                ${buttonsHTML}
 
                 <div style="margin-top:15px;">
                 ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
