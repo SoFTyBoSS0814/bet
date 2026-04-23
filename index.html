@@ -631,7 +631,7 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
-  async function loadMarkets() {
+ async function loadMarkets() {
     const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
     const mList = document.getElementById('market-list');
     const hList = document.getElementById('history-list');
@@ -648,18 +648,14 @@ async function requestWithdrawal() {
         const card = document.createElement('div');
         card.className = 'market-card';
 
-        // FÜLEK HOZZÁADÁSA A KÁRTYA TETEJÉRE
-        const tabsHtml = `
-            <div class="market-tabs">
-                <button class="tab-link active" onclick="manageTab('${m.id}', 'bet', this)">${dict.bet || 'Fogadás'}</button>
-                <button class="tab-link" onclick="manageTab('${m.id}', 'chat', this)">${dict.comments || 'Kommentek'}</button>
-                <button class="tab-link" onclick="manageTab('${m.id}', 'res', this)">${dict.data || 'Adatok'}</button>
-            </div>
-        `;
-
         if(m.status === 'active') {
             card.innerHTML = `
-                ${tabsHtml}
+                <div class="market-tabs">
+                    <button class="tab-link active" onclick="manageTab('${m.id}', 'bet', this)">${dict.bet || 'Fogadás'}</button>
+                    <button class="tab-link" onclick="manageTab('${m.id}', 'chat', this)">${dict.comments || 'Kommentek'}</button>
+                    <button class="tab-link" onclick="manageTab('${m.id}', 'res', this)">${dict.data || 'Adatok'}</button>
+                </div>
+                
                 <div id="p-bet-${m.id}" class="tab-content">
                     <div class="market-header">
                         <div class="header-left">
@@ -673,7 +669,7 @@ async function requestWithdrawal() {
                         </div>
                         <div class="header-right">
                             <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
-                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create" style="margin-top:5px;">SETTLE</button>` : ''}
                         </div>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
@@ -684,9 +680,9 @@ async function requestWithdrawal() {
                 <div id="p-chat-${m.id}" class="tab-content hidden">
                     <div class="comment-pane">
                         <div id="chat-list-${m.id}" class="chat-scroll"><small>Betöltés...</small></div>
-                        <div style="display:flex; gap:8px; margin-top:10px;">
-                            <input type="text" id="chat-input-${m.id}" placeholder="..." style="margin:0; flex:1;">
-                            <button class="btn-create" onclick="postComment('${m.id}')">SEND</button>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="chat-input-${m.id}" placeholder="Írj egy üzenetet...">
+                            <button class="btn-create" onclick="postComment('${m.id}')" style="white-space:nowrap;">KÜLDÉS</button>
                         </div>
                     </div>
                 </div>
@@ -699,6 +695,7 @@ async function requestWithdrawal() {
             `;
             mList.appendChild(card);
         } else {
+            // SETTLED (LEZÁRT) PIACOK MEGJELENÍTÉSE
             const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
             card.innerHTML = `
                 <div class="settled-badge">Settled</div>
@@ -725,7 +722,8 @@ async function requestWithdrawal() {
     });
 }
 
-    window.manageTab = function(mid, type, btn) {
+// --- FÜLKEZELŐ LOGIKA ---
+window.manageTab = function(mid, type, btn) {
     const card = btn.closest('.market-card');
     card.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -737,10 +735,11 @@ async function requestWithdrawal() {
     if(type === 'res') loadMarketStats(mid);
 };
 
+// --- KOMMENTEK KEZELÉSE ---
 async function loadMarketChat(mid) {
     const list = document.getElementById(`chat-list-${mid}`);
     const { data } = await _supabase.from('comments').select('*').eq('market_id', mid).order('created_at', {ascending: true});
-    if(!data || data.length === 0) { list.innerHTML = "<small style='color:#556b7d'>No messages yet.</small>"; return; }
+    if(!data || data.length === 0) { list.innerHTML = "<small style='color:#556b7d'>Nincsenek üzenetek.</small>"; return; }
     list.innerHTML = data.map(c => `
         <div class="chat-msg">
             <div class="chat-msg-meta"><b>${c.username}</b> <span>${new Date(c.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
@@ -754,14 +753,20 @@ window.postComment = async function(mid) {
     const input = document.getElementById(`chat-input-${mid}`);
     const text = input.value.trim();
     if(!text) return;
-    const { error } = await _supabase.from('comments').insert([{ market_id: mid, user_id: currentUser.id, username: currentUser.username, comment_text: text }]);
+    const { error } = await _supabase.from('comments').insert([{ 
+        market_id: mid, 
+        user_id: currentUser.id, 
+        username: currentUser.username, 
+        comment_text: text 
+    }]);
     if(!error) { input.value = ""; loadMarketChat(mid); }
 };
 
+// --- ADATOK (FOGADÁSOK) KEZELÉSE ---
 async function loadMarketStats(mid) {
     const list = document.getElementById(`res-list-${mid}`);
     const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
-    if(!bets || bets.length === 0) { list.innerHTML = "<small style='color:#556b7d'>No bets yet.</small>"; return; }
+    if(!bets || bets.length === 0) { list.innerHTML = "<small style='color:#556b7d'>Még nem érkezett fogadás.</small>"; return; }
     list.innerHTML = bets.map(b => `
         <div class="data-row">
             <span><b>${b.username}</b>: ${b.outcome_name}</span>
