@@ -689,15 +689,15 @@ async function loadMarkets() {
         card.className = 'market-card';
         card.style.position = 'relative';
 
-        // Gombok sablonja - Eredeti sötét design
+        // Fix Sötét Design Gombok
         const buttonsHTML = `
-            <div class="top-extra-btns" style="position: relative; z-index: 1000; display: flex; gap: 10px; margin: 15px 0; width: 100%;">
-                <button type="button" class="btn-top-extra" 
-                    style="flex: 1; cursor: pointer !important; pointer-events: all !important; padding: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white; border-radius: 8px;" 
-                    onclick="event.preventDefault(); event.stopPropagation(); openComments('${m.id}')">💬 Kommentek</button>
-                <button type="button" class="btn-top-extra" 
-                    style="flex: 1; cursor: pointer !important; pointer-events: all !important; padding: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: white; border-radius: 8px;" 
-                    onclick="event.preventDefault(); event.stopPropagation(); openBets('${m.id}')">📊 Fogadások</button>
+            <div class="top-extra-btns" style="display: flex; gap: 10px; margin: 15px 0; position: relative; z-index: 100;">
+                <button class="btn-top-extra" style="flex:1; cursor:pointer !important; pointer-events: auto !important; background: rgba(255,255,255,0.05); color: #ccc; border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-weight: bold;" onclick="event.stopPropagation(); openComments('${m.id}')">
+                    💬 KOMMENTEK
+                </button>
+                <button class="btn-top-extra" style="flex:1; cursor:pointer !important; pointer-events: auto !important; background: rgba(255,255,255,0.05); color: #ccc; border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-weight: bold;" onclick="event.stopPropagation(); openBets('${m.id}')">
+                    📊 FOGADÁSOK
+                </button>
             </div>
         `;
 
@@ -709,9 +709,7 @@ async function loadMarkets() {
                         <h2 style="margin:0; color: white;">${m.title}</h2>
                         <div class="deadline-badge">⏳ ${dict.deadline}: ${dlDate.toLocaleString()}</div>
                         <div style="margin-top:5px;">
-                            <small style="color:#aaa">${dict.host}: ${m.creator_name} | 
-                                <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b>
-                            </small>
+                            <small style="color:#aaa">${dict.host}: ${m.creator_name} | <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
                         </div>
                     </div>
                     <div class="header-right">
@@ -722,25 +720,29 @@ async function loadMarkets() {
 
                 ${buttonsHTML}
 
-                ${groups.map(g => `<div class="market-group">
-                    <small style="display:block; margin-bottom:8px; color:var(--primary)">${g.title}</small>
-                    <div class="outcomes-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
-                        ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
+                ${groups.map(g => `
+                    <div class="market-group">
+                        <small style="display:block; margin-bottom:8px; color:var(--primary)">${g.title}</small>
+                        <div class="outcomes-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                            ${g.outcomes.map(o => `
+                                <button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>
+                                    ${o.n}<br><b>${o.o}</b>
+                                </button>
+                            `).join('')}
+                        </div>
                     </div>
-                </div>`).join('')}`;
+                `).join('')}`;
             mList.appendChild(card);
         } else {
-            // --- LEZÁRT PIACOK (MINDEN ADATTAL) ---
+            // --- LEZÁRT (SETTLED) PIACOK ---
             const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
             card.innerHTML = `
-                <div class="settled-badge" style="position: absolute; top: 15px; left: 15px; z-index: 5; background: #ff4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">Settled</div>
-                <div class="market-header" style="padding-top: 30px;">
+                <div class="settled-badge" style="margin-bottom: 10px; display: inline-block; background: #ff4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold;">SETTLED</div>
+                <div class="market-header">
                     <div class="header-left">
-                        <h2 style="margin:0; color: white;">${m.title} <span style="color:var(--primary); font-size: 0.75em; font-weight: normal;">- Settled at ${sDate.toLocaleString()}</span></h2>
+                        <h2 style="margin:0; color: white;">${m.title} <span style="color:var(--primary); font-size: 0.7em; font-weight: normal;">- Settled at ${sDate.toLocaleString()}</span></h2>
                         <div style="margin-top:5px;">
-                            <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
-                            <small style="color:var(--danger); display:block;">DEADLINE: ${dlDate.toLocaleString()}</small>
-                            <small style="color:${typeColor}; font-weight:bold;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            <small style="color:#aaa; display:block;">Host: ${m.creator_name} | Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
                         </div>
                     </div>
                     <div class="header-right">
@@ -751,15 +753,17 @@ async function loadMarkets() {
                 ${buttonsHTML}
 
                 <div style="margin-top:15px;">
-                ${groups.map(g => `<div class="market-group">
-                    <small style="color:var(--primary); display:block; margin-bottom:8px;">${g.title}</small>
-                    ${g.outcomes.map(o => `
-                        <div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}" 
-                             style="display: flex; justify-content: space-between; padding: 10px; border-radius: 6px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-left: 3px solid ${o.status==='win'?'#28a745':o.status==='loss'?'#dc3545':'#334756'}">
-                            <span>${o.n}</span>
-                            <b style="text-transform: uppercase; color: ${o.status==='win'?'#28a745':o.status==='loss'?'#dc3545':'#aaa'}">${o.status}</b>
-                        </div>`).join('')}
-                </div>`).join('')}
+                ${groups.map(g => `
+                    <div class="market-group">
+                        <small style="color:var(--primary); margin-bottom: 8px; display: block;">${g.title}</small>
+                        ${g.outcomes.map(o => `
+                            <div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}" 
+                                 style="display: flex; justify-content: space-between; padding: 10px; border-radius: 6px; margin-bottom: 5px; background: rgba(255,255,255,0.03); border-left: 3px solid ${o.status==='win'?'#28a745':o.status==='loss'?'#dc3545':'#334756'}">
+                                <span>${o.n}</span>
+                                <b style="text-transform: uppercase; color: ${o.status==='win'?'#28a745':o.status==='loss'?'#dc3545':'#aaa'}">${o.status}</b>
+                            </div>`).join('')}
+                    </div>
+                `).join('')}
                 </div>`;
             hList.appendChild(card);
         }
