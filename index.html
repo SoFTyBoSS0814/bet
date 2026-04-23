@@ -631,49 +631,24 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
-/* --- ÚJ FUNKCIÓK STÍLUSAI - AZ EREDETI DIZÁJNHOZ IGAZÍTVA --- */
-.market-tabs { display: flex; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); }
-.tab-link { flex: 1; padding: 12px; border: none; background: transparent; color: #556b7d; cursor: pointer; font-weight: bold; font-size: 11px; text-transform: uppercase; transition: 0.2s; border-bottom: 2px solid transparent; }
-.tab-link.active { color: var(--primary); border-bottom: 2px solid var(--primary); background: rgba(0,212,255,0.05); }
-
-.comment-pane, .data-pane { padding: 15px; background: #0a1014; }
-.chat-scroll { max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.chat-msg { background: #1d2d37; padding: 10px; border-radius: 8px; border-left: 3px solid var(--primary); font-size: 13px; }
-.chat-msg-meta { display: flex; justify-content: space-between; font-size: 10px; color: #556b7d; margin-bottom: 4px; }
-.data-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #2c4f60; font-size: 12px; color: #eee; }
-.hidden { display: none !important; }
-
-.comment-pane input { 
-    background: #0b1218; border: 1px solid #334756; color: white; padding: 10px; border-radius: 5px; width: 100%; box-sizing: border-box; outline: none;
-}
-.comment-pane input:focus { border-color: var(--primary); }
-    
- async function loadMarkets() {
-    const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
-    const mList = document.getElementById('market-list');
-    const hList = document.getElementById('history-list');
-    const dict = i18n[currentLang];
-    mList.innerHTML = ""; hList.innerHTML = "";
-    
-    markets.forEach(m => {
-        const groups = JSON.parse(m.note || "[]");
-        const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
-        const symbol = m.type === 'REAL' ? '€' : 'DEMO';
-        const dlDate = new Date(m.deadline);
-        const isExpired = dlDate < new Date();
+    async function loadMarkets() {
+        const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const mList = document.getElementById('market-list');
+        const hList = document.getElementById('history-list');
+        const dict = i18n[currentLang];
+        mList.innerHTML = ""; hList.innerHTML = "";
         
-        const card = document.createElement('div');
-        card.className = 'market-card';
-
-        if(m.status === 'active') {
-            card.innerHTML = `
-                <div class="market-tabs">
-                    <button class="tab-link active" onclick="manageTab('${m.id}', 'bet', this)">${dict.bet || 'Fogadás'}</button>
-                    <button class="tab-link" onclick="manageTab('${m.id}', 'chat', this)">${dict.comments || 'Kommentek'}</button>
-                    <button class="tab-link" onclick="manageTab('${m.id}', 'res', this)">${dict.data || 'Adatok'}</button>
-                </div>
-                
-                <div id="p-bet-${m.id}" class="tab-content">
+        markets.forEach(m => {
+            const groups = JSON.parse(m.note || "[]");
+            const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
+            const symbol = m.type === 'REAL' ? '€' : 'DEMO';
+            const dlDate = new Date(m.deadline);
+            const isExpired = dlDate < new Date();
+            
+            if(m.status === 'active') {
+                const card = document.createElement('div');
+                card.className = 'market-card';
+                card.innerHTML = `
                     <div class="market-header">
                         <div class="header-left">
                             <h2 style="margin:0;">${m.title}</h2>
@@ -686,111 +661,41 @@ async function requestWithdrawal() {
                         </div>
                         <div class="header-right">
                             <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
-                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create" style="margin-top:5px;">SETTLE</button>` : ''}
+                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
                         </div>
                     </div>
                     ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
                         ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
-                    </div></div>`).join('')}
-                </div>
-                
-                <div id="p-chat-${m.id}" class="tab-content hidden">
-                    <div class="comment-pane">
-                        <div id="chat-list-${m.id}" class="chat-scroll"><small>Betöltés...</small></div>
-                        <div style="display:flex; gap:8px;">
-                            <input type="text" id="chat-input-${m.id}" placeholder="Írj egy üzenetet...">
-                            <button class="btn-create" onclick="postComment('${m.id}')" style="white-space:nowrap;">KÜLDÉS</button>
+                    </div></div>`).join('')}`;
+                mList.appendChild(card);
+            } else {
+                const card = document.createElement('div');
+                card.className = 'market-card';
+                const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
+                card.innerHTML = `
+                    <div class="settled-badge">Settled</div>
+                    <div class="market-header">
+                        <div class="header-left">
+                            <h2 style="margin-top:15px; margin-bottom:5px;">
+                                ${m.title} <span style="color:${typeColor}; opacity:0.7">- ${dict.settled_at} ${sDate.toLocaleString()}.</span>
+                            </h2>
+                            <div style="margin-bottom:15px;">
+                                <small style="color:#aaa; display:block;">${dict.host}: ${m.creator_name}</small>
+                                <small style="color:var(--danger); display:block;">${dict.deadline}: ${dlDate.toLocaleString()}</small>
+                                <small style="color:${typeColor}; font-weight:bold;">${dict.final_pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            </div>
+                        </div>
+                        <div class="header-right">
+                            <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
                         </div>
                     </div>
-                </div>
-
-                <div id="p-res-${m.id}" class="tab-content hidden">
-                    <div class="data-pane">
-                        <div id="res-list-${m.id}"><small>Betöltés...</small></div>
-                    </div>
-                </div>
-            `;
-            mList.appendChild(card);
-        } else {
-            // SETTLED (LEZÁRT) PIACOK MEGJELENÍTÉSE
-            const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
-            card.innerHTML = `
-                <div class="settled-badge">Settled</div>
-                <div class="market-header">
-                    <div class="header-left">
-                        <h2 style="margin-top:15px; margin-bottom:5px;">
-                            ${m.title} <span style="color:${typeColor}; opacity:0.7">- ${dict.settled_at} ${sDate.toLocaleString()}.</span>
-                        </h2>
-                        <div style="margin-bottom:15px;">
-                            <small style="color:#aaa; display:block;">${dict.host}: ${m.creator_name}</small>
-                            <small style="color:var(--danger); display:block;">${dict.deadline}: ${dlDate.toLocaleString()}</small>
-                            <small style="color:${typeColor}; font-weight:bold;">${dict.final_pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
-                        </div>
-                    </div>
-                    <div class="header-right">
-                        <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
-                    </div>
-                </div>
-                ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
-                    ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
-                </div>`).join('')}`;
-            hList.appendChild(card);
-        }
-    });
-}
-
-// --- FÜLKEZELŐ LOGIKA ---
-window.manageTab = function(mid, type, btn) {
-    const card = btn.closest('.market-card');
-    card.querySelectorAll('.tab-link').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    
-    card.querySelectorAll('.tab-content').forEach(p => p.classList.add('hidden'));
-    card.querySelector(`#p-${type}-${mid}`).classList.remove('hidden');
-
-    if(type === 'chat') loadMarketChat(mid);
-    if(type === 'res') loadMarketStats(mid);
-};
-
-// --- KOMMENTEK KEZELÉSE ---
-async function loadMarketChat(mid) {
-    const list = document.getElementById(`chat-list-${mid}`);
-    const { data } = await _supabase.from('comments').select('*').eq('market_id', mid).order('created_at', {ascending: true});
-    if(!data || data.length === 0) { list.innerHTML = "<small style='color:#556b7d'>Nincsenek üzenetek.</small>"; return; }
-    list.innerHTML = data.map(c => `
-        <div class="chat-msg">
-            <div class="chat-msg-meta"><b>${c.username}</b> <span>${new Date(c.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>
-            <div>${c.comment_text}</div>
-        </div>
-    `).join('');
-    list.scrollTop = list.scrollHeight;
-}
-
-window.postComment = async function(mid) {
-    const input = document.getElementById(`chat-input-${mid}`);
-    const text = input.value.trim();
-    if(!text) return;
-    const { error } = await _supabase.from('comments').insert([{ 
-        market_id: mid, 
-        user_id: currentUser.id, 
-        username: currentUser.username, 
-        comment_text: text 
-    }]);
-    if(!error) { input.value = ""; loadMarketChat(mid); }
-};
-
-// --- ADATOK (FOGADÁSOK) KEZELÉSE ---
-async function loadMarketStats(mid) {
-    const list = document.getElementById(`res-list-${mid}`);
-    const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
-    if(!bets || bets.length === 0) { list.innerHTML = "<small style='color:#556b7d'>Még nem érkezett fogadás.</small>"; return; }
-    list.innerHTML = bets.map(b => `
-        <div class="data-row">
-            <span><b>${b.username}</b>: ${b.outcome_name}</span>
-            <b style="color:white">${parseFloat(b.amount).toFixed(2)} ${b.type}</b>
-        </div>
-    `).join('');
-}
+                    ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
+                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
+                    </div>`).join('')}`;
+                hList.appendChild(card);
+            }
+        });
+    }
 
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
