@@ -671,17 +671,13 @@ async function loadMarkets() {
         
         const card = document.createElement('div');
         card.className = 'market-card';
-        card.style.position = 'relative'; // Biztosítjuk a kártya alapját
+        card.style.position = 'relative';
 
-        // Közös gomb-szekció generálása
+        // Gombok sablonja - Eredeti stílus, kényszerített kattintással
         const buttonsHTML = `
-            <div class="top-extra-btns" style="position: relative; z-index: 1000; display: flex; gap: 10px; margin: 15px 0; width: 100%; clear: both;">
-                <button class="btn-top-extra" 
-                    style="flex: 1; cursor: pointer !important; pointer-events: all !important; position: relative; z-index: 1001; padding: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05);" 
-                    onclick="console.log('Klikk Komment'); event.preventDefault(); event.stopPropagation(); openComments('${m.id}')">💬 Kommentek</button>
-                <button class="btn-top-extra" 
-                    style="flex: 1; cursor: pointer !important; pointer-events: all !important; position: relative; z-index: 1001; padding: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.05);" 
-                    onclick="console.log('Klikk Fogadás'); event.preventDefault(); event.stopPropagation(); openBets('${m.id}')">📊 Fogadások</button>
+            <div class="top-extra-btns" style="display: flex; gap: 8px; margin: 12px 0; position: relative; z-index: 999;">
+                <button class="btn-top-extra" style="flex:1; cursor:pointer !important; pointer-events:auto !important;" onclick="event.stopPropagation(); openComments('${m.id}')">💬 KOMMENTEK</button>
+                <button class="btn-top-extra" style="flex:1; cursor:pointer !important; pointer-events:auto !important;" onclick="event.stopPropagation(); openBets('${m.id}')">📊 FOGADÁSOK</button>
             </div>
         `;
 
@@ -712,8 +708,8 @@ async function loadMarkets() {
         } else {
             const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
             card.innerHTML = `
-                <div class="settled-badge" style="position: absolute; top: 15px; left: 15px; z-index: 5;">Settled</div>
-                <div class="market-header" style="padding-top: 30px;">
+                <div class="settled-badge" style="position: absolute; top: 15px; left: 15px; margin:0;">SETTLED</div>
+                <div class="market-header" style="padding-top: 25px;">
                     <div class="header-left">
                         <h2 style="margin:0;">${m.title} <span style="color:${typeColor}; font-size: 0.8em; opacity: 0.8;">- Settled at ${sDate.toLocaleString()}.</span></h2>
                         <div style="margin-top:5px;">
@@ -737,6 +733,60 @@ async function loadMarkets() {
             hList.appendChild(card);
         }
     });
+}
+
+// --- HIÁNYZÓ FÜGGVÉNYEK (Ezek kellettek a gombokhoz) ---
+
+function closeSFModal() { 
+    document.getElementById('infoModal').style.display = "none"; 
+}
+
+async function openComments(mid) {
+    const body = document.getElementById('modalBody');
+    const footer = document.getElementById('modalFooter');
+    document.getElementById('modalTitle').innerText = "KOMMENTEK";
+    body.innerHTML = "Betöltés...";
+    document.getElementById('infoModal').style.display = "block";
+
+    const { data } = await _supabase.from('comments').select('*').eq('market_id', mid).order('created_at', {ascending: false});
+    
+    body.innerHTML = data && data.length ? data.map(c => `
+        <div class="sf-item">
+            <div class="sf-item-meta"><b>${c.username}</b> <span>${new Date(c.created_at).toLocaleString()}</span></div>
+            ${c.comment_text}
+        </div>`).join('') : "<div style='text-align:center; padding:20px; color:#556b7d;'>Nincs még komment.</div>";
+
+    footer.innerHTML = `
+        <div style="display:flex; gap:8px; margin-top:15px;">
+            <input type="text" id="new-cmt" placeholder="Üzenet..." style="margin:0; flex:1;">
+            <button class="btn-create" onclick="saveComment('${mid}')">KÜLDÉS</button>
+        </div>`;
+}
+
+async function saveComment(mid) {
+    const val = document.getElementById('new-cmt').value.trim();
+    if(!val) return;
+    await _supabase.from('comments').insert([{ market_id: mid, user_id: currentUser.id, username: currentUser.username, comment_text: val }]);
+    openComments(mid);
+}
+
+async function openBets(mid) {
+    const body = document.getElementById('modalBody');
+    document.getElementById('modalTitle').innerText = "FOGADÁSOK";
+    document.getElementById('modalFooter').innerHTML = "";
+    document.getElementById('infoModal').style.display = "block";
+    body.innerHTML = "Betöltés...";
+
+    const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
+    
+    body.innerHTML = bets && bets.length ? bets.map(b => `
+        <div class="sf-item">
+            <div class="sf-item-meta"><b>${b.username}</b> <span>${new Date(b.created_at).toLocaleString()}</span></div>
+            <b>${parseFloat(b.amount).toFixed(2)} ${b.type}</b> -> ${b.outcome_name}
+            <div style="font-size:10px; margin-top:5px; color:${b.status === 'win' ? 'var(--success)' : b.status === 'loss' ? 'var(--danger)' : '#aaa'}">
+                ${b.status.toUpperCase()}
+            </div>
+        </div>`).join('') : "<div style='text-align:center; padding:20px; color:#556b7d;'>Még nincs fogadás.</div>";
 }
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
