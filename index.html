@@ -842,46 +842,134 @@ async function openBets(mid) {
         setTimeout(() => { errDiv.style.display = 'none'; }, 5000);
     }
 
-    async function saveMarket() {
-        const dict = i18n[currentLang];
-        const t = document.getElementById('m-name').value.trim();
-        const b = parseFloat(document.getElementById('m-budget').value);
-        const dlInput = document.getElementById('m-deadline').value;
-        const type = document.getElementById('m-type').value;
-        if (!dlInput) return showCreateError(dict.min_deadline_err);
-        const deadline = new Date(dlInput), now = new Date();
-        if (deadline < new Date(now.getTime() + 60000)) return showCreateError(dict.min_deadline_err);
-        if (deadline > new Date(now.getTime() + 259200000)) return showCreateError(dict.max_deadline_err);
-        if(!t || isNaN(b) || b <= 0) return showCreateError(dict.fill_all);
-        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return showCreateError(dict.insufficient);
-        const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
-        if(groupDivs.length === 0) return showCreateError(dict.cat_err);
-        const grp = [];
-        for(let g of groupDivs) {
-            const categoryTitle = g.querySelector('.gt').value.trim();
-            if(!categoryTitle) return showCreateError(dict.cat_err);
-            const outcomes = [];
-            const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
-            for(let o of outcomeDivs) {
-                const name = o.querySelector('.on').value.trim(), odds = parseFloat(o.querySelector('.oo').value);
-                if(!name) return showCreateError(dict.outcome_err);
-                if(isNaN(odds) || odds < 1.01 || odds > 1000) return showCreateError(dict.odds_err);
-                outcomes.push({ n: name, o: odds, status: 'pending' });
-            }
-            grp.push({ title: categoryTitle, outcomes });
+async function saveMarket() {
+    const btn = document.getElementById('save-market-btn');
+    const dict = i18n[currentLang];
+    
+    const unlock = (msg) => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = dict.publish || "PUBLISH";
         }
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ title: t, type, take: b, initial_liquidity: b, deadline: deadline.toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
-        location.reload();
+        if (msg) showCreateError(msg);
+    };
+
+    // --- SPAM VÉDELEM ---
+    // Ha a gomb létezik, azonnal tiltjuk
+    if (btn) {
+        if (btn.disabled) return; 
+        btn.disabled = true;
+        btn.innerText = "WAIT...";
     }
 
-    function openBet(mId, n, o, t, dl) {
-        activeBet = { mId, n, o, t, dl };
-        const symbol = t === 'REAL' ? '€' : 'DEMO';
-        document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
-        document.getElementById('betModal').classList.remove('hidden'); calcWin();
+    const t = document.getElementById('m-name').value.trim();
+    const b = parseFloat(document.getElementById('m-budget').value);
+    const dlInput = document.getElementById('m-deadline').value;
+    const type = document.getElementById('m-type').value;
+
+    if (!dlInput) return unlock(dict.min_deadline_err);
+    const deadline = new Date(dlInput), now = new Date();
+    if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
+    if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
+
+    const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+    if (b > userProfile[balField]) return unlock(dict.insufficient);
+
+    const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
+    if (groupDivs.length === 0) return unlock(dict.cat_err);
+
+    const grp = [];
+    for (let g of groupDivs) {
+        const categoryTitle = g.querySelector('.gt').value.trim();
+        if (!categoryTitle) return unlock(dict.cat_err);
+        const outcomes = [];
+        const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
+        for (let o of outcomeDivs) {
+            const name = o.querySelector('.on').value.trim(), 
+                  odds = parseFloat(o.querySelector('.oo').value);
+            if (!name || isNaN(odds)) return unlock(dict.outcome_err);
+            outcomes.push({ n: name, o: odds, status: 'pending' });
+        }
+        grp.push({ title: categoryTitle, outcomes });
     }
+
+    try {
+        // Tranzakciók sorrendben
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
+        await _supabase.from('markets').insert([{ 
+            title: t, type, take: b, initial_liquidity: b, 
+            deadline: deadline.toISOString(), note: JSON.stringify(grp), 
+            creator_name: currentUser.username, status: 'active' 
+        }]);
+        
+        location.reload(); 
+    } catch (err) {
+        console.error("Hiba:", err);
+        unlock("Server error! Please try again.");
+    }
+}
+
+async function placeBet() {
+    const btn = document.getElementById('place-bet-btn');
+    if (window.userIsRestricted) { showRestrictionToast(); return; }
+    
+    // --- SPAM VÉDELEM ---
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerText = "WAIT...";
+    }
+
+    const amt = parseFloat(document.getElementById('bet-amount').value);
+    const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+    const profit = amt * (activeBet.o - 1);
+
+    if (isNaN(amt) || amt <= 0) {
+        alert("Invalid amount");
+        if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+        return;
+    }
+    if (amt > userProfile[f]) {
+        alert(i18n[currentLang].insufficient);
+        if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+        return;
+    }
+
+    try {
+        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+        if (profit > mData.take) {
+            alert("Liquidity limit reached!");
+            if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+            return;
+        }
+
+        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
+        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
+        await _supabase.from('bets').insert([{ 
+            user_id: currentUser.id, market_id: activeBet.mId, 
+            outcome_name: activeBet.n, amount: amt, odds: activeBet.o, 
+            type: activeBet.t, status: 'pending' 
+        }]);
+
+        location.reload();
+    } catch (err) {
+        console.error(err);
+        if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+    }
+}
+
+function openBet(mId, n, o, t, dl) {
+    activeBet = { mId, n, o, t, dl };
+    const btn = document.getElementById('place-bet-btn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = "PLACE BET";
+    }
+    document.getElementById('bet-on').innerText = n; 
+    document.getElementById('bet-odds').innerText = "x" + o;
+    document.getElementById('betModal').classList.remove('hidden'); 
+    calcWin();
+}
 
  async function placeBet() {
     // 1. Korlátozás ellenőrzése piros felugró üzenettel
