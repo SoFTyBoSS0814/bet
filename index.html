@@ -631,6 +631,51 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
+
+    function subscribeToProfileChanges() {
+    if (!currentUser) return;
+
+    _supabase
+        .channel('profile-changes')
+        .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'profiles', 
+            filter: `id=eq.${currentUser.id}` 
+        }, (payload) => {
+            const newStatus = payload.new.is_restricted;
+            
+            // Frissítjük a változót a memóriában
+            window.userIsRestricted = newStatus;
+            userProfile.is_restricted = newStatus;
+
+            console.log("Státusz változott:", newStatus ? "KORLÁTOZVA" : "FELOLDVA");
+
+            // Azonnali UI frissítés frissítés nélkül:
+            updateUIAfterRestrictionChange(newStatus);
+        })
+        .subscribe();
+}
+
+// Ez a függvény elrejti/megjeleníti a gombokat azonnal
+function updateUIAfterRestrictionChange(restricted) {
+    // 1. A Piac létrehozó gomb elrejtése/megjelenítése a főoldalon
+    const createBtn = document.querySelector('.btn-create'); // Vagy amilyen osztályod van a fő gombra
+    if (createBtn) {
+        createBtn.style.display = restricted ? 'none' : 'block';
+    }
+
+    // 2. Ha épp nyitva van a modal, dobjon egy értesítést
+    if (restricted) {
+        if (typeof showRestrictionToast === 'function') showRestrictionToast();
+        // Opcionálisan be is zárhatod a modált, ha épp benne van
+        // document.getElementById('createModal').classList.add('hidden');
+    }
+}
+
+// Indítsd el a figyelést!
+subscribeToProfileChanges();
+    
 async function loadMarkets() {
     try {
         if (!document.getElementById('infoModal')) {
