@@ -648,8 +648,17 @@ async function loadMarkets() {
             document.body.appendChild(modalDiv);
         }
 
+        // Adatok lekérése: piacok + komment számláláshoz az összes komment
         const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const { data: allComments } = await _supabase.from('comments').select('market_id');
+        
         if (error) throw error;
+
+        // Kommentek összesítése market_id szerint
+        const commentCounts = {};
+        (allComments || []).forEach(c => {
+            commentCounts[c.market_id] = (commentCounts[c.market_id] || 0) + 1;
+        });
 
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
@@ -664,13 +673,14 @@ async function loadMarkets() {
             const symbol = m.type === 'REAL' ? '€' : 'DEMO';
             const dlDate = new Date(m.deadline);
             const isExpired = dlDate < new Date();
+            const cCount = commentCounts[m.id] || 0;
             
             const card = document.createElement('div');
             card.className = 'market-card';
 
             const buttonsHTML = `
                 <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
-                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK</button>
+                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
                     <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
                 </div>
             `;
@@ -727,11 +737,9 @@ async function loadMarkets() {
             }
         });
     } catch (e) {
-        console.error("Hiba a loadMarkets során:", e);
+        console.error(e);
     }
 }
-
-// --- FONTOS FUNKCIÓK A GOMBOKHOZ ÉS MODALHOZ ---
 
 function closeSFModal() { 
     document.getElementById('infoModal').style.display = "none"; 
@@ -771,6 +779,8 @@ async function saveComment(mid) {
         username: currentUser.username, 
         comment_text: input.value.trim() 
     }]);
+    // Frissítés után újratöltjük a piacokat is, hogy látszódjon a gombnál a növekmény
+    await loadMarkets();
     openComments(mid);
 }
 
@@ -795,9 +805,9 @@ async function openBets(mid) {
         const displayName = nameMap[b.user_id] || "Ismeretlen";
         return `
         <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid ${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#334756'}">
-            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
-                <b style="color:#00d1ff;">${displayName}</b> 
-                <span style="color:#666;">${new Date(b.created_at).toLocaleString()}</span>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <b style="color:#00d1ff; font-size: 11px;">${displayName}</b> 
+                <span style="color:white; font-size:12px; font-weight:500;">${new Date(b.created_at).toLocaleString()}</span>
             </div>
             <div style="font-size:13px; color:#ccc;"><b>${parseFloat(b.amount).toFixed(2)} ${b.type || 'DEMO'}</b> ➞ ${b.outcome_name}</div>
             <div style="font-size:10px; margin-top:3px; font-weight:bold; color:${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#aaa'}">${(b.status || 'pending').toUpperCase()}</div>
