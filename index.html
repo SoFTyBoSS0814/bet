@@ -842,46 +842,95 @@ async function openBets(mid) {
         setTimeout(() => { errDiv.style.display = 'none'; }, 5000);
     }
 
-    async function saveMarket() {
-        const dict = i18n[currentLang];
-        const t = document.getElementById('m-name').value.trim();
-        const b = parseFloat(document.getElementById('m-budget').value);
-        const dlInput = document.getElementById('m-deadline').value;
-        const type = document.getElementById('m-type').value;
-        if (!dlInput) return showCreateError(dict.min_deadline_err);
-        const deadline = new Date(dlInput), now = new Date();
-        if (deadline < new Date(now.getTime() + 60000)) return showCreateError(dict.min_deadline_err);
-        if (deadline > new Date(now.getTime() + 259200000)) return showCreateError(dict.max_deadline_err);
-        if(!t || isNaN(b) || b <= 0) return showCreateError(dict.fill_all);
-        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return showCreateError(dict.insufficient);
-        const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
-        if(groupDivs.length === 0) return showCreateError(dict.cat_err);
-        const grp = [];
-        for(let g of groupDivs) {
-            const categoryTitle = g.querySelector('.gt').value.trim();
-            if(!categoryTitle) return showCreateError(dict.cat_err);
-            const outcomes = [];
-            const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
-            for(let o of outcomeDivs) {
-                const name = o.querySelector('.on').value.trim(), odds = parseFloat(o.querySelector('.oo').value);
-                if(!name) return showCreateError(dict.outcome_err);
-                if(isNaN(odds) || odds < 1.01 || odds > 1000) return showCreateError(dict.odds_err);
-                outcomes.push({ n: name, o: odds, status: 'pending' });
-            }
-            grp.push({ title: categoryTitle, outcomes });
+  async function saveMarket() {
+    const btn = document.getElementById('save-market-btn');
+    const dict = i18n[currentLang];
+    
+    // Segédfüggvény: hiba esetén visszakapcsolja a gombot és mutatja a hibaüzenetet
+    const abort = (msg) => {
+        btn.disabled = false;
+        btn.innerText = dict.publish || "PUBLISH";
+        return showCreateError(msg);
+    };
+
+    // 1. Azonnali tiltás a spam ellen
+    btn.disabled = true;
+    btn.innerText = "WAIT...";
+
+    const t = document.getElementById('m-name').value.trim();
+    const b = parseFloat(document.getElementById('m-budget').value);
+    const dlInput = document.getElementById('m-deadline').value;
+    const type = document.getElementById('m-type').value;
+
+    // Ellenőrzések (hibánál az abort függvényt hívjuk)
+    if (!dlInput) return abort(dict.min_deadline_err);
+    
+    const deadline = new Date(dlInput), now = new Date();
+    if (deadline < new Date(now.getTime() + 60000)) return abort(dict.min_deadline_err);
+    if (deadline > new Date(now.getTime() + 259200000)) return abort(dict.max_deadline_err);
+    if (!t || isNaN(b) || b <= 0) return abort(dict.fill_all);
+
+    const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+    if (b > userProfile[balField]) return abort(dict.insufficient);
+
+    const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
+    if (groupDivs.length === 0) return abort(dict.cat_err);
+
+    const grp = [];
+    for (let g of groupDivs) {
+        const categoryTitle = g.querySelector('.gt').value.trim();
+        if (!categoryTitle) return abort(dict.cat_err);
+        
+        const outcomes = [];
+        const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
+        for (let o of outcomeDivs) {
+            const name = o.querySelector('.on').value.trim();
+            const odds = parseFloat(o.querySelector('.oo').value);
+            if (!name) return abort(dict.outcome_err);
+            if (isNaN(odds) || odds < 1.01 || odds > 1000) return abort(dict.odds_err);
+            outcomes.push({ n: name, o: odds, status: 'pending' });
         }
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ title: t, type, take: b, initial_liquidity: b, deadline: deadline.toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
-        location.reload();
+        grp.push({ title: categoryTitle, outcomes });
     }
 
-    function openBet(mId, n, o, t, dl) {
-        activeBet = { mId, n, o, t, dl };
-        const symbol = t === 'REAL' ? '€' : 'DEMO';
-        document.getElementById('bet-on').innerText = n; document.getElementById('bet-odds').innerText = "x" + o;
-        document.getElementById('betModal').classList.remove('hidden'); calcWin();
+    try {
+        // Tranzakciók futtatása
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
+        await _supabase.from('markets').insert([{ 
+            title: t, 
+            type, 
+            take: b, 
+            initial_liquidity: b, 
+            deadline: deadline.toISOString(), 
+            note: JSON.stringify(grp), 
+            creator_name: currentUser.username, 
+            status: 'active' 
+        }]);
+        
+        location.reload();
+    } catch (err) {
+        console.error("Hiba mentéskor:", err);
+        return abort("Server error, please try again!");
     }
+}
+
+function openBet(mId, n, o, t, dl) {
+    activeBet = { mId, n, o, t, dl };
+    
+    // Amikor megnyílik a modál, a gombot alaphelyzetbe tesszük (kattinthatóra)
+    const placeBtn = document.getElementById('place-bet-btn');
+    if (placeBtn) {
+        placeBtn.disabled = false;
+        const dict = i18n[currentLang];
+        placeBtn.innerText = dict.btn_place_bet || "PLACE BET";
+    }
+
+    const symbol = t === 'REAL' ? '€' : 'DEMO';
+    document.getElementById('bet-on').innerText = n; 
+    document.getElementById('bet-odds').innerText = "x" + o;
+    document.getElementById('betModal').classList.remove('hidden'); 
+    calcWin();
+}
 
  async function placeBet() {
     // 1. Korlátozás ellenőrzése piros felugró üzenettel
