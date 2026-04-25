@@ -128,10 +128,52 @@
         .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
         .market-type-label { font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
         
-        .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
-        .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
-        .history-item.loss-row { border-left-color: var(--danger); background: rgba(255, 68, 68, 0.1); }
+/* A teljes sor stílusa a History-ban */
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    margin: 6px 0;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border-left: 4px solid transparent;
+}
 
+/* A kimenetel neve (pl. Hazai) */
+.history-item span {
+    font-size: 18px; /* MEGNÖVELVE */
+    font-weight: 600;
+    color: #fff;
+}
+
+/* A státusz szövege (pl. WINNER / LOSS) */
+.history-item b {
+    font-size: 16px; /* MEGNÖVELVE */
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+/* Külön színek a státuszoknak a jobb láthatóságért */
+.winner-row {
+    border-left-color: var(--success) !important;
+    background: rgba(40, 167, 69, 0.1) !important;
+}
+
+.winner-row b {
+    color: var(--success);
+}
+
+.loss-row {
+    border-left-color: var(--danger) !important;
+    background: rgba(255, 68, 68, 0.05) !important;
+}
+
+.loss-row b {
+    color: var(--danger);
+}
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
         #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
 
