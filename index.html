@@ -842,10 +842,17 @@ async function openBets(mid) {
         setTimeout(() => { errDiv.style.display = 'none'; }, 5000);
     }
 
-  async function saveMarket() {
+async function saveMarket() {
+    // 1. Megkeressük a gombot az ID alapján
     const btn = document.getElementById('save-market-btn');
     const dict = i18n[currentLang];
     
+    // Ha a gomb véletlenül nem létezik a DOM-ban, ne haljon meg a kód
+    if (!btn) {
+        console.error("Hiba: 'save-market-btn' nem található a HTML-ben!");
+        return;
+    }
+
     // Segédfüggvény: hiba esetén visszakapcsolja a gombot és mutatja a hibaüzenetet
     const abort = (msg) => {
         btn.disabled = false;
@@ -853,7 +860,7 @@ async function openBets(mid) {
         return showCreateError(msg);
     };
 
-    // 1. Azonnali tiltás a spam ellen
+    // 2. AZONNALI TILTÁS a spam ellen (bal klikk spammelés kivédve)
     btn.disabled = true;
     btn.innerText = "WAIT...";
 
@@ -862,7 +869,7 @@ async function openBets(mid) {
     const dlInput = document.getElementById('m-deadline').value;
     const type = document.getElementById('m-type').value;
 
-    // Ellenőrzések (hibánál az abort függvényt hívjuk)
+    // Ellenőrzések (hibánál az abort visszaállítja a gombot)
     if (!dlInput) return abort(dict.min_deadline_err);
     
     const deadline = new Date(dlInput), now = new Date();
@@ -894,7 +901,7 @@ async function openBets(mid) {
     }
 
     try {
-        // Tranzakciók futtatása
+        // Tranzakciók futtatása (Levonás + Létrehozás)
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
         await _supabase.from('markets').insert([{ 
             title: t, 
@@ -907,11 +914,31 @@ async function openBets(mid) {
             status: 'active' 
         }]);
         
+        // Siker esetén frissítünk (a gomb inaktív marad a reloadig, így biztos nem lesz dupla)
         location.reload();
     } catch (err) {
         console.error("Hiba mentéskor:", err);
         return abort("Server error, please try again!");
     }
+}
+
+// Ezt is cseréld le, hogy a fogadás gombja is resetelődjön minden megnyitásnál!
+function openBet(mId, n, o, t, dl) {
+    activeBet = { mId, n, o, t, dl };
+    
+    // Megkeressük a fogadás gombot és újra engedélyezzük
+    const placeBtn = document.getElementById('place-bet-btn');
+    if (placeBtn) {
+        placeBtn.disabled = false;
+        const dict = i18n[currentLang];
+        placeBtn.innerText = (dict && dict.btn_place_bet) ? dict.btn_place_bet : "PLACE BET";
+    }
+
+    const symbol = t === 'REAL' ? '€' : 'DEMO';
+    document.getElementById('bet-on').innerText = n; 
+    document.getElementById('bet-odds').innerText = "x" + o;
+    document.getElementById('betModal').classList.remove('hidden'); 
+    calcWin();
 }
 
 function openBet(mId, n, o, t, dl) {
