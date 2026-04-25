@@ -671,7 +671,7 @@ async function openComments(mid) {
 
 
 async function loadMarkets() {
-    // 1. MODAL ELLENŐRZÉS - Stílusos sötétkék design
+    // 1. MODAL ELLENŐRZÉS - Fix kék design
     if (!document.getElementById('infoModal')) {
         const modalDiv = document.createElement('div');
         modalDiv.id = 'infoModal';
@@ -734,7 +734,6 @@ async function loadMarkets() {
                 </div>`).join('')}`;
             mList.appendChild(card);
         } else {
-            // --- LEZÁRT PIACOK (Visszaállított kék stílus és cím melletti dátum) ---
             const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
             card.innerHTML = `
                 <div class="settled-badge" style="margin-bottom:10px; display:inline-block;">SETTLED</div>
@@ -763,8 +762,6 @@ async function loadMarkets() {
         }
     });
 }
-
-// --- FUNKCIÓK JAVÍTÁSA (Undefined fix) ---
 
 function closeSFModal() { document.getElementById('infoModal').style.display = "none"; }
 
@@ -810,15 +807,15 @@ async function openBets(mid) {
 
     const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
     
-    // FIX: b.type helyett manuálisan ellenőrizzük, ha nincs benne a rekordban
+    // FIX: Itt a 'type' oszlopot használjuk a pénznemhez, mert a Supabase-ben az van
     body.innerHTML = bets && bets.length ? bets.map(b => `
         <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid ${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#334756'}">
             <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px;">
                 <b style="color:#eee;">${b.username}</b> 
                 <span style="color:#666;">${new Date(b.created_at).toLocaleString()}</span>
             </div>
-            <div style="font-size:13px; color:#ccc;"><b>${parseFloat(b.amount).toFixed(2)} ${b.currency || 'DEMO/€'}</b> ➞ ${b.outcome_name}</div>
-            <div style="font-size:10px; margin-top:3px; font-weight:bold; color:${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#aaa'}">${b.status.toUpperCase()}</div>
+            <div style="font-size:13px; color:#ccc;"><b>${parseFloat(b.amount).toFixed(2)} ${b.type}</b> ➞ ${b.outcome_name}</div>
+            <div style="font-size:10px; margin-top:3px; font-weight:bold; color:${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#aaa'}">${b.status ? b.status.toUpperCase() : 'PENDING'}</div>
         </div>`).join('') : "<div style='text-align:center; padding:20px; color:#556b7d;'>Még nincsenek fogadások.</div>";
 }
     function checkDeadlines() {
