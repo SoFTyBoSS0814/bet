@@ -845,7 +845,15 @@ async function openBets(mid) {
 async function saveMarket() {
     const btn = document.getElementById('save-market-btn');
     const dict = i18n[currentLang];
-    
+
+    // 1. AZONNALI TILTÁS - Ez állítja meg a spamet
+    if (btn) {
+        if (btn.disabled) return; // Ha már tiltva van, kiugrunk
+        btn.disabled = true;
+        btn.innerText = "WAIT...";
+    }
+
+    // Segédfüggvény hiba esetére
     const unlock = (msg) => {
         if (btn) {
             btn.disabled = false;
@@ -854,57 +862,57 @@ async function saveMarket() {
         if (msg) showCreateError(msg);
     };
 
-    // --- SPAM VÉDELEM ---
-    // Ha a gomb létezik, azonnal tiltjuk
-    if (btn) {
-        if (btn.disabled) return; 
-        btn.disabled = true;
-        btn.innerText = "WAIT...";
-    }
-
-    const t = document.getElementById('m-name').value.trim();
-    const b = parseFloat(document.getElementById('m-budget').value);
-    const dlInput = document.getElementById('m-deadline').value;
-    const type = document.getElementById('m-type').value;
-
-    if (!dlInput) return unlock(dict.min_deadline_err);
-    const deadline = new Date(dlInput), now = new Date();
-    if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
-    if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
-
-    const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-    if (b > userProfile[balField]) return unlock(dict.insufficient);
-
-    const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
-    if (groupDivs.length === 0) return unlock(dict.cat_err);
-
-    const grp = [];
-    for (let g of groupDivs) {
-        const categoryTitle = g.querySelector('.gt').value.trim();
-        if (!categoryTitle) return unlock(dict.cat_err);
-        const outcomes = [];
-        const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
-        for (let o of outcomeDivs) {
-            const name = o.querySelector('.on').value.trim(), 
-                  odds = parseFloat(o.querySelector('.oo').value);
-            if (!name || isNaN(odds)) return unlock(dict.outcome_err);
-            outcomes.push({ n: name, o: odds, status: 'pending' });
-        }
-        grp.push({ title: categoryTitle, outcomes });
-    }
-
     try {
-        // Tranzakciók sorrendben
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ 
+        const t = document.getElementById('m-name').value.trim();
+        const b = parseFloat(document.getElementById('m-budget').value);
+        const dlInput = document.getElementById('m-deadline').value;
+        const type = document.getElementById('m-type').value;
+
+        // Ellenőrzések
+        if (!dlInput) return unlock(dict.min_deadline_err);
+        const deadline = new Date(dlInput), now = new Date();
+        if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
+        if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
+
+        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+        if (b > userProfile[balField]) return unlock(dict.insufficient);
+
+        const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
+        if (groupDivs.length === 0) return unlock(dict.cat_err);
+
+        const grp = [];
+        for (let g of groupDivs) {
+            const categoryTitle = g.querySelector('.gt').value.trim();
+            if (!categoryTitle) return unlock(dict.cat_err);
+            const outcomes = [];
+            const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
+            for (let o of outcomeDivs) {
+                const name = o.querySelector('.on').value.trim(), 
+                      odds = parseFloat(o.querySelector('.oo').value);
+                if (!name || isNaN(odds)) return unlock(dict.outcome_err);
+                outcomes.push({ n: name, o: odds, status: 'pending' });
+            }
+            grp.push({ title: categoryTitle, outcomes });
+        }
+
+        // --- ADATBÁZIS MŰVELETEK ---
+        // Előbb a levonás
+        const { error: pErr } = await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
+        if (pErr) throw pErr;
+
+        // Aztán a létrehozás
+        const { error: mErr } = await _supabase.from('markets').insert([{ 
             title: t, type, take: b, initial_liquidity: b, 
             deadline: deadline.toISOString(), note: JSON.stringify(grp), 
             creator_name: currentUser.username, status: 'active' 
         }]);
-        
-        location.reload(); 
+        if (mErr) throw mErr;
+
+        // Ha idáig eljutott, minden oké, frissítünk
+        location.reload();
+
     } catch (err) {
-        console.error("Hiba:", err);
+        console.error("Hiba történt:", err);
         unlock("Server error! Please try again.");
     }
 }
