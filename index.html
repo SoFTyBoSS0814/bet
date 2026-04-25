@@ -631,8 +631,6 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
-
-    
 async function loadMarkets() {
     try {
         if (!document.getElementById('infoModal')) {
@@ -856,24 +854,8 @@ async function saveMarket() {
         if (msg) showCreateError(msg);
     };
 
-    // --- VALÓS IDEJŰ ELLENŐRZÉS (Frissítés nélkül) ---
-    // Lekérjük a legfrissebb profil adatokat az adatbázisból a beküldés pillanatában
-    const { data: freshProfile, error: checkError } = await _supabase
-        .from('profiles')
-        .select('is_restricted')
-        .eq('id', currentUser.id)
-        .single();
-
-    if (checkError) {
-        console.error("Hiba az ellenőrzéskor:", checkError);
-    } else if (freshProfile && freshProfile.is_restricted) {
-        // Ha időközben korlátozták, itt megállítjuk
-        if (typeof showRestrictionToast === 'function') showRestrictionToast();
-        else alert("Your account is restricted!");
-        return; 
-    }
-
     // --- SPAM VÉDELEM ---
+    // Ha a gomb létezik, azonnal tiltjuk
     if (btn) {
         if (btn.disabled) return; 
         btn.disabled = true;
@@ -912,6 +894,7 @@ async function saveMarket() {
     }
 
     try {
+        // Tranzakciók sorrendben
         await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
         await _supabase.from('markets').insert([{ 
             title: t, type, take: b, initial_liquidity: b, 
@@ -928,19 +911,7 @@ async function saveMarket() {
 
 async function placeBet() {
     const btn = document.getElementById('place-bet-btn');
-    
-    // --- VALÓS IDEJŰ ELLENŐRZÉS FOGADÁSNÁL IS ---
-    const { data: freshProfile } = await _supabase
-        .from('profiles')
-        .select('is_restricted')
-        .eq('id', currentUser.id)
-        .single();
-
-    if (freshProfile && freshProfile.is_restricted) {
-        if (typeof showRestrictionToast === 'function') showRestrictionToast();
-        else alert("Account restricted!");
-        return;
-    }
+    if (window.userIsRestricted) { showRestrictionToast(); return; }
     
     // --- SPAM VÉDELEM ---
     if (btn) {
@@ -1266,6 +1237,37 @@ function openCreateModal() {
     }
 }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
-<script>
+
+function showRestrictionToast() {
+    // Ha már van kint egy értesítés, ne halmozzuk fel
+    if (document.getElementById('active-toast')) return;
+
+    const toast = document.createElement('div');
+    toast.id = 'active-toast';
+    toast.className = 'restriction-toast';
+    toast.innerHTML = `
+        <b>Hozzáférés megtagadva</b>
+        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
+        <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
+    `;
+
+    document.body.appendChild(toast);
+
+    // 5 másodperc után eltüntetjük
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(100%)";
+        setTimeout(() => toast.remove(), 500);
+    }, 5000);
+}
+
+    function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+</script>
 </body>
 </html>
