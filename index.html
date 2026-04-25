@@ -1238,68 +1238,50 @@ function openCreateModal() {
 }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 
+// --- KORLÁTOZÁS ELLENŐRZŐ (POLLING + EREDETI UI) ---
+
+// 1. Az eredeti stílusú üzenet megjelenítése a jobb alsó sarokban
 function showRestrictionToast() {
-    // Ha már van kint egy értesítés, ne halmozzuk fel
-    if (document.getElementById('active-toast')) return;
-
-    const toast = document.createElement('div');
-    toast.id = 'active-toast';
-    toast.className = 'restriction-toast';
-    toast.innerHTML = `
-        <b>Hozzáférés megtagadva</b>
-        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
-        <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
-    `;
-
-    document.body.appendChild(toast);
-
-    // 5 másodperc után eltüntetjük
-    setTimeout(() => {
-        toast.style.transition = "opacity 0.5s ease, transform 0.5s ease";
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(100%)";
-        setTimeout(() => toast.remove(), 500);
-    }, 5000);
-}
-
-    function closeModal(id) {
-    const modal = document.getElementById(id);
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-}
-
-    // --- KORLÁTOZÁS ELLENŐRZŐ (POLLING) ---
-
-// 1. A hibaüzenet (Toast) létrehozása, ami fixen kint marad
-function showRestrictionToast() {
-    if (document.getElementById('res-alert-overlay')) return;
+    if (document.getElementById('res-alert-toast')) return;
 
     const div = document.createElement('div');
-    div.id = 'res-alert-overlay';
+    div.id = 'res-alert-toast';
+    // Eredeti sötét stílus, jobb alulra pozicionálva
     div.style = `
-        position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
-        background: #ff4444; color: white; padding: 20px 30px; border-radius: 12px; 
-        z-index: 9999999; font-weight: bold; box-shadow: 0 10px 40px rgba(0,0,0,0.6); 
-        text-align: center; min-width: 300px; border: 2px solid rgba(255,255,255,0.3);
+        position: fixed; 
+        bottom: 20px; 
+        right: 20px; 
+        background: #1a222a; 
+        color: #ccc; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border-left: 4px solid #ff4444;
+        z-index: 1000000; 
+        font-size: 13px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        animation: slideInRight 0.3s ease-out;
     `;
+
     div.innerHTML = `
-        <div style="font-size: 20px; margin-bottom: 8px;">🚫 FIÓK KORLÁTOZVA</div>
-        <div style="font-size: 14px; font-weight: normal; opacity: 0.9; margin-bottom: 15px;">
-            Műveletek végrehajtása jelenleg nem engedélyezett.<br>
-            Kérjük, fordulj az adminisztrátorhoz.
+        <div style="margin-bottom: 5px;"><b style="color:#fff; font-size:14px;">Hozzáférés megtagadva</b></div>
+        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
+        <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
+        <div style="margin-top:10px; text-align:right;">
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: #334756; color: white; border: none; padding: 4px 10px; 
+                           border-radius: 4px; cursor: pointer; font-size: 11px;">OK</button>
         </div>
-        <button onclick="this.parentElement.remove()" 
-                style="background: white; color: #ff4444; border: none; padding: 10px 25px; 
-                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 900; 
-                       text-transform: uppercase;">
-            Értettem
-        </button>
+        <style>
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        </style>
     `;
     document.body.appendChild(div);
 }
 
-// 2. Az ellenőrző függvény (Csak a háttérben frissít, gomb marad!)
+// 2. Az ellenőrző függvény (3 másodpercenként frissít, de nem bántja a gombokat)
 async function runStatusCheck() {
     if (!currentUser) return;
 
@@ -1313,11 +1295,11 @@ async function runStatusCheck() {
         if (error) throw error;
 
         if (profile) {
-            // Frissítjük a globális státuszt a memóriában
+            // Frissítjük a globális változót a háttérben
             window.userIsRestricted = profile.is_restricted;
             if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
             
-            // Ha épp nyitva van a modal ÉS közben tiltják le, bezárjuk és üzenünk
+            // Ha épp nyitva van a létrehozó ablak (modal) és közben tiltják le, zárjuk be
             if (profile.is_restricted) {
                 const modal = document.getElementById('createModal');
                 if (modal && !modal.classList.contains('hidden')) {
@@ -1331,7 +1313,7 @@ async function runStatusCheck() {
     }
 }
 
-// 3 másodpercenként csekkol
+// Időzítő indítása
 setInterval(runStatusCheck, 3000);
 </script>
 </body>
