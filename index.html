@@ -128,41 +128,51 @@
         .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
         .market-type-label { font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
         
-/* History (Lezárt piacok) kimenetel nevek és státuszok */
-.history-list .history-item {
-    padding: 15px !important; /* Nagyobb belső hely */
-    margin-bottom: 8px !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
+/* A teljes sor stílusa a History-ban */
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    margin: 6px 0;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border-left: 4px solid transparent;
 }
 
-/* A kimenetel neve (Győztes, Igen, stb.) */
+/* A kimenetel neve (pl. Hazai) */
 .history-item span {
-    font-size: 20px !important; /* Extra nagy méret */
-    font-weight: 700 !important; /* Vastag betű */
-    color: #ffffff !important;
+    font-size: 18px; /* MEGNÖVELVE */
+    font-weight: 600;
+    color: #fff;
 }
 
-/* A státusz felirat (WINNER, LOSS, PENDING) */
+/* A státusz szövege (pl. WINNER / LOSS) */
 .history-item b {
-    font-size: 18px !important; /* Szintén megnövelve */
-    text-transform: uppercase !important;
-    letter-spacing: 1.5px !important;
-    padding: 5px 12px !important;
-    border-radius: 6px !important;
-    background: rgba(255, 255, 255, 0.05); /* Egy kis keretet adunk neki */
+    font-size: 16px; /* MEGNÖVELVE */
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
 }
 
-/* Színek finomítása, hogy világítson a szöveg */
+/* Külön színek a státuszoknak a jobb láthatóságért */
+.winner-row {
+    border-left-color: var(--success) !important;
+    background: rgba(40, 167, 69, 0.1) !important;
+}
+
 .winner-row b {
-    color: #28a745 !important; /* Erős zöld */
-    text-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+    color: var(--success);
+}
+
+.loss-row {
+    border-left-color: var(--danger) !important;
+    background: rgba(255, 68, 68, 0.05) !important;
 }
 
 .loss-row b {
-    color: #ff4444 !important; /* Erős piros */
-    text-shadow: 0 0 10px rgba(255, 68, 68, 0.3);
+    color: var(--danger);
 }
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
         #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
