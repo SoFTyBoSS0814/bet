@@ -1297,6 +1297,49 @@ function showRestrictionToast() {
         modal.classList.add('hidden');
     }
 }
+
+    // --- AUTOMATA ELLENŐRZÉS (POLLING) ---
+function startStatusChecker() {
+    if (!currentUser) return;
+
+    // Beállítjuk, hogy 5 másodpercenként fusson le (5000 ms)
+    setInterval(async () => {
+        try {
+            const { data: profile, error } = await _supabase
+                .from('profiles')
+                .select('is_restricted')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (error) throw error;
+
+            const isRestricted = profile.is_restricted;
+
+            // Csak akkor avatkozunk be, ha változott a státusz a memóriához képest
+            if (isRestricted !== window.userIsRestricted) {
+                window.userIsRestricted = isRestricted;
+                if(window.userProfile) userProfile.is_restricted = isRestricted;
+
+                console.log("Státusz frissítve (polling):", isRestricted ? "TILTVA" : "OK");
+
+                // UI Frissítése
+                const createBtn = document.querySelector('.btn-create');
+                if (createBtn) {
+                    createBtn.style.display = isRestricted ? 'none' : 'block';
+                }
+
+                if (isRestricted) {
+                    // Ha nyitva a modal, bezárjuk
+                    const modal = document.getElementById('createModal');
+                    if(modal) modal.classList.add('hidden');
+                    if (typeof showRestrictionToast === 'function') showRestrictionToast();
+                }
+            }
+        } catch (e) {
+            console.error("Hiba az automata ellenőrzésnél:", e);
+        }
+    }, 5000); // 5 másodperc
+}
 </script>
 </body>
 </html>
