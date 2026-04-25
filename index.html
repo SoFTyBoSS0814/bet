@@ -1268,6 +1268,71 @@ function showRestrictionToast() {
         modal.classList.add('hidden');
     }
 }
+
+    // --- KORLÁTOZÁS ELLENŐRZŐ (POLLING) ---
+
+// 1. A hibaüzenet (Toast) létrehozása, ami fixen kint marad
+function showRestrictionToast() {
+    if (document.getElementById('res-alert-overlay')) return;
+
+    const div = document.createElement('div');
+    div.id = 'res-alert-overlay';
+    div.style = `
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+        background: #ff4444; color: white; padding: 20px 30px; border-radius: 12px; 
+        z-index: 9999999; font-weight: bold; box-shadow: 0 10px 40px rgba(0,0,0,0.6); 
+        text-align: center; min-width: 300px; border: 2px solid rgba(255,255,255,0.3);
+    `;
+    div.innerHTML = `
+        <div style="font-size: 20px; margin-bottom: 8px;">🚫 FIÓK KORLÁTOZVA</div>
+        <div style="font-size: 14px; font-weight: normal; opacity: 0.9; margin-bottom: 15px;">
+            Műveletek végrehajtása jelenleg nem engedélyezett.<br>
+            Kérjük, fordulj az adminisztrátorhoz.
+        </div>
+        <button onclick="this.parentElement.remove()" 
+                style="background: white; color: #ff4444; border: none; padding: 10px 25px; 
+                       border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 900; 
+                       text-transform: uppercase;">
+            Értettem
+        </button>
+    `;
+    document.body.appendChild(div);
+}
+
+// 2. Az ellenőrző függvény (Csak a háttérben frissít, gomb marad!)
+async function runStatusCheck() {
+    if (!currentUser) return;
+
+    try {
+        const { data: profile, error } = await _supabase
+            .from('profiles')
+            .select('is_restricted')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (error) throw error;
+
+        if (profile) {
+            // Frissítjük a globális státuszt a memóriában
+            window.userIsRestricted = profile.is_restricted;
+            if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
+            
+            // Ha épp nyitva van a modal ÉS közben tiltják le, bezárjuk és üzenünk
+            if (profile.is_restricted) {
+                const modal = document.getElementById('createModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    showRestrictionToast();
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Polling hiba:", e);
+    }
+}
+
+// 3 másodpercenként csekkol
+setInterval(runStatusCheck, 3000);
 </script>
 </body>
 </html>
