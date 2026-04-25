@@ -631,7 +631,7 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
-  async function loadMarkets() {
+async function loadMarkets() {
     try {
         if (!document.getElementById('infoModal')) {
             const modalDiv = document.createElement('div');
@@ -699,17 +699,19 @@ async function requestWithdrawal() {
             } else {
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `
-                    <div class="settled-badge" style="margin-bottom:15px; display:inline-block; position:relative; z-index:1;">SETTLED</div>
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; position:relative;">
-                        <div>
-                            <h2 style="margin:0; color:white; line-height:1.2;">${m.title} <span style="color:#00d1ff; font-size: 0.65em; font-weight: normal; margin-left:8px; opacity:0.8; vertical-align:middle;">• Settled at ${sDate.toLocaleString()}</span></h2>
-                            <div style="margin-top:8px; line-height:1.5;">
-                                <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
-                                <small style="color:var(--danger); display:block; font-weight:bold;">DEADLINE: ${dlDate.toLocaleString()}</small>
-                                <small style="color:#00d1ff; display:block; font-weight:bold; font-size:1.05em; margin-top:2px;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                    <div style="position: relative; margin-bottom: 2px;">
+                        <div class="settled-badge" style="display:inline-block; margin-bottom:0; font-size:10px; position:absolute; left:5px; top:5px;">SETTLED</div>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; position:relative; padding-top: 15px;">
+                            <div>
+                                <h2 style="margin:0; color:white;">${m.title} <span style="color:#00d1ff; font-size: 0.65em; font-weight: normal; margin-left:8px; opacity:0.8; vertical-align:middle;">• Settled at ${sDate.toLocaleString()}</span></h2>
+                                <div style="margin-top:8px; line-height:1.5;">
+                                    <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
+                                    <small style="color:var(--danger); display:block; font-weight:bold;">DEADLINE: ${dlDate.toLocaleString()}</small>
+                                    <small style="color:#00d1ff; display:block; font-weight:bold; font-size:1.05em; margin-top:2px;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                                </div>
                             </div>
+                            <div style="color:${typeColor}; font-weight:bold;">${m.type}</div>
                         </div>
-                        <div style="color:${typeColor}; font-weight:bold;">${m.type}</div>
                     </div>
                     ${buttonsHTML}
                     <div style="margin-top:15px; background:rgba(0,0,0,0.15); padding:10px; border-radius:8px;">
