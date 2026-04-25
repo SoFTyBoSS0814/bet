@@ -73,35 +73,6 @@
             animation: toastSlideIn 0.4s ease-out forwards;
         }
 
-        .btn-bet {
-    background: #1a2a33;
-    border: 1px solid var(--border);
-    color: #fff;
-    padding: 12px 8px; /* Több hely függőlegesen */
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 18px; /* MEGNÖVELT betűméret a kimenetel nevének */
-    font-weight: 600;
-    transition: 0.2s;
-    text-align: center;
-    line-height: 1.2; /* Biztosítja, hogy ne legyen túl szoros a név */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-bet b {
-    display: block;
-    font-size: 15px; /* Az odds valamivel kisebb, mint a név */
-    color: var(--primary);
-    margin-top: 8px; /* EZ TOLJA LEJJEBB az oddsot a névtől */
-    font-weight: 800;
-    background: rgba(0, 212, 255, 0.1); /* Opcionális: egy enyhe háttér az odds-nak, hogy profibb legyen */
-    padding: 2px 8px;
-    border-radius: 4px;
-}
-
         @keyframes toastSlideIn {
             from { transform: translateX(120%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
@@ -116,21 +87,22 @@
         .header-left { flex: 1; }
         .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
 
-      .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
-
+        .market-group { background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; margin-top: 15px; border-left: 4px solid var(--primary); position: relative; }
         .outcomes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
-
         
-
         .btn-bet { background: #0b1218; border: 1px solid #334756; color: #fff; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; font-size: 13px; }
-
         .btn-bet:disabled { opacity: 0.4; cursor: not-allowed; border-color: #222; }
-
         .btn-create { background: var(--primary); color: #000; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; transition: 0.2s; }
-
         .btn-create:hover { opacity: 0.8; }
-
         .btn-primary { background: var(--primary); color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.3s; }
+
+        .settled-badge { position: absolute; top: 15px; left: 15px; background: #555; color: #fff; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+        .market-type-label { font-weight: 900; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .history-item { display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.03); margin-top: 5px; border-radius: 8px; font-size: 13px; border-left: 3px solid transparent; }
+        .history-item.winner-row { border-left-color: var(--success); background: rgba(40, 167, 69, 0.15); }
+        .history-item.loss-row { border-left-color: var(--danger); background: rgba(255, 68, 68, 0.1); }
+
         .reward-box { background: linear-gradient(145deg, rgba(255, 204, 0, 0.1), rgba(0,0,0,0.4)); border: 1px dashed var(--demo); padding: 25px; border-radius: 16px; margin-top: 20px; text-align: center; }
         #reward-msg { font-size: 18px; font-weight: bold; color: var(--success); margin: 10px 0; min-height: 24px; }
 
@@ -873,15 +845,7 @@ async function openBets(mid) {
 async function saveMarket() {
     const btn = document.getElementById('save-market-btn');
     const dict = i18n[currentLang];
-
-    // 1. KRITIKUS SPAM ELLENŐRZÉS - Ha már disabled, azonnal megállunk!
-    if (btn) {
-        if (btn.disabled) return; 
-        btn.disabled = true; // Fizikai tiltás a böngészőben
-        btn.innerText = "WAIT...";
-    }
-
-    // Segédfüggvény hiba esetére: mindent visszaállít eredetire
+    
     const unlock = (msg) => {
         if (btn) {
             btn.disabled = false;
@@ -890,82 +854,58 @@ async function saveMarket() {
         if (msg) showCreateError(msg);
     };
 
-    try {
-        // --- ADATOK BEGYŰJTÉSE ---
-        const t = document.getElementById('m-name').value.trim();
-        const b = parseFloat(document.getElementById('m-budget').value);
-        const dlInput = document.getElementById('m-deadline').value;
-        const type = document.getElementById('m-type').value;
+    // --- SPAM VÉDELEM ---
+    // Ha a gomb létezik, azonnal tiltjuk
+    if (btn) {
+        if (btn.disabled) return; 
+        btn.disabled = true;
+        btn.innerText = "WAIT...";
+    }
 
-        // --- ELLENŐRZÉSEK (Visszarakva minden eredeti) ---
-        if (!dlInput) return unlock(dict.min_deadline_err);
-        
-        const deadline = new Date(dlInput), now = new Date();
-        // Minimum 1 perc a jövőben
-        if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
-        // Maximum 3 nap a jövőben (259200000 ms)
-        if (deadline > new Date(now.getTime() + 259200000)) return unlock(dict.max_deadline_err);
-        
-        if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
+    const t = document.getElementById('m-name').value.trim();
+    const b = parseFloat(document.getElementById('m-budget').value);
+    const dlInput = document.getElementById('m-deadline').value;
+    const type = document.getElementById('m-type').value;
 
-        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if (b > userProfile[balField]) return unlock(dict.insufficient);
+    if (!dlInput) return unlock(dict.min_deadline_err);
+    const deadline = new Date(dlInput), now = new Date();
+    if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
+    if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
 
-        const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
-        if (groupDivs.length === 0) return unlock(dict.cat_err);
+    const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+    if (b > userProfile[balField]) return unlock(dict.insufficient);
 
-        // --- CSOPORTOK ÉS KIMENETELEK ÖSSZEÁLLÍTÁSA ---
-        const grp = [];
-        for (let g of groupDivs) {
-            const categoryTitle = g.querySelector('.gt').value.trim();
-            if (!categoryTitle) return unlock(dict.cat_err);
-            
-            const outcomes = [];
-            const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
-            for (let o of outcomeDivs) {
-                const name = o.querySelector('.on').value.trim();
-                const odds = parseFloat(o.querySelector('.oo').value);
-                
-                if (!name) return unlock(dict.outcome_err);
-                if (isNaN(odds) || odds < 1.01 || odds > 1000) return unlock(dict.odds_err);
-                
-                outcomes.push({ n: name, o: odds, status: 'pending' });
-            }
-            grp.push({ title: categoryTitle, outcomes });
+    const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
+    if (groupDivs.length === 0) return unlock(dict.cat_err);
+
+    const grp = [];
+    for (let g of groupDivs) {
+        const categoryTitle = g.querySelector('.gt').value.trim();
+        if (!categoryTitle) return unlock(dict.cat_err);
+        const outcomes = [];
+        const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
+        for (let o of outcomeDivs) {
+            const name = o.querySelector('.on').value.trim(), 
+                  odds = parseFloat(o.querySelector('.oo').value);
+            if (!name || isNaN(odds)) return unlock(dict.outcome_err);
+            outcomes.push({ n: name, o: odds, status: 'pending' });
         }
+        grp.push({ title: categoryTitle, outcomes });
+    }
 
-        // --- ADATBÁZIS MŰVELETEK (Tranzakció szerűen) ---
+    try {
+        // Tranzakciók sorrendben
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
+        await _supabase.from('markets').insert([{ 
+            title: t, type, take: b, initial_liquidity: b, 
+            deadline: deadline.toISOString(), note: JSON.stringify(grp), 
+            creator_name: currentUser.username, status: 'active' 
+        }]);
         
-        // 1. Felhasználói egyenleg frissítése (Levonás)
-        const { error: pErr } = await _supabase
-            .from('profiles')
-            .update({ [balField]: userProfile[balField] - b })
-            .eq('id', currentUser.id);
-            
-        if (pErr) throw pErr;
-
-        // 2. Piac beszúrása
-        const { error: mErr } = await _supabase
-            .from('markets')
-            .insert([{ 
-                title: t, 
-                type, 
-                take: b, 
-                initial_liquidity: b, 
-                deadline: deadline.toISOString(), 
-                note: JSON.stringify(grp), 
-                creator_name: currentUser.username, 
-                status: 'active' 
-            }]);
-            
-        if (mErr) throw mErr;
-
-        // SIKER! Az oldal újratöltése mindent alaphelyzetbe rak.
-        location.reload();
-
+        location.reload(); 
     } catch (err) {
-        console.error("Kritikus hiba mentéskor:", err);
-        unlock("Server error! Please try again later.");
+        console.error("Hiba:", err);
+        unlock("Server error! Please try again.");
     }
 }
 
