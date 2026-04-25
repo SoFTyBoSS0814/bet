@@ -73,6 +73,35 @@
             animation: toastSlideIn 0.4s ease-out forwards;
         }
 
+        .btn-bet {
+    background: #1a2a33;
+    border: 1px solid var(--border);
+    color: #fff;
+    padding: 12px 8px; /* Több hely függőlegesen */
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 18px; /* MEGNÖVELT betűméret a kimenetel nevének */
+    font-weight: 600;
+    transition: 0.2s;
+    text-align: center;
+    line-height: 1.2; /* Biztosítja, hogy ne legyen túl szoros a név */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-bet b {
+    display: block;
+    font-size: 15px; /* Az odds valamivel kisebb, mint a név */
+    color: var(--primary);
+    margin-top: 8px; /* EZ TOLJA LEJJEBB az oddsot a névtől */
+    font-weight: 800;
+    background: rgba(0, 212, 255, 0.1); /* Opcionális: egy enyhe háttér az odds-nak, hogy profibb legyen */
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
         @keyframes toastSlideIn {
             from { transform: translateX(120%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
