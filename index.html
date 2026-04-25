@@ -1238,8 +1238,9 @@ function openCreateModal() {
 }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 
-// --- JAVÍTOTT KORLÁTOZÁS KEZELŐ (MODAL FIX) ---
+// --- VÉGLEGES KORLÁTOZÁS KEZELŐ (GOMB ÉS MODAL FIX) ---
 
+// 1. Az eredeti stílusú üzenet (Jobb alul)
 function showRestrictionToast() {
     if (document.getElementById('res-alert-toast')) return;
 
@@ -1257,7 +1258,6 @@ function showRestrictionToast() {
         z-index: 1000000; 
         font-size: 13px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        animation: slideInRight 0.3s ease-out;
     `;
 
     div.innerHTML = `
@@ -1269,16 +1269,11 @@ function showRestrictionToast() {
                     style="background: #334756; color: white; border: none; padding: 4px 10px; 
                            border-radius: 4px; cursor: pointer; font-size: 11px;">OK</button>
         </div>
-        <style>
-            @keyframes slideInRight {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        </style>
     `;
     document.body.appendChild(div);
 }
 
+// 2. Az ellenőrző függvény - CSAK A VÁLTOZÓT FRISSÍTI
 async function runStatusCheck() {
     if (!currentUser) return;
 
@@ -1292,20 +1287,12 @@ async function runStatusCheck() {
         if (error) throw error;
 
         if (profile) {
-            // CSAK akkor avatkozunk be, ha ténylegesen MEGVÁLTOZOTT a státusz
-            if (window.userIsRestricted !== profile.is_restricted) {
-                window.userIsRestricted = profile.is_restricted;
-                if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
-
-                // Ha épp nyitva volt a modal, de most lett korlátozva, akkor zárjuk be egyszer
-                if (window.userIsRestricted) {
-                    const modal = document.getElementById('createModal');
-                    if (modal && !modal.classList.contains('hidden')) {
-                        modal.classList.add('hidden');
-                        showRestrictionToast();
-                    }
-                }
-            }
+            // Frissítjük a memóriában a státuszt
+            window.userIsRestricted = profile.is_restricted;
+            if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
+            
+            // Log a konzolra, hogy lásd: frissül
+            console.log("Restriction status:", window.userIsRestricted);
         }
     } catch (e) {
         console.error("Polling hiba:", e);
