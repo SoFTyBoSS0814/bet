@@ -677,6 +677,7 @@ async function openComments(mid) {
         <div id="modalFooter"></div>
     </div>
 </div>
+    <script>
     
 async function loadMarkets() {
     const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
