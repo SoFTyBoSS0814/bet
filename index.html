@@ -1238,68 +1238,36 @@ function openCreateModal() {
 }
     function logout() { localStorage.clear(); window.location.href="login.html"; }
 
-// --- VÉGLEGES, GOMB-BARÁT KORLÁTOZÁS KEZELŐ ---
-
-// 1. Az eredeti stílusú üzenet (Jobb alul, nem blokkolja a képernyőt)
 function showRestrictionToast() {
-    if (document.getElementById('res-alert-toast')) return;
+    // Ha már van kint egy értesítés, ne halmozzuk fel
+    if (document.getElementById('active-toast')) return;
 
-    const div = document.createElement('div');
-    div.id = 'res-alert-toast';
-    // Fontos: a pointer-events: auto biztosítja, hogy csak a toast-ra lehessen kattintani, 
-    // de ne blokkolja az egész képernyőt.
-    div.style = `
-        position: fixed; 
-        bottom: 20px; 
-        right: 20px; 
-        background: #1a222a; 
-        color: #ccc; 
-        padding: 15px; 
-        border-radius: 8px; 
-        border-left: 4px solid #ff4444;
-        z-index: 2000000; 
-        font-size: 13px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        pointer-events: auto;
-    `;
-
-    div.innerHTML = `
-        <div style="margin-bottom: 5px;"><b style="color:#fff; font-size:14px;">Hozzáférés megtagadva</b></div>
+    const toast = document.createElement('div');
+    toast.id = 'active-toast';
+    toast.className = 'restriction-toast';
+    toast.innerHTML = `
+        <b>Hozzáférés megtagadva</b>
         A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
         <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
-        <div style="margin-top:10px; text-align:right;">
-            <button onclick="this.parentElement.parentElement.remove()" 
-                    style="background: #334756; color: white; border: none; padding: 5px 12px; 
-                           border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">OK</button>
-        </div>
     `;
-    document.body.appendChild(div);
+
+    document.body.appendChild(toast);
+
+    // 5 másodperc után eltüntetjük
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(100%)";
+        setTimeout(() => toast.remove(), 500);
+    }, 5000);
 }
 
-// 2. Háttérben futó ellenőrző (Csak adatot frissít, UI-t nem bánt!)
-async function runStatusCheck() {
-    if (typeof currentUser === 'undefined' || !currentUser) return;
-
-    try {
-        const { data: profile, error } = await _supabase
-            .from('profiles')
-            .select('is_restricted')
-            .eq('id', currentUser.id)
-            .single();
-
-        if (error) throw error;
-
-        if (profile) {
-            window.userIsRestricted = profile.is_restricted;
-            if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
-        }
-    } catch (e) {
-        console.error("Status check error:", e);
+    function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('hidden');
     }
 }
-
-// 3 másodpercenként frissít
-setInterval(runStatusCheck, 3000);
 </script>
 </body>
 </html>
