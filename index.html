@@ -846,14 +846,14 @@ async function saveMarket() {
     const btn = document.getElementById('save-market-btn');
     const dict = i18n[currentLang];
 
-    // 1. AZONNALI TILTÁS - Ez állítja meg a spamet
+    // 1. KRITIKUS SPAM ELLENŐRZÉS - Ha már disabled, azonnal megállunk!
     if (btn) {
-        if (btn.disabled) return; // Ha már tiltva van, kiugrunk
-        btn.disabled = true;
+        if (btn.disabled) return; 
+        btn.disabled = true; // Fizikai tiltás a böngészőben
         btn.innerText = "WAIT...";
     }
 
-    // Segédfüggvény hiba esetére
+    // Segédfüggvény hiba esetére: mindent visszaállít eredetire
     const unlock = (msg) => {
         if (btn) {
             btn.disabled = false;
@@ -863,15 +863,21 @@ async function saveMarket() {
     };
 
     try {
+        // --- ADATOK BEGYŰJTÉSE ---
         const t = document.getElementById('m-name').value.trim();
         const b = parseFloat(document.getElementById('m-budget').value);
         const dlInput = document.getElementById('m-deadline').value;
         const type = document.getElementById('m-type').value;
 
-        // Ellenőrzések
+        // --- ELLENŐRZÉSEK (Visszarakva minden eredeti) ---
         if (!dlInput) return unlock(dict.min_deadline_err);
+        
         const deadline = new Date(dlInput), now = new Date();
+        // Minimum 1 perc a jövőben
         if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
+        // Maximum 3 nap a jövőben (259200000 ms)
+        if (deadline > new Date(now.getTime() + 259200000)) return unlock(dict.max_deadline_err);
+        
         if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
 
         const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
@@ -880,40 +886,58 @@ async function saveMarket() {
         const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
         if (groupDivs.length === 0) return unlock(dict.cat_err);
 
+        // --- CSOPORTOK ÉS KIMENETELEK ÖSSZEÁLLÍTÁSA ---
         const grp = [];
         for (let g of groupDivs) {
             const categoryTitle = g.querySelector('.gt').value.trim();
             if (!categoryTitle) return unlock(dict.cat_err);
+            
             const outcomes = [];
             const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
             for (let o of outcomeDivs) {
-                const name = o.querySelector('.on').value.trim(), 
-                      odds = parseFloat(o.querySelector('.oo').value);
-                if (!name || isNaN(odds)) return unlock(dict.outcome_err);
+                const name = o.querySelector('.on').value.trim();
+                const odds = parseFloat(o.querySelector('.oo').value);
+                
+                if (!name) return unlock(dict.outcome_err);
+                if (isNaN(odds) || odds < 1.01 || odds > 1000) return unlock(dict.odds_err);
+                
                 outcomes.push({ n: name, o: odds, status: 'pending' });
             }
             grp.push({ title: categoryTitle, outcomes });
         }
 
-        // --- ADATBÁZIS MŰVELETEK ---
-        // Előbb a levonás
-        const { error: pErr } = await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
+        // --- ADATBÁZIS MŰVELETEK (Tranzakció szerűen) ---
+        
+        // 1. Felhasználói egyenleg frissítése (Levonás)
+        const { error: pErr } = await _supabase
+            .from('profiles')
+            .update({ [balField]: userProfile[balField] - b })
+            .eq('id', currentUser.id);
+            
         if (pErr) throw pErr;
 
-        // Aztán a létrehozás
-        const { error: mErr } = await _supabase.from('markets').insert([{ 
-            title: t, type, take: b, initial_liquidity: b, 
-            deadline: deadline.toISOString(), note: JSON.stringify(grp), 
-            creator_name: currentUser.username, status: 'active' 
-        }]);
+        // 2. Piac beszúrása
+        const { error: mErr } = await _supabase
+            .from('markets')
+            .insert([{ 
+                title: t, 
+                type, 
+                take: b, 
+                initial_liquidity: b, 
+                deadline: deadline.toISOString(), 
+                note: JSON.stringify(grp), 
+                creator_name: currentUser.username, 
+                status: 'active' 
+            }]);
+            
         if (mErr) throw mErr;
 
-        // Ha idáig eljutott, minden oké, frissítünk
+        // SIKER! Az oldal újratöltése mindent alaphelyzetbe rak.
         location.reload();
 
     } catch (err) {
-        console.error("Hiba történt:", err);
-        unlock("Server error! Please try again.");
+        console.error("Kritikus hiba mentéskor:", err);
+        unlock("Server error! Please try again later.");
     }
 }
 
