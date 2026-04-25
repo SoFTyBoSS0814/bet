@@ -1298,48 +1298,54 @@ function showRestrictionToast() {
     }
 }
 
-    // --- AUTOMATA ELLENŐRZÉS (POLLING) ---
-function startStatusChecker() {
+// 1. A ELLENŐRZŐ FÜGGVÉNY DEFINÍCIÓJA
+async function runStatusCheck() {
+    // Ha nincs bejelentkezve senki, ne is fusson
     if (!currentUser) return;
 
-    // Beállítjuk, hogy 5 másodpercenként fusson le (5000 ms)
-    setInterval(async () => {
-        try {
-            const { data: profile, error } = await _supabase
-                .from('profiles')
-                .select('is_restricted')
-                .eq('id', currentUser.id)
-                .single();
+    try {
+        const { data: profile, error } = await _supabase
+            .from('profiles')
+            .select('is_restricted')
+            .eq('id', currentUser.id)
+            .single();
 
-            if (error) throw error;
+        if (error) throw error;
 
-            const isRestricted = profile.is_restricted;
+        // Ha a státusz eltér attól, amit a böngésző eddig tudott
+        if (profile.is_restricted !== window.userIsRestricted) {
+            window.userIsRestricted = profile.is_restricted;
+            
+            // Ha van userProfile objektumod, azt is frissítjük
+            if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
 
-            // Csak akkor avatkozunk be, ha változott a státusz a memóriához képest
-            if (isRestricted !== window.userIsRestricted) {
-                window.userIsRestricted = isRestricted;
-                if(window.userProfile) userProfile.is_restricted = isRestricted;
+            console.log("Státusz változás észlelve:", profile.is_restricted ? "TILTVA" : "OK");
 
-                console.log("Státusz frissítve (polling):", isRestricted ? "TILTVA" : "OK");
-
-                // UI Frissítése
-                const createBtn = document.querySelector('.btn-create');
-                if (createBtn) {
-                    createBtn.style.display = isRestricted ? 'none' : 'block';
-                }
-
-                if (isRestricted) {
-                    // Ha nyitva a modal, bezárjuk
-                    const modal = document.getElementById('createModal');
-                    if(modal) modal.classList.add('hidden');
-                    if (typeof showRestrictionToast === 'function') showRestrictionToast();
-                }
+            // UI MÓDOSÍTÁSA AZONNAL
+            // Keressük meg a "Create Market" vagy "Létrehozás" gombot
+            const createBtn = document.querySelector('.btn-create') || document.querySelector('[onclick*="OpenCreate"]');
+            
+            if (createBtn) {
+                createBtn.style.display = profile.is_restricted ? 'none' : 'block';
             }
-        } catch (e) {
-            console.error("Hiba az automata ellenőrzésnél:", e);
+
+            // Ha épp nyitva van a létrehozó ablak, zárjuk be
+            if (profile.is_restricted) {
+                const modal = document.getElementById('createModal');
+                if (modal) modal.classList.add('hidden');
+                
+                // Ha van toast értesítőd, mutassuk meg
+                if (typeof showRestrictionToast === 'function') showRestrictionToast();
+            }
         }
-    }, 5000); // 5 másodperc
+    } catch (e) {
+        console.error("Polling hiba:", e);
+    }
 }
+
+// 2. AZ ELLENŐRZÉS ELINDÍTÁSA
+// 3 másodpercenként (3000 ms) leellenőrzi a státuszt
+setInterval(runStatusCheck, 3000);
 </script>
 </body>
 </html>
