@@ -264,6 +264,56 @@
     </div>
 </div>
 
+async function loadMyActivity() {
+    if (!currentUser) return;
+
+    // 1. Saját piacok lekérése
+    const { data: myMarkets } = await _supabase
+        .from('markets')
+        .select('*')
+        .eq('creator_id', currentUser.id);
+
+    // 2. Saját fogadások lekérése (Piac névvel együtt)
+    const { data: myBets } = await _supabase
+        .from('bets')
+        .select(`
+            *,
+            markets ( question, status )
+        `)
+        .eq('user_id', currentUser.id);
+
+    // Megjelenítés (Egyszerűsített példa)
+    renderMyActivity(myMarkets, myBets);
+}
+
+function renderMyActivity(markets, bets) {
+    const marketList = document.getElementById('my-created-markets-list');
+    const betList = document.getElementById('my-bets-list');
+
+    // Piacok listázása
+    if (markets && markets.length > 0) {
+        marketList.innerHTML = markets.map(m => `
+            <div style="background:#1a222a; padding:10px; margin-bottom:5px; border-radius:5px; border-left:3px solid #00d2ff;">
+                <b>${m.question}</b> - Státusz: ${m.status}
+            </div>
+        `).join('');
+    } else {
+        marketList.innerHTML = "<p>You haven't created any markets yet.</p>";
+    }
+
+    // Fogadások listázása
+    if (bets && bets.length > 0) {
+        betList.innerHTML = bets.map(b => `
+            <div style="background:#1a222a; padding:10px; margin-bottom:5px; border-radius:5px; border-left:3px solid #44ff44;">
+                <b>${b.markets?.question || 'Unknown Market'}</b><br>
+                Tét: ${b.amount} € | Tipp: ${b.outcome}
+            </div>
+        `).join('');
+    } else {
+        betList.innerHTML = "<p>You haven't placed any bets yet.</p>";
+    }
+}
+    
 
 <div id="betModal" class="modal hidden">
     <div class="modal-box" style="width:320px; text-align:center">
