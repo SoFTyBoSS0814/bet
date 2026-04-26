@@ -911,14 +911,19 @@ async function saveMarket() {
 
 async function placeBet() {
     const btn = document.getElementById('place-bet-btn');
-    
-    // --- IDŐ ELLENŐRZÉSE (DEADLINE) ---
-    const now = new Date();
-    const marketDeadline = new Date(activeBet.dl);
 
-    if (now > marketDeadline) {
-        alert("Sajnos ez a piac már lezárult, nem lehet több fogadást kötni!");
-        location.reload(); 
+    // --- IDŐ ELLENŐRZÉSE (SZIGORÍTVA) ---
+    const now = new Date().getTime(); // Jelenlegi idő milliszekundumban
+    const deadlineTime = new Date(activeBet.dl).getTime(); // Határidő milliszekundumban
+
+    // Debug: Ha meg akarod nézni a konzolban, mi történik, vedd ki a perjelet:
+    // console.log("Most:", now, "Határidő:", deadlineTime);
+
+    if (isNaN(deadlineTime) || now > deadlineTime) {
+        alert("Sajnos ez a piac már lezárult vagy érvénytelen a határidő!");
+        if (btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+        // Csak akkor frissítsünk, ha tényleg lejárt, hogy ne zavarjuk a usert
+        if (!isNaN(deadlineTime)) location.reload(); 
         return;
     }
 
@@ -970,7 +975,7 @@ async function placeBet() {
 }
 
 function openBet(mId, n, o, t, dl) {
-    // Itt elmentjük a deadline-t is (dl), hogy a placeBet tudja ellenőrizni
+    // Nagyon fontos: Itt a 'dl' változónak meg kell érkeznie!
     activeBet = { mId, n, o, t, dl };
     
     const btn = document.getElementById('place-bet-btn');
