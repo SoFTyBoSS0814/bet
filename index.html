@@ -912,18 +912,13 @@ async function saveMarket() {
 async function placeBet() {
     const btn = document.getElementById('place-bet-btn');
 
-    // --- IDŐ ELLENŐRZÉSE (SZIGORÍTVA) ---
-    const now = new Date().getTime(); // Jelenlegi idő milliszekundumban
-    const deadlineTime = new Date(activeBet.dl).getTime(); // Határidő milliszekundumban
-
-    // Debug: Ha meg akarod nézni a konzolban, mi történik, vedd ki a perjelet:
-    // console.log("Most:", now, "Határidő:", deadlineTime);
+    // --- IDŐ ELLENŐRZÉSE (BEKÜLDÉSKOR) ---
+    const now = new Date().getTime();
+    const deadlineTime = new Date(activeBet.dl).getTime();
 
     if (isNaN(deadlineTime) || now > deadlineTime) {
-        alert("Sajnos ez a piac már lezárult vagy érvénytelen a határidő!");
-        if (btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
-        // Csak akkor frissítsünk, ha tényleg lejárt, hogy ne zavarjuk a usert
-        if (!isNaN(deadlineTime)) location.reload(); 
+        alert("Sajnos ez a piac már lezárult!");
+        location.reload(); 
         return;
     }
 
@@ -975,7 +970,16 @@ async function placeBet() {
 }
 
 function openBet(mId, n, o, t, dl) {
-    // Nagyon fontos: Itt a 'dl' változónak meg kell érkeznie!
+    // --- AZONNALI ELLENŐRZÉS MEGNYITÁSKOR ---
+    const now = new Date().getTime();
+    const deadlineTime = new Date(dl).getTime();
+
+    if (!isNaN(deadlineTime) && now > deadlineTime) {
+        alert("Ez az esemény már véget ért!");
+        location.reload(); // Frissítjük az oldalt, hogy eltűnjenek a lejárt piacok
+        return;
+    }
+
     activeBet = { mId, n, o, t, dl };
     
     const btn = document.getElementById('place-bet-btn');
