@@ -241,6 +241,14 @@
         </div>
     </div>
 </div>
+
+    <div id="my-activity-page" class="selection" style="display:none;">
+    <h2 style="color: #00d2ff;">Created Markets</h2>
+    <div id="my-created-markets-list">Betöltés...</div>
+
+    <h2 style="color: #44ff44; margin-top: 30px;">My Bets</h2>
+    <div id="my-bets-list">Betöltés...</div>
+</div>
     
 
 <div id="betModal" class="modal hidden">
@@ -1332,6 +1340,23 @@ async function runStatusCheck() {
 
 // 3 másodpercenkénti frissítés indítása
 setInterval(runStatusCheck, 3000);
+
+    async function loadMyActivity() {
+    if (!currentUser) return;
+    
+    // Piacok és fogadások lekérése
+    const { data: markets } = await _supabase.from('markets').select('*').eq('creator_id', currentUser.id);
+    const { data: bets } = await _supabase.from('bets').select('*, markets(question, status)').eq('user_id', currentUser.id);
+
+    // Megjelenítés
+    document.getElementById('my-created-markets-list').innerHTML = markets?.length 
+        ? markets.map(m => `<div class="card">${m.question} [${m.status}]</div>`).join('') 
+        : "Nincs létrehozott piacod.";
+
+    document.getElementById('my-bets-list').innerHTML = bets?.length 
+        ? bets.map(b => `<div class="card">${b.markets?.question}: ${b.amount}€ -> ${b.outcome}</div>`).join('') 
+        : "Még nem fogadtál.";
+}
 </script>
 </body>
 </html>
