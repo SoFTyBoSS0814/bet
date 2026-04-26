@@ -911,6 +911,17 @@ async function saveMarket() {
 
 async function placeBet() {
     const btn = document.getElementById('place-bet-btn');
+    
+    // --- IDŐ ELLENŐRZÉSE (DEADLINE) ---
+    const now = new Date();
+    const marketDeadline = new Date(activeBet.dl);
+
+    if (now > marketDeadline) {
+        alert("Sajnos ez a piac már lezárult, nem lehet több fogadást kötni!");
+        location.reload(); 
+        return;
+    }
+
     if (window.userIsRestricted) { showRestrictionToast(); return; }
     
     // --- SPAM VÉDELEM ---
@@ -959,7 +970,9 @@ async function placeBet() {
 }
 
 function openBet(mId, n, o, t, dl) {
+    // Itt elmentjük a deadline-t is (dl), hogy a placeBet tudja ellenőrizni
     activeBet = { mId, n, o, t, dl };
+    
     const btn = document.getElementById('place-bet-btn');
     if (btn) {
         btn.disabled = false;
