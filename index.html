@@ -911,17 +911,6 @@ async function saveMarket() {
 
 async function placeBet() {
     const btn = document.getElementById('place-bet-btn');
-
-    // --- IDŐ ELLENŐRZÉSE (BEKÜLDÉSKOR) ---
-    const now = new Date().getTime();
-    const deadlineTime = new Date(activeBet.dl).getTime();
-
-    if (isNaN(deadlineTime) || now > deadlineTime) {
-        alert("Sajnos ez a piac már lezárult!");
-        location.reload(); 
-        return;
-    }
-
     if (window.userIsRestricted) { showRestrictionToast(); return; }
     
     // --- SPAM VÉDELEM ---
@@ -970,18 +959,7 @@ async function placeBet() {
 }
 
 function openBet(mId, n, o, t, dl) {
-    // --- AZONNALI ELLENŐRZÉS MEGNYITÁSKOR ---
-    const now = new Date().getTime();
-    const deadlineTime = new Date(dl).getTime();
-
-    if (!isNaN(deadlineTime) && now > deadlineTime) {
-        alert("Ez az esemény már véget ért!");
-        location.reload(); // Frissítjük az oldalt, hogy eltűnjenek a lejárt piacok
-        return;
-    }
-
     activeBet = { mId, n, o, t, dl };
-    
     const btn = document.getElementById('place-bet-btn');
     if (btn) {
         btn.disabled = false;
@@ -1290,6 +1268,68 @@ function showRestrictionToast() {
         modal.classList.add('hidden');
     }
 }
+
+// --- INTERFERENCIA-MENTES KORLÁTOZÁS KEZELŐ ---
+
+// 1. Az eredeti stílusú üzenet (Jobb alul)
+function showRestrictionToast() {
+    if (document.getElementById('res-alert-toast')) return;
+
+    const div = document.createElement('div');
+    div.id = 'res-alert-toast';
+    div.style = `
+        position: fixed; 
+        bottom: 20px; 
+        right: 20px; 
+        background: #1a222a; 
+        color: #ccc; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border-left: 4px solid #ff4444;
+        z-index: 9999999; 
+        font-size: 13px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    `;
+
+    div.innerHTML = `
+        <div style="margin-bottom: 5px;"><b style="color:#fff; font-size:14px;">Hozzáférés megtagadva</b></div>
+        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
+        <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
+        <div style="margin-top:10px; text-align:right;">
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: #334756; color: white; border: none; padding: 4px 10px; 
+                           border-radius: 4px; cursor: pointer; font-size: 11px;">OK</button>
+        </div>
+    `;
+    document.body.appendChild(div);
+}
+
+// 2. Az ellenőrző függvény - CSAK ADATOT FRISSÍT, UI-HOZ NEM NYÚL
+async function runStatusCheck() {
+    // Ellenőrizzük, hogy be van-e jelentkezve a felhasználó
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+
+    try {
+        const { data: profile, error } = await _supabase
+            .from('profiles')
+            .select('is_restricted')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (error) throw error;
+
+        if (profile) {
+            // Csak a változót frissítjük a memóriában
+            window.userIsRestricted = profile.is_restricted;
+            if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
+        }
+    } catch (e) {
+        console.error("Háttér ellenőrzés hiba:", e);
+    }
+}
+
+// 3 másodpercenkénti frissítés indítása
+setInterval(runStatusCheck, 3000);
 </script>
 </body>
 </html>
