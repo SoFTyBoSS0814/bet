@@ -1421,20 +1421,14 @@ window.addEventListener('load', startRealtimeDeadlineCheck);
 // EZ NAGYON FONTOS: El kell indítani a figyelőt!
 window.addEventListener('load', startRealtimeButtonWatcher);
 
-    function showErrorToast(message) {
+function showErrorToast(message) {
     const toast = document.getElementById('res-alert-toast');
     if (toast) {
         toast.innerText = message;
-        toast.style.backgroundColor = "#ff4b2b"; // Piros háttér
+        toast.style.backgroundColor = "#ff4b2b";
         toast.classList.add('show');
-        
-        // 3 másodperc után eltüntetjük a piros csíkot
-        setTimeout(() => { 
-            toast.classList.remove('show'); 
-        }, 3000);
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
     } else {
-        // Ha nincs meg a HTML elem, legalább egy alert ugorjon fel, hogy ne haljon meg a kód
-        console.warn("Toast elem (res-alert-toast) nincs a HTML-ben!");
         alert(message);
     }
 }
