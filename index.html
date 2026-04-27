@@ -974,12 +974,6 @@ function openBet(mId, n, o, t, dl) {
     if (btn) {
         btn.disabled = false;
         btn.innerText = "PLACE BET";
-        {
-             // ALERT HELYETT TOAST:
-    if (!isNaN(deadlineTime) && now > deadlineTime) {
-        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
-        setTimeout(() => { location.reload(); }, 2000);
-        return;
     
     document.getElementById('bet-on').innerText = n; 
     document.getElementById('bet-odds').innerText = "x" + o;
@@ -993,7 +987,12 @@ async function placeBet() {
 
     const now = new Date().getTime();
     const deadlineTime = new Date(activeBet.dl).getTime();
-
+    // ALERT HELYETT TOAST ITT IS:
+    if (isNaN(deadlineTime) || now > deadlineTime) {
+        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
+        setTimeout(() => { location.reload(); }, 2500);
+        return;
+    }
 
     const btn = document.getElementById('place-bet-btn');
     // ... a többi kód változatlan ...
