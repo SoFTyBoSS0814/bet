@@ -1434,11 +1434,30 @@ window.addEventListener('load', startRealtimeButtonWatcher);
 function showErrorToast(message) {
     const toast = document.getElementById('res-alert-toast');
     if (toast) {
+        // Kényszerített stílus beállítása JS-ből
         toast.innerText = message;
+        toast.style.visibility = "visible";
+        toast.style.opacity = "1";
         toast.style.backgroundColor = "#ff4b2b";
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        toast.style.color = "white";
+        toast.style.padding = "16px";
+        toast.style.position = "fixed";
+        toast.style.bottom = "30px";
+        toast.style.right = "30px";
+        toast.style.zIndex = "10000";
+        toast.style.borderRadius = "8px";
+        toast.style.minWidth = "250px";
+        toast.style.textAlign = "center";
+        toast.style.boxShadow = "0 4px 15px rgba(0,0,0,0.5)";
+        toast.style.display = "block"; // Biztosítsuk, hogy ne legyen hidden
+
+        // 3 másodperc múlva eltüntetjük
+        setTimeout(() => {
+            toast.style.visibility = "hidden";
+            toast.style.opacity = "0";
+        }, 3000);
     } else {
+        console.error("Még mindig nem találom a res-alert-toast elemet a HTML-ben!");
         alert(message);
     }
 }
