@@ -986,7 +986,8 @@ async function placeBet() {
     if (window.userIsRestricted) { showRestrictionToast(); return; }
 
     const now = new Date().getTime();
-    const deadlineTime = new Date(activeBet.dl).getTime();
+     const deadlineTime = new Date(activeBet.dl).getTime();
+
     // ALERT HELYETT TOAST ITT IS:
     if (isNaN(deadlineTime) || now > deadlineTime) {
         showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
