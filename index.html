@@ -981,6 +981,13 @@ function openBet(mId, n, o, t, dl) {
     calcWin();
 }
 
+     // ALERT HELYETT TOAST:
+    if (!isNaN(deadlineTime) && now > deadlineTime) {
+        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
+        setTimeout(() => { location.reload(); }, 2000);
+        return;
+    }
+
 async function placeBet() {
     if (window.userIsRestricted) { showRestrictionToast(); return; }
 
