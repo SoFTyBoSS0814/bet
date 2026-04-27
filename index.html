@@ -959,20 +959,17 @@ async function placeBet() {
 }
 
 function openBet(mId, n, o, t, dl) {
-    // --- AZONNALI ELLENŐRZÉS MEGNYITÁSKOR ---
     const now = new Date().getTime();
     const deadlineTime = new Date(dl).getTime();
 
+    // Ha lejárt, ki sem nyitjuk!
     if (!isNaN(deadlineTime) && now > deadlineTime) {
         showErrorToast("Ez az esemény már véget ért!");
-        setTimeout(() => { location.reload(); }, 2000);
+        setTimeout(() => { location.reload(); }, 1500);
         return;
     }
 
-    // Mentjük az adatokat az activeBet objektumba
     activeBet = { mId, n, o, t, dl };
-    
-    // Gomb alaphelyzetbe állítása
     const btn = document.getElementById('place-bet-btn');
     if (btn) {
         btn.disabled = false;
@@ -986,43 +983,31 @@ function openBet(mId, n, o, t, dl) {
 }
 
 async function placeBet() {
-    // 1. Korlátozás ellenőrzése
-    if (window.userIsRestricted) {
-        showRestrictionToast();
-        return;
-    }
+    if (window.userIsRestricted) { showRestrictionToast(); return; }
 
-    // --- BIZTONSÁGI IDŐ-ZÁR (KATTINTÁSKOR) ---
+    // --- SZIGORÚBB IDŐ-ELLENŐRZÉS ---
     const now = new Date().getTime();
-    const deadlineTime = new Date(activeBet.dl).getTime();
+    const dlValue = activeBet.dl;
+    const deadlineTime = new Date(dlValue).getTime();
 
-   if (isNaN(deadlineTime) || now > deadlineTime) {
-        // Megpróbáljuk elérni a toast elemet
+    // Ha az idő nagyobb, vagy a dátum értelmezhetetlen, STOP.
+    if (isNaN(deadlineTime) || now > deadlineTime) {
         const toast = document.getElementById('res-alert-toast');
-        
         if (toast) {
             toast.innerText = "Sajnos a határidő lejárt, a fogadás nem rögzíthető!";
             toast.classList.add('show');
-            // Csak akkor frissítünk, ha a toast már kint van
-            setTimeout(() => { 
-                toast.classList.remove('show');
-                location.reload(); 
-            }, 2500);
+            setTimeout(() => { location.reload(); }, 2000);
         } else {
-            // Ha még mindig nincs meg az elem, kiírjuk a konzolra, hogy lásd a hibát
-            console.error("Hiba: A 'res-alert-toast' ID-jú elem nem található a HTML-ben!");
-            alert("Sajnos a határidő lejárt, a fogadás nem rögzíthető!");
+            alert("Lejárt a határidő!");
             location.reload();
         }
         return;
     }
 
-    // 2. Adatok begyűjtése
     const btn = document.getElementById('place-bet-btn');
     const amt = parseFloat(document.getElementById('bet-amount').value);
     const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
 
-    // 3. Spam védelem (Gomb letiltása)
     if (btn) {
         if (btn.disabled) return;
         btn.disabled = true;
@@ -1030,13 +1015,11 @@ async function placeBet() {
     }
 
     try {
-        // 4. Likviditás lekérése
         const { data: mData, error: mError } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        if (mError || !mData) throw new Error("Market data error");
+        if (mError || !mData) throw new Error("Market error");
 
         const profit = amt * (activeBet.o - 1);
 
-        // 5. Ellenőrzések (egyenleg és limit) TOAST üzenetekkel
         if (isNaN(amt) || amt <= 0) {
             showErrorToast("Invalid amount");
             if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
@@ -1055,38 +1038,31 @@ async function placeBet() {
             return;
         }
 
-        // 6. Tranzakciók végrehajtása
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
         await _supabase.from('bets').insert([{ 
-            user_id: currentUser.id, 
-            market_id: activeBet.mId, 
-            outcome_name: activeBet.n, 
-            amount: amt, 
-            odds: activeBet.o, 
-            type: activeBet.t, 
-            status: 'pending' 
+            user_id: currentUser.id, market_id: activeBet.mId, 
+            outcome_name: activeBet.n, amount: amt, odds: activeBet.o, 
+            type: activeBet.t, status: 'pending' 
         }]);
 
         location.reload();
-
     } catch (err) {
-        console.error("Betting error:", err);
-        showErrorToast("Transaction failed. Please try again.");
+        console.error(err);
+        showErrorToast("Transaction failed!");
         if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
     }
 }
 
-// 7. Univerzális hiba-toast megjelenítő (piros üzenet a jobb alsó sarokba)
 function showErrorToast(message) {
     const toast = document.getElementById('res-alert-toast');
     if (toast) {
         toast.innerText = message;
-        toast.style.backgroundColor = "#ff4b2b"; // Biztonsági piros szín
+        toast.style.backgroundColor = "#ff4b2b";
         toast.classList.add('show');
         setTimeout(() => { toast.classList.remove('show'); }, 3000);
     } else {
-        alert(message); // Tartalék, ha a toast elem hiányozna
+        alert(message);
     }
 }
     async function openSettle(mId, title) {
@@ -1408,6 +1384,32 @@ async function runStatusCheck() {
 
 // 3 másodpercenkénti frissítés indítása
 setInterval(runStatusCheck, 3000);
+
+    // --- 1. EZT TEDD A SCRIPTED LEGALJÁRA (VALÓS IDEJŰ FIGYELŐ) ---
+function startRealtimeDeadlineCheck() {
+    setInterval(() => {
+        const now = new Date().getTime();
+        // Keressük az összes odds gombot a piacon
+        const allButtons = document.querySelectorAll('button[onclick^="openBet"]');
+        
+        allButtons.forEach(btn => {
+            // Megpróbáljuk kinyerni a deadline-t az onclick szövegéből
+            const onclickText = btn.getAttribute('onclick');
+            const match = onclickText.match(/'(\d{4}-\d{2}-\d{2}.*?)'/g);
+            if (match && match.length >= 2) {
+                const dlString = match[match.length - 1].replace(/'/g, "");
+                const dlTime = new Date(dlString).getTime();
+                
+                if (!isNaN(dlTime) && now > dlTime && !btn.disabled) {
+                    btn.disabled = true;
+                    btn.innerText = "CLOSED";
+                    btn.style.opacity = "0.5";
+                }
+            }
+        });
+    }, 5000); // 5 másodpercenként frissít gombnyomás nélkül is
+}
+window.addEventListener('load', startRealtimeDeadlineCheck);
 </script>
 </body>
 </html>
