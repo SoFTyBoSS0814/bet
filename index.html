@@ -797,9 +797,24 @@ async function placeBet() {
     const now = new Date().getTime();
     const deadlineTime = new Date(activeBet.dl).getTime();
 
-    if (isNaN(deadlineTime) || now > deadlineTime) {
-        showErrorToast("Sajnos a határidő lejárt, a fogadás nem rögzíthető!");
-        setTimeout(() => { location.reload(); }, 2500);
+   if (isNaN(deadlineTime) || now > deadlineTime) {
+        // Megpróbáljuk elérni a toast elemet
+        const toast = document.getElementById('res-alert-toast');
+        
+        if (toast) {
+            toast.innerText = "Sajnos a határidő lejárt, a fogadás nem rögzíthető!";
+            toast.classList.add('show');
+            // Csak akkor frissítünk, ha a toast már kint van
+            setTimeout(() => { 
+                toast.classList.remove('show');
+                location.reload(); 
+            }, 2500);
+        } else {
+            // Ha még mindig nincs meg az elem, kiírjuk a konzolra, hogy lásd a hibát
+            console.error("Hiba: A 'res-alert-toast' ID-jú elem nem található a HTML-ben!");
+            alert("Sajnos a határidő lejárt, a fogadás nem rögzíthető!");
+            location.reload();
+        }
         return;
     }
 
