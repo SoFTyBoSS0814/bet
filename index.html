@@ -1432,34 +1432,56 @@ window.addEventListener('load', startRealtimeDeadlineCheck);
 window.addEventListener('load', startRealtimeButtonWatcher);
 
 function showErrorToast(message) {
-    const toast = document.getElementById('res-alert-toast');
-    if (toast) {
-        // Kényszerített stílus beállítása JS-ből
-        toast.innerText = message;
-        toast.style.visibility = "visible";
-        toast.style.opacity = "1";
-        toast.style.backgroundColor = "#ff4b2b";
-        toast.style.color = "white";
-        toast.style.padding = "16px";
-        toast.style.position = "fixed";
-        toast.style.bottom = "30px";
-        toast.style.right = "30px";
-        toast.style.zIndex = "10000";
-        toast.style.borderRadius = "8px";
-        toast.style.minWidth = "250px";
-        toast.style.textAlign = "center";
-        toast.style.boxShadow = "0 4px 15px rgba(0,0,0,0.5)";
-        toast.style.display = "block"; // Biztosítsuk, hogy ne legyen hidden
-
-        // 3 másodperc múlva eltüntetjük
-        setTimeout(() => {
-            toast.style.visibility = "hidden";
-            toast.style.opacity = "0";
-        }, 3000);
-    } else {
-        console.error("Még mindig nem találom a res-alert-toast elemet a HTML-ben!");
-        alert(message);
+    // 1. Megpróbáljuk megkeresni
+    let toast = document.getElementById('res-alert-toast');
+    
+    // 2. Ha nem találja, vagy nincs a DOM-ban, létrehozzuk a semmiből
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'res-alert-toast';
+        document.body.appendChild(toast);
     }
+
+    // 3. Kényszerített stílus (hogy ne függjünk a külső CSS-től)
+    Object.assign(toast.style, {
+        position: "fixed",
+        bottom: "30px",
+        right: "30px",
+        backgroundColor: "#ff4b2b",
+        color: "white",
+        padding: "16px 24px",
+        borderRadius: "12px",
+        zIndex: "10000",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+        fontFamily: "Arial, sans-serif",
+        fontWeight: "bold",
+        fontSize: "14px",
+        transition: "all 0.4s ease",
+        opacity: "0",
+        display: "block",
+        pointerEvents: "none"
+    });
+
+    // 4. Szöveg behelyezése és megjelenítés
+    toast.innerText = message;
+    
+    // Rövid időzítés a transition miatt
+    setTimeout(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateY(-10px)";
+    }, 10);
+
+    // 5. 3 másodperc múlva eltüntetjük
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(0)";
+        // Miután elhalványult, kivesszük, hogy ne zavarjon
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 400);
+    }, 3000);
 }
 </script>
 </body>
