@@ -789,7 +789,7 @@ async function placeBet() {
     const deadlineTime = new Date(activeBet.dl).getTime();
 
     if (isNaN(deadlineTime) || now > deadlineTime) {
-        alert("Sajnos a határidő lejárt, a fogadás nem rögzíthető!");
+        showErrorToast("Sajnos a határidő lejárt, a fogadás nem rögzíthető!");
         location.reload(); 
         return;
     }
