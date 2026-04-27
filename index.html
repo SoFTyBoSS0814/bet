@@ -987,12 +987,6 @@ async function placeBet() {
     const now = new Date().getTime();
     const deadlineTime = new Date(activeBet.dl).getTime();
 
-    // ALERT HELYETT TOAST ITT IS:
-    if (isNaN(deadlineTime) || now > deadlineTime) {
-        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
-        setTimeout(() => { location.reload(); }, 2500);
-        return;
-    }
 
     const btn = document.getElementById('place-bet-btn');
     // ... a többi kód változatlan ...
