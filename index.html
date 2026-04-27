@@ -959,57 +959,135 @@ async function placeBet() {
 }
 
 function openBet(mId, n, o, t, dl) {
+    // --- AZONNALI ELLENŐRZÉS MEGNYITÁSKOR ---
+    const now = new Date().getTime();
+    const deadlineTime = new Date(dl).getTime();
+
+    if (!isNaN(deadlineTime) && now > deadlineTime) {
+        showErrorToast("Ez az esemény már véget ért!");
+        setTimeout(() => { location.reload(); }, 2000);
+        return;
+    }
+
+    // Mentjük az adatokat az activeBet objektumba
     activeBet = { mId, n, o, t, dl };
+    
+    // Gomb alaphelyzetbe állítása
     const btn = document.getElementById('place-bet-btn');
     if (btn) {
         btn.disabled = false;
         btn.innerText = "PLACE BET";
     }
+
     document.getElementById('bet-on').innerText = n; 
     document.getElementById('bet-odds').innerText = "x" + o;
     document.getElementById('betModal').classList.remove('hidden'); 
     calcWin();
 }
 
- async function placeBet() {
-    // 1. Korlátozás ellenőrzése piros felugró üzenettel
+async function placeBet() {
+    // 1. Korlátozás ellenőrzése
     if (window.userIsRestricted) {
         showRestrictionToast();
         return;
     }
 
+    // --- BIZTONSÁGI IDŐ-ZÁR (KATTINTÁSKOR) ---
+    const now = new Date().getTime();
+    const deadlineTime = new Date(activeBet.dl).getTime();
+
+   if (isNaN(deadlineTime) || now > deadlineTime) {
+        // Megpróbáljuk elérni a toast elemet
+        const toast = document.getElementById('res-alert-toast');
+        
+        if (toast) {
+            toast.innerText = "Sajnos a határidő lejárt, a fogadás nem rögzíthető!";
+            toast.classList.add('show');
+            // Csak akkor frissítünk, ha a toast már kint van
+            setTimeout(() => { 
+                toast.classList.remove('show');
+                location.reload(); 
+            }, 2500);
+        } else {
+            // Ha még mindig nincs meg az elem, kiírjuk a konzolra, hogy lásd a hibát
+            console.error("Hiba: A 'res-alert-toast' ID-jú elem nem található a HTML-ben!");
+            alert("Sajnos a határidő lejárt, a fogadás nem rögzíthető!");
+            location.reload();
+        }
+        return;
+    }
+
     // 2. Adatok begyűjtése
+    const btn = document.getElementById('place-bet-btn');
     const amt = parseFloat(document.getElementById('bet-amount').value);
     const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-    const profit = amt * (activeBet.o - 1);
 
-    // 3. Likviditás lekérése
-    const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+    // 3. Spam védelem (Gomb letiltása)
+    if (btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerText = "WAIT...";
+    }
 
-    // 4. Ellenőrzések (egyenleg és limit)
-    if(amt > userProfile[f]) return alert(i18n[currentLang].insufficient);
-    if(profit > mData.take) return alert("Liquidity limit reached!");
+    try {
+        // 4. Likviditás lekérése
+        const { data: mData, error: mError } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+        if (mError || !mData) throw new Error("Market data error");
 
-    // 5. Tranzakciók végrehajtása
-    // Egyenleg levonása
-    await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
-    
-    // Likviditás frissítése a piacon
-    await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
-    
-    // Fogadás rögzítése
-    await _supabase.from('bets').insert([{ 
-        user_id: currentUser.id, 
-        market_id: activeBet.mId, 
-        outcome_name: activeBet.n, 
-        amount: amt, 
-        odds: activeBet.o, 
-        type: activeBet.t, 
-        status: 'pending' 
-    }]);
+        const profit = amt * (activeBet.o - 1);
 
-    // Oldal frissítése
-    location.reload();
+        // 5. Ellenőrzések (egyenleg és limit) TOAST üzenetekkel
+        if (isNaN(amt) || amt <= 0) {
+            showErrorToast("Invalid amount");
+            if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+            return;
+        }
+
+        if (amt > userProfile[f]) {
+            showErrorToast(i18n[currentLang].insufficient);
+            if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+            return;
+        }
+
+        if (profit > mData.take) {
+            showErrorToast("Liquidity limit reached!");
+            if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+            return;
+        }
+
+        // 6. Tranzakciók végrehajtása
+        await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
+        await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
+        await _supabase.from('bets').insert([{ 
+            user_id: currentUser.id, 
+            market_id: activeBet.mId, 
+            outcome_name: activeBet.n, 
+            amount: amt, 
+            odds: activeBet.o, 
+            type: activeBet.t, 
+            status: 'pending' 
+        }]);
+
+        location.reload();
+
+    } catch (err) {
+        console.error("Betting error:", err);
+        showErrorToast("Transaction failed. Please try again.");
+        if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+    }
+}
+
+// 7. Univerzális hiba-toast megjelenítő (piros üzenet a jobb alsó sarokba)
+function showErrorToast(message) {
+    const toast = document.getElementById('res-alert-toast');
+    if (toast) {
+        toast.innerText = message;
+        toast.style.backgroundColor = "#ff4b2b"; // Biztonsági piros szín
+        toast.classList.add('show');
+        setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    } else {
+        alert(message); // Tartalék, ha a toast elem hiányozna
+    }
 }
     async function openSettle(mId, title) {
         const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
