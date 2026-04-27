@@ -267,7 +267,7 @@
         <div id="groups-container"></div>
         <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed" data-i18n="add_category">+ Add Category</button>
         <div id="create-error-msg"></div>
-        <button class="btn-primary" style="margin-top:20px" onclick="saveMarket()" data-i18n="publish">PUBLISH</button>
+        <button id="save-market-btn" class="btn-primary" style="margin-top:20px" onclick="saveMarket()" data-i18n="publish">PUBLISH</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('createModal')" data-i18n="cancel">Cancel</button>
     </div>
 </div>
@@ -631,11 +631,40 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
-    async function loadMarkets() {
-        const { data: markets } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+async function loadMarkets() {
+    try {
+        if (!document.getElementById('infoModal')) {
+            const modalDiv = document.createElement('div');
+            modalDiv.id = 'infoModal';
+            modalDiv.style.cssText = "display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);";
+            modalDiv.innerHTML = `
+                <div style="background:#0b1218; border:1px solid #334756; margin:8% auto; padding:20px; width:90%; max-width:500px; border-radius:12px; position:relative; color:white; box-shadow: 0 0 20px rgba(0,209,255,0.2);">
+                    <span onclick="closeSFModal()" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px; color:#00d1ff;">&times;</span>
+                    <h2 id="modalTitle" style="margin-top:0; color:#00d1ff; font-size:1.2em; text-transform:uppercase; letter-spacing:1px;">Betöltés...</h2>
+                    <div id="modalBody" style="max-height:60vh; overflow-y:auto; margin-top:15px;"></div>
+                    <div id="modalFooter" style="margin-top:15px; border-top:1px solid #334756; padding-top:15px;"></div>
+                </div>
+            `;
+            document.body.appendChild(modalDiv);
+        }
+
+        // Adatok lekérése: piacok + komment számláláshoz az összes komment
+        const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const { data: allComments } = await _supabase.from('comments').select('market_id');
+        
+        if (error) throw error;
+
+        // Kommentek összesítése market_id szerint
+        const commentCounts = {};
+        (allComments || []).forEach(c => {
+            commentCounts[c.market_id] = (commentCounts[c.market_id] || 0) + 1;
+        });
+
         const mList = document.getElementById('market-list');
         const hList = document.getElementById('history-list');
         const dict = i18n[currentLang];
+        
+        if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
         
         markets.forEach(m => {
@@ -644,59 +673,147 @@ async function requestWithdrawal() {
             const symbol = m.type === 'REAL' ? '€' : 'DEMO';
             const dlDate = new Date(m.deadline);
             const isExpired = dlDate < new Date();
+            const cCount = commentCounts[m.id] || 0;
             
+            const card = document.createElement('div');
+            card.className = 'market-card';
+
+            const buttonsHTML = `
+                <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
+                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
+                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
+                </div>
+            `;
+
             if(m.status === 'active') {
-                const card = document.createElement('div');
-                card.className = 'market-card';
                 card.innerHTML = `
-                    <div class="market-header">
-                        <div class="header-left">
-                            <h2 style="margin:0;">${m.title}</h2>
-                            <div class="deadline-badge">⏳ ${dict.deadline}: ${dlDate.toLocaleString()}</div>
-                            <div style="margin-top:5px;">
-                                <small style="color:#aaa">${dict.host}: ${m.creator_name} | 
-                                    <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b>
-                                </small>
-                            </div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div>
+                            <h2 style="margin:0; color:white;">${m.title}</h2>
+                            <div style="font-size:12px; color:#aaa; margin-top:4px;">⏳ ${dict.deadline}: ${dlDate.toLocaleString()}</div>
+                            <small style="color:#888; display:block; margin-top:4px;">${dict.host}: ${m.creator_name} | <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
                         </div>
-                        <div class="header-right">
-                            <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
-                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create">SETTLE</button>` : ''}
+                        <div style="text-align:right;">
+                            <div style="color:${typeColor}; font-weight:bold;">${m.type}</div>
+                            ${m.creator_name === currentUser.username ? `<button onclick="openSettle('${m.id}','${m.title}')" class="btn-create" style="margin-top:8px;">SETTLE</button>` : ''}
                         </div>
                     </div>
-                    ${groups.map(g => `<div class="market-group"><small>${g.title}</small><div class="outcomes-grid">
-                        ${g.outcomes.map(o => `<button class="btn-bet" data-deadline="${m.deadline}" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
-                    </div></div>`).join('')}`;
+                    ${buttonsHTML}
+                    ${groups.map(g => `<div style="margin-top:12px;">
+                        <small style="color:var(--primary); text-transform:uppercase; font-size:10px;">${g.title}</small>
+                        <div class="outcomes-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-top:5px;">
+                            ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
+                        </div>
+                    </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                const card = document.createElement('div');
-                card.className = 'market-card';
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `
-                    <div class="settled-badge">Settled</div>
-                    <div class="market-header">
-                        <div class="header-left">
-                            <h2 style="margin-top:15px; margin-bottom:5px;">
-                                ${m.title} <span style="color:${typeColor}; opacity:0.7">- ${dict.settled_at} ${sDate.toLocaleString()}.</span>
-                            </h2>
-                            <div style="margin-bottom:15px;">
-                                <small style="color:#aaa; display:block;">${dict.host}: ${m.creator_name}</small>
-                                <small style="color:var(--danger); display:block;">${dict.deadline}: ${dlDate.toLocaleString()}</small>
-                                <small style="color:${typeColor}; font-weight:bold;">${dict.final_pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                        <div style="flex:1;">
+                            <div style="margin-bottom: 5px;">
+                                <span style="font-size:9px; padding: 1px 5px; background: #ff4444; border-radius: 3px; color: white; text-transform: uppercase; font-weight: bold; margin-right: 8px;">SETTLED</span>
+                                <h2 style="margin:0; color:white; display: inline; vertical-align: middle;">${m.title} <span style="color:#00d1ff; font-size: 0.65em; font-weight: normal; margin-left:5px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span></h2>
+                            </div>
+                            <div style="line-height:1.4;">
+                                <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
+                                <small style="color:var(--danger); display:block; font-weight:bold;">DEADLINE: ${dlDate.toLocaleString()}</small>
+                                <small style="color:#00d1ff; display:block; font-weight:bold; font-size:1em; margin-top:2px;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
                             </div>
                         </div>
-                        <div class="header-right">
-                            <div class="market-type-label" style="color:${typeColor}">${m.type}</div>
-                        </div>
+                        <div style="color:${typeColor}; font-weight:bold; margin-left: 10px;">${m.type}</div>
                     </div>
-                    ${groups.map(g => `<div class="market-group"><small style="color:var(--primary)">${g.title}</small>
-                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}"><span>${o.n}</span><b>${o.status.toUpperCase()}</b></div>`).join('')}
-                    </div>`).join('')}`;
+                    ${buttonsHTML}
+                    <div style="margin-top:10px; background:rgba(0,0,0,0.15); padding:10px; border-radius:8px;">
+                    ${groups.map(g => `<div style="margin-bottom:10px;">
+                        <small style="color:var(--primary); font-size:10px; text-transform:uppercase;">${g.title}</small>
+                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}">
+                            <span>${o.n}</span>
+                            <b style="text-transform:uppercase;">${o.status}</b>
+                        </div>`).join('')}
+                    </div>`).join('')}
+                    </div>`;
                 hList.appendChild(card);
             }
         });
+    } catch (e) {
+        console.error(e);
     }
+}
 
+function closeSFModal() { 
+    document.getElementById('infoModal').style.display = "none"; 
+}
+
+async function openComments(mid) {
+    const modal = document.getElementById('infoModal');
+    const body = document.getElementById('modalBody');
+    const footer = document.getElementById('modalFooter');
+    document.getElementById('modalTitle').innerText = "KOMMENTEK";
+    body.innerHTML = "<div style='padding:20px; text-align:center;'>Betöltés...</div>";
+    modal.style.display = "block";
+
+    const { data } = await _supabase.from('comments').select('*').eq('market_id', mid).order('created_at', {ascending: false});
+    body.innerHTML = data && data.length ? data.map(c => `
+        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:8px; border:1px solid rgba(0,209,255,0.1);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+                <b style="color:#00d1ff;">${c.username}</b> 
+                <span style="color:#666;">${new Date(c.created_at).toLocaleString()}</span>
+            </div>
+            <div style="color:#eee; font-size:13px;">${c.comment_text}</div>
+        </div>`).join('') : "<div style='text-align:center; padding:20px; color:#556b7d;'>Még nincs hozzászólás.</div>";
+
+    footer.innerHTML = `
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="new-cmt-input" placeholder="Írj valamit..." style="flex:1; background:#050a0e; border:1px solid #334756; color:white; padding:10px; border-radius:6px; outline:none;">
+            <button class="btn-create" onclick="saveComment('${mid}')">KÜLDÉS</button>
+        </div>`;
+}
+
+async function saveComment(mid) {
+    const input = document.getElementById('new-cmt-input');
+    if(!input || !input.value.trim()) return;
+    await _supabase.from('comments').insert([{ 
+        market_id: mid, 
+        user_id: currentUser.id, 
+        username: currentUser.username, 
+        comment_text: input.value.trim() 
+    }]);
+    // Frissítés után újratöltjük a piacokat is, hogy látszódjon a gombnál a növekmény
+    await loadMarkets();
+    openComments(mid);
+}
+
+async function openBets(mid) {
+    const modal = document.getElementById('infoModal');
+    const body = document.getElementById('modalBody');
+    document.getElementById('modalFooter').innerHTML = "";
+    document.getElementById('modalTitle').innerText = "FOGADÁSOK";
+    body.innerHTML = "<div style='padding:20px; text-align:center;'>Betöltés...</div>";
+    modal.style.display = "block";
+
+    const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
+    if (!bets || bets.length === 0) {
+        body.innerHTML = "<div style='text-align:center; padding:20px; color:#556b7d;'>Még nincsenek fogadások.</div>";
+        return;
+    }
+    const uids = [...new Set(bets.map(b => b.user_id))];
+    const { data: profiles } = await _supabase.from('profiles').select('id, username').in('id', uids);
+    const nameMap = Object.fromEntries((profiles || []).map(p => [p.id, p.username]));
+
+    body.innerHTML = bets.map(b => {
+        const displayName = nameMap[b.user_id] || "Ismeretlen";
+        return `
+        <div style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid ${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#334756'}">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                <b style="color:#00d1ff; font-size: 11px;">${displayName}</b> 
+                <span style="color:white; font-size:12px; font-weight:500;">${new Date(b.created_at).toLocaleString()}</span>
+            </div>
+            <div style="font-size:18px; color:#fff; padding: 5px 0;"><b>${parseFloat(b.amount).toFixed(2)} ${b.type || 'DEMO'}</b> <span style="color:var(--primary);">➞</span> ${b.outcome_name}</div>
+            <div style="font-size:10px; margin-top:3px; font-weight:bold; color:${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#aaa'}">${(b.status || 'pending').toUpperCase()}</div>
+        </div>`;
+    }).join('');
+}
     function checkDeadlines() {
         document.querySelectorAll('.btn-bet').forEach(btn => { if(new Date(btn.dataset.deadline) < new Date()) btn.disabled = true; });
     }
@@ -725,170 +842,174 @@ async function requestWithdrawal() {
         setTimeout(() => { errDiv.style.display = 'none'; }, 5000);
     }
 
-    async function saveMarket() {
-        const dict = i18n[currentLang];
-        const t = document.getElementById('m-name').value.trim();
-        const b = parseFloat(document.getElementById('m-budget').value);
-        const dlInput = document.getElementById('m-deadline').value;
-        const type = document.getElementById('m-type').value;
-        if (!dlInput) return showCreateError(dict.min_deadline_err);
-        const deadline = new Date(dlInput), now = new Date();
-        if (deadline < new Date(now.getTime() + 60000)) return showCreateError(dict.min_deadline_err);
-        if (deadline > new Date(now.getTime() + 259200000)) return showCreateError(dict.max_deadline_err);
-        if(!t || isNaN(b) || b <= 0) return showCreateError(dict.fill_all);
-        const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
-        if(b > userProfile[balField]) return showCreateError(dict.insufficient);
-        const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
-        if(groupDivs.length === 0) return showCreateError(dict.cat_err);
-        const grp = [];
-        for(let g of groupDivs) {
-            const categoryTitle = g.querySelector('.gt').value.trim();
-            if(!categoryTitle) return showCreateError(dict.cat_err);
-            const outcomes = [];
-            const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
-            for(let o of outcomeDivs) {
-                const name = o.querySelector('.on').value.trim(), odds = parseFloat(o.querySelector('.oo').value);
-                if(!name) return showCreateError(dict.outcome_err);
-                if(isNaN(odds) || odds < 1.01 || odds > 1000) return showCreateError(dict.odds_err);
-                outcomes.push({ n: name, o: odds, status: 'pending' });
-            }
-            grp.push({ title: categoryTitle, outcomes });
-        }
-        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
-        await _supabase.from('markets').insert([{ title: t, type, take: b, initial_liquidity: b, deadline: deadline.toISOString(), note: JSON.stringify(grp), creator_name: currentUser.username, status: 'active' }]);
-        location.reload();
-    }
-
-function openBet(mId, n, o, t, dl) {
-    // --- AZONNALI ELLENŐRZÉS MEGNYITÁSKOR ---
-    const now = new Date().getTime();
-    const deadlineTime = new Date(dl).getTime();
-
-    if (!isNaN(deadlineTime) && now > deadlineTime) {
-        showErrorToast("Ez az esemény már véget ért!");
-        setTimeout(() => { location.reload(); }, 2000);
-        return;
-    }
-
-    // Mentjük az adatokat az activeBet objektumba
-    activeBet = { mId, n, o, t, dl };
+async function saveMarket() {
+    const btn = document.getElementById('save-market-btn');
+    const dict = i18n[currentLang];
     
-    // Gomb alaphelyzetbe állítása
-    const btn = document.getElementById('place-bet-btn');
+    const unlock = (msg) => {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = dict.publish || "PUBLISH";
+        }
+        if (msg) showCreateError(msg);
+    };
+
+    // --- SPAM VÉDELEM ---
+    // Ha a gomb létezik, azonnal tiltjuk
     if (btn) {
-        btn.disabled = false;
-        btn.innerText = "PLACE BET";
+        if (btn.disabled) return; 
+        btn.disabled = true;
+        btn.innerText = "WAIT...";
     }
 
-    document.getElementById('bet-on').innerText = n; 
-    document.getElementById('bet-odds').innerText = "x" + o;
-    document.getElementById('betModal').classList.remove('hidden'); 
-    calcWin();
+    const t = document.getElementById('m-name').value.trim();
+    const b = parseFloat(document.getElementById('m-budget').value);
+    const dlInput = document.getElementById('m-deadline').value;
+    const type = document.getElementById('m-type').value;
+
+    if (!dlInput) return unlock(dict.min_deadline_err);
+    const deadline = new Date(dlInput), now = new Date();
+    if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
+    if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
+
+    const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
+    if (b > userProfile[balField]) return unlock(dict.insufficient);
+
+    const groupDivs = Array.from(document.querySelectorAll('#groups-container .market-group'));
+    if (groupDivs.length === 0) return unlock(dict.cat_err);
+
+    const grp = [];
+    for (let g of groupDivs) {
+        const categoryTitle = g.querySelector('.gt').value.trim();
+        if (!categoryTitle) return unlock(dict.cat_err);
+        const outcomes = [];
+        const outcomeDivs = Array.from(g.querySelectorAll('div[id^="o-cont-"] > div'));
+        for (let o of outcomeDivs) {
+            const name = o.querySelector('.on').value.trim(), 
+                  odds = parseFloat(o.querySelector('.oo').value);
+            if (!name || isNaN(odds)) return unlock(dict.outcome_err);
+            outcomes.push({ n: name, o: odds, status: 'pending' });
+        }
+        grp.push({ title: categoryTitle, outcomes });
+    }
+
+    try {
+        // Tranzakciók sorrendben
+        await _supabase.from('profiles').update({ [balField]: userProfile[balField] - b }).eq('id', currentUser.id);
+        await _supabase.from('markets').insert([{ 
+            title: t, type, take: b, initial_liquidity: b, 
+            deadline: deadline.toISOString(), note: JSON.stringify(grp), 
+            creator_name: currentUser.username, status: 'active' 
+        }]);
+        
+        location.reload(); 
+    } catch (err) {
+        console.error("Hiba:", err);
+        unlock("Server error! Please try again.");
+    }
 }
 
 async function placeBet() {
-    // 1. Korlátozás ellenőrzése
-    if (window.userIsRestricted) {
-        showRestrictionToast();
-        return;
-    }
-
-    // --- BIZTONSÁGI IDŐ-ZÁR (KATTINTÁSKOR) ---
-    const now = new Date().getTime();
-    const deadlineTime = new Date(activeBet.dl).getTime();
-
-   if (isNaN(deadlineTime) || now > deadlineTime) {
-        // Megpróbáljuk elérni a toast elemet
-        const toast = document.getElementById('res-alert-toast');
-        
-        if (toast) {
-            toast.innerText = "Sajnos a határidő lejárt, a fogadás nem rögzíthető!";
-            toast.classList.add('show');
-            // Csak akkor frissítünk, ha a toast már kint van
-            setTimeout(() => { 
-                toast.classList.remove('show');
-                location.reload(); 
-            }, 2500);
-        } else {
-            // Ha még mindig nincs meg az elem, kiírjuk a konzolra, hogy lásd a hibát
-            console.error("Hiba: A 'res-alert-toast' ID-jú elem nem található a HTML-ben!");
-            alert("Sajnos a határidő lejárt, a fogadás nem rögzíthető!");
-            location.reload();
-        }
-        return;
-    }
-
-    // 2. Adatok begyűjtése
     const btn = document.getElementById('place-bet-btn');
-    const amt = parseFloat(document.getElementById('bet-amount').value);
-    const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
-
-    // 3. Spam védelem (Gomb letiltása)
+    if (window.userIsRestricted) { showRestrictionToast(); return; }
+    
+    // --- SPAM VÉDELEM ---
     if (btn) {
         if (btn.disabled) return;
         btn.disabled = true;
         btn.innerText = "WAIT...";
     }
 
+    const amt = parseFloat(document.getElementById('bet-amount').value);
+    const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+    const profit = amt * (activeBet.o - 1);
+
+    if (isNaN(amt) || amt <= 0) {
+        alert("Invalid amount");
+        if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+        return;
+    }
+    if (amt > userProfile[f]) {
+        alert(i18n[currentLang].insufficient);
+        if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
+        return;
+    }
+
     try {
-        // 4. Likviditás lekérése
-        const { data: mData, error: mError } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
-        if (mError || !mData) throw new Error("Market data error");
-
-        const profit = amt * (activeBet.o - 1);
-
-        // 5. Ellenőrzések (egyenleg és limit) TOAST üzenetekkel
-        if (isNaN(amt) || amt <= 0) {
-            showErrorToast("Invalid amount");
-            if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
-            return;
-        }
-
-        if (amt > userProfile[f]) {
-            showErrorToast(i18n[currentLang].insufficient);
-            if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
-            return;
-        }
-
+        const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
         if (profit > mData.take) {
-            showErrorToast("Liquidity limit reached!");
+            alert("Liquidity limit reached!");
             if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
             return;
         }
 
-        // 6. Tranzakciók végrehajtása
         await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
         await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
         await _supabase.from('bets').insert([{ 
-            user_id: currentUser.id, 
-            market_id: activeBet.mId, 
-            outcome_name: activeBet.n, 
-            amount: amt, 
-            odds: activeBet.o, 
-            type: activeBet.t, 
-            status: 'pending' 
+            user_id: currentUser.id, market_id: activeBet.mId, 
+            outcome_name: activeBet.n, amount: amt, odds: activeBet.o, 
+            type: activeBet.t, status: 'pending' 
         }]);
 
         location.reload();
-
     } catch (err) {
-        console.error("Betting error:", err);
-        showErrorToast("Transaction failed. Please try again.");
+        console.error(err);
         if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
     }
 }
 
-// 7. Univerzális hiba-toast megjelenítő (piros üzenet a jobb alsó sarokba)
-function showErrorToast(message) {
-    const toast = document.getElementById('res-alert-toast');
-    if (toast) {
-        toast.innerText = message;
-        toast.style.backgroundColor = "#ff4b2b"; // Biztonsági piros szín
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 3000);
-    } else {
-        alert(message); // Tartalék, ha a toast elem hiányozna
+function openBet(mId, n, o, t, dl) {
+    activeBet = { mId, n, o, t, dl };
+    const btn = document.getElementById('place-bet-btn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = "PLACE BET";
     }
+    document.getElementById('bet-on').innerText = n; 
+    document.getElementById('bet-odds').innerText = "x" + o;
+    document.getElementById('betModal').classList.remove('hidden'); 
+    calcWin();
+}
+
+ async function placeBet() {
+    // 1. Korlátozás ellenőrzése piros felugró üzenettel
+    if (window.userIsRestricted) {
+        showRestrictionToast();
+        return;
+    }
+
+    // 2. Adatok begyűjtése
+    const amt = parseFloat(document.getElementById('bet-amount').value);
+    const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
+    const profit = amt * (activeBet.o - 1);
+
+    // 3. Likviditás lekérése
+    const { data: mData } = await _supabase.from('markets').select('take').eq('id', activeBet.mId).single();
+
+    // 4. Ellenőrzések (egyenleg és limit)
+    if(amt > userProfile[f]) return alert(i18n[currentLang].insufficient);
+    if(profit > mData.take) return alert("Liquidity limit reached!");
+
+    // 5. Tranzakciók végrehajtása
+    // Egyenleg levonása
+    await _supabase.from('profiles').update({ [f]: userProfile[f] - amt }).eq('id', currentUser.id);
+    
+    // Likviditás frissítése a piacon
+    await _supabase.from('markets').update({ take: mData.take - profit }).eq('id', activeBet.mId);
+    
+    // Fogadás rögzítése
+    await _supabase.from('bets').insert([{ 
+        user_id: currentUser.id, 
+        market_id: activeBet.mId, 
+        outcome_name: activeBet.n, 
+        amount: amt, 
+        odds: activeBet.o, 
+        type: activeBet.t, 
+        status: 'pending' 
+    }]);
+
+    // Oldal frissítése
+    location.reload();
 }
     async function openSettle(mId, title) {
         const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
@@ -918,6 +1039,300 @@ async function finalSubmitSettle() {
 
     for (let group of currentSettleGroups) {
         if (!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
+            errDiv.innerText = i18n[currentLang].win_loss_err;
+            errDiv.style.display = 'block';
+            return;
+        }
+    }
+
+    const btn = document.getElementById('finalize-btn');
+    btn.disabled = true;
+    btn.innerText = "Processing...";
+
+    let winners = [];
+    currentSettleGroups.forEach(g =>
+        g.outcomes.forEach(o => { if (o.status === 'win') winners.push(o.n); })
+    );
+
+    try {
+        const { data: mData } = await _supabase
+            .from('markets')
+            .select('*')
+            .eq('id', currentSettleId)
+            .single();
+
+        const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+        // ✅ Most már az initial_liquidity oszlopból vesszük az alap letétet
+        let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
+
+        const { data: bets } = await _supabase
+            .from('bets')
+            .select('*')
+            .eq('market_id', currentSettleId)
+            .eq('status', 'pending');
+
+        if (bets) {
+            for (let bet of bets) {
+                const isWin = winners.includes(bet.outcome_name);
+                const betAmt = parseFloat(bet.amount);
+
+                if (isWin) {
+                    // Ha a fogadó nyert: a Host csak a tiszta nyereményt bukja a poolból
+                    const payout = betAmt * parseFloat(bet.odds);
+                    const netLoss = payout - betAmt; 
+                    settlementAmount -= netLoss;
+
+                    await _supabase.rpc('settle_bet_payout', {
+                        p_user_id: bet.user_id,
+                        p_amount: payout,
+                        p_field: field
+                    });
+                } else {
+                    // Ha a fogadó veszített: a teljes tétje profit a Hostnak
+                    settlementAmount += betAmt;
+                }
+
+                await _supabase
+                    .from('bets')
+                    .update({ status: isWin ? 'win' : 'loss' })
+                    .eq('id', bet.id);
+            }
+        }
+
+        // Host profil lekérése és egyenleg frissítése
+        const { data: host } = await _supabase
+            .from('profiles')
+            .select('*')
+            .eq('username', mData.creator_name)
+            .single();
+
+        if (host) {
+            const currentBalance = parseFloat(host[field]) || 0;
+            await _supabase
+                .from('profiles')
+                .update({
+                    [field]: currentBalance + settlementAmount
+                })
+                .eq('id', host.id);
+        }
+
+        // Piac lezárása
+        await _supabase
+            .from('markets')
+            .update({
+                note: JSON.stringify(currentSettleGroups),
+                status: 'settled',
+                start_time: new Date().toISOString()
+            })
+            .eq('id', currentSettleId);
+
+        location.reload();
+
+    } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.innerText = "FINALIZE";
+    }
+}
+    async function claimDailyDemo() {
+        const dict = i18n[currentLang];
+        if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert(dict.wait_24);
+        const win = Math.floor(Math.random() * 8000 + 1000);
+        await _supabase.from('profiles').update({ demo_balance: userProfile.demo_balance + win, last_claim: new Date().toISOString() }).eq('id', currentUser.id);
+        document.getElementById('reward-msg').innerText = dict.won + win + " DEMO!"; fetchProfile();
+    }
+
+    function showSection(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('section-' + id).classList.add('active');
+        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+        document.getElementById('link-' + id).classList.add('active');
+    }
+
+async function loadUsers(mode) {
+    const container = document.getElementById('user-list-container');
+    container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:var(--primary);">Betöltés...</p>';
+
+    let query = _supabase
+        .from('profiles')
+        .select('username, created_at, real_balance, total_activity');
+
+    if (mode === 'newest') {
+        query = query.order('created_at', { ascending: false });
+    } else if (mode === 'active') {
+        // A NULL értékeket a Supabase a lista végére rakja, ha így használod:
+        query = query.order('total_activity', { ascending: false, nullsFirst: false });
+    } else {
+        query = query.order('username', { ascending: true });
+    }
+
+    const { data: users, error } = await query.limit(20);
+
+    if (error) {
+        console.error(error);
+        container.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color:red;">Hiba történt.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+
+    users.forEach(u => {
+        const card = document.createElement('div');
+        card.style.background = 'rgba(255,255,255,0.03)';
+        card.style.padding = '20px 10px';
+        card.style.borderRadius = '12px';
+        card.style.border = '1px solid var(--border)';
+        card.style.textAlign = 'center';
+
+        // Itt a trükk: a (u.total_activity || 0) garantálja, hogy ha NULL, akkor 0 legyen
+        let subText = "";
+        if (mode === 'active') {
+            subText = `Aktivitás (Fogadás/Host): ${u.total_activity || 0}`;
+        } else {
+            subText = `Regisztráció: ${new Date(u.created_at).toLocaleDateString()}`;
+        }
+
+        card.innerHTML = `
+            <div style="font-size: 32px; margin-bottom: 12px;">👤</div>
+            <div style="font-weight: 900; color: var(--primary); font-size: 18px; text-transform: uppercase; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis;">
+                ${u.username}
+            </div>
+            <div style="font-size: 12px; color: #ffffff; background: rgba(255,255,255,0.05); padding: 8px 5px; border-radius: 6px; white-space: nowrap; width: 92%; margin: 0 auto;">
+                <span style="font-weight: bold;">${subText}</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+    function calcWin() { 
+        const symbol = activeBet && activeBet.t === 'REAL' ? '€' : 'DEMO';
+        document.getElementById('bet-win-text').innerText = "Payout: " + (parseFloat(document.getElementById('bet-amount').value) * (activeBet ? activeBet.o : 0)).toFixed(2) + " " + symbol; 
+    }
+function openCreateModal() { 
+    // 1. Ha korlátozva van, csak a piros popupot mutatjuk és megállunk
+    if (window.userIsRestricted) {
+        showRestrictionToast(); 
+        return; 
+    }
+
+    // 2. Ha nincs korlátozás, nyitjuk a panelt
+    const modal = document.getElementById('createModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+    
+    // 3. Dátum beállítása (ne lehessen múltba fogadni)
+    const deadlineInput = document.getElementById('m-deadline');
+    if (deadlineInput) {
+        const now = new Date(); 
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        deadlineInput.min = now.toISOString().slice(0, 16);
+    }
+    
+    // 4. Csoportok inicializálása, ha még nincsenek
+    const container = document.getElementById('groups-container');
+    if (container && !container.innerHTML.trim()) {
+        addGroup();
+    }
+}
+    function logout() { localStorage.clear(); window.location.href="login.html"; }
+
+function showRestrictionToast() {
+    // Ha már van kint egy értesítés, ne halmozzuk fel
+    if (document.getElementById('active-toast')) return;
+
+    const toast = document.createElement('div');
+    toast.id = 'active-toast';
+    toast.className = 'restriction-toast';
+    toast.innerHTML = `
+        <b>Hozzáférés megtagadva</b>
+        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
+        <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
+    `;
+
+    document.body.appendChild(toast);
+
+    // 5 másodperc után eltüntetjük
+    setTimeout(() => {
+        toast.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(100%)";
+        setTimeout(() => toast.remove(), 500);
+    }, 5000);
+}
+
+    function closeModal(id) {
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// --- INTERFERENCIA-MENTES KORLÁTOZÁS KEZELŐ ---
+
+// 1. Az eredeti stílusú üzenet (Jobb alul)
+function showRestrictionToast() {
+    if (document.getElementById('res-alert-toast')) return;
+
+    const div = document.createElement('div');
+    div.id = 'res-alert-toast';
+    div.style = `
+        position: fixed; 
+        bottom: 20px; 
+        right: 20px; 
+        background: #1a222a; 
+        color: #ccc; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border-left: 4px solid #ff4444;
+        z-index: 9999999; 
+        font-size: 13px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    `;
+
+    div.innerHTML = `
+        <div style="margin-bottom: 5px;"><b style="color:#fff; font-size:14px;">Hozzáférés megtagadva</b></div>
+        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
+        <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
+        <div style="margin-top:10px; text-align:right;">
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="background: #334756; color: white; border: none; padding: 4px 10px; 
+                           border-radius: 4px; cursor: pointer; font-size: 11px;">OK</button>
+        </div>
+    `;
+    document.body.appendChild(div);
+}
+
+// 2. Az ellenőrző függvény - CSAK ADATOT FRISSÍT, UI-HOZ NEM NYÚL
+async function runStatusCheck() {
+    // Ellenőrizzük, hogy be van-e jelentkezve a felhasználó
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+
+    try {
+        const { data: profile, error } = await _supabase
+            .from('profiles')
+            .select('is_restricted')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (error) throw error;
+
+        if (profile) {
+            // Csak a változót frissítjük a memóriában
+            window.userIsRestricted = profile.is_restricted;
+            if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
+        }
+    } catch (e) {
+        console.error("Háttér ellenőrzés hiba:", e);
+    }
+}
+
+// 3 másodpercenkénti frissítés indítása
+setInterval(runStatusCheck, 3000);
+</script>
+</body>
+</html>
             errDiv.innerText = i18n[currentLang].win_loss_err;
             errDiv.style.display = 'block';
             return;
