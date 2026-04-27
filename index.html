@@ -962,10 +962,10 @@ function openBet(mId, n, o, t, dl) {
     const now = new Date().getTime();
     const deadlineTime = new Date(dl).getTime();
 
-    // Ha lejárt, ki sem nyitjuk!
+    // ALERT HELYETT TOAST:
     if (!isNaN(deadlineTime) && now > deadlineTime) {
-        showErrorToast("Ez az esemény már véget ért!");
-        setTimeout(() => { location.reload(); }, 1500);
+        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
+        setTimeout(() => { location.reload(); }, 2000);
         return;
     }
 
@@ -975,7 +975,6 @@ function openBet(mId, n, o, t, dl) {
         btn.disabled = false;
         btn.innerText = "PLACE BET";
     }
-
     document.getElementById('bet-on').innerText = n; 
     document.getElementById('bet-odds').innerText = "x" + o;
     document.getElementById('betModal').classList.remove('hidden'); 
@@ -985,26 +984,18 @@ function openBet(mId, n, o, t, dl) {
 async function placeBet() {
     if (window.userIsRestricted) { showRestrictionToast(); return; }
 
-    // --- SZIGORÚBB IDŐ-ELLENŐRZÉS ---
     const now = new Date().getTime();
-    const dlValue = activeBet.dl;
-    const deadlineTime = new Date(dlValue).getTime();
+    const deadlineTime = new Date(activeBet.dl).getTime();
 
-    // Ha az idő nagyobb, vagy a dátum értelmezhetetlen, STOP.
+    // ALERT HELYETT TOAST ITT IS:
     if (isNaN(deadlineTime) || now > deadlineTime) {
-        const toast = document.getElementById('res-alert-toast');
-        if (toast) {
-            toast.innerText = "Sajnos a határidő lejárt, a fogadás nem rögzíthető!";
-            toast.classList.add('show');
-            setTimeout(() => { location.reload(); }, 2000);
-        } else {
-            alert("Lejárt a határidő!");
-            location.reload();
-        }
+        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
+        setTimeout(() => { location.reload(); }, 2500);
         return;
     }
 
     const btn = document.getElementById('place-bet-btn');
+    // ... a többi kód változatlan ...
     const amt = parseFloat(document.getElementById('bet-amount').value);
     const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
 
@@ -1051,18 +1042,6 @@ async function placeBet() {
         console.error(err);
         showErrorToast("Transaction failed!");
         if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
-    }
-}
-
-function showErrorToast(message) {
-    const toast = document.getElementById('res-alert-toast');
-    if (toast) {
-        toast.innerText = message;
-        toast.style.backgroundColor = "#ff4b2b";
-        toast.classList.add('show');
-        setTimeout(() => { toast.classList.remove('show'); }, 3000);
-    } else {
-        alert(message);
     }
 }
     async function openSettle(mId, title) {
