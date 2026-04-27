@@ -809,7 +809,7 @@ async function openBets(mid) {
                 <b style="color:#00d1ff; font-size: 11px;">${displayName}</b> 
                 <span style="color:white; font-size:12px; font-weight:500;">${new Date(b.created_at).toLocaleString()}</span>
             </div>
-            <div style="font-size:18px; color:#fff; padding: 5px 0;"><b>${parseFloat(b.amount).toFixed(2)} ${b.type || 'DEMO'}</b> <span style="color:var(--primary);">➞</span> ${b.outcome_name}</div>
+            <div style="font-size:13px; color:#ccc;"><b>${parseFloat(b.amount).toFixed(2)} ${b.type || 'DEMO'}</b> ➞ ${b.outcome_name}</div>
             <div style="font-size:10px; margin-top:3px; font-weight:bold; color:${b.status==='win'?'#28a745':b.status==='loss'?'#dc3545':'#aaa'}">${(b.status || 'pending').toUpperCase()}</div>
         </div>`;
     }).join('');
@@ -1268,68 +1268,6 @@ function showRestrictionToast() {
         modal.classList.add('hidden');
     }
 }
-
-// --- INTERFERENCIA-MENTES KORLÁTOZÁS KEZELŐ ---
-
-// 1. Az eredeti stílusú üzenet (Jobb alul)
-function showRestrictionToast() {
-    if (document.getElementById('res-alert-toast')) return;
-
-    const div = document.createElement('div');
-    div.id = 'res-alert-toast';
-    div.style = `
-        position: fixed; 
-        bottom: 20px; 
-        right: 20px; 
-        background: #1a222a; 
-        color: #ccc; 
-        padding: 15px; 
-        border-radius: 8px; 
-        border-left: 4px solid #ff4444;
-        z-index: 9999999; 
-        font-size: 13px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    `;
-
-    div.innerHTML = `
-        <div style="margin-bottom: 5px;"><b style="color:#fff; font-size:14px;">Hozzáférés megtagadva</b></div>
-        A fiókod korlátozva van. Kérlek vedd fel velünk a kapcsolatot: 
-        <br><span style="font-weight:bold; color:#fff;">support@stakeforge.com</span>
-        <div style="margin-top:10px; text-align:right;">
-            <button onclick="this.parentElement.parentElement.remove()" 
-                    style="background: #334756; color: white; border: none; padding: 4px 10px; 
-                           border-radius: 4px; cursor: pointer; font-size: 11px;">OK</button>
-        </div>
-    `;
-    document.body.appendChild(div);
-}
-
-// 2. Az ellenőrző függvény - CSAK ADATOT FRISSÍT, UI-HOZ NEM NYÚL
-async function runStatusCheck() {
-    // Ellenőrizzük, hogy be van-e jelentkezve a felhasználó
-    if (typeof currentUser === 'undefined' || !currentUser) return;
-
-    try {
-        const { data: profile, error } = await _supabase
-            .from('profiles')
-            .select('is_restricted')
-            .eq('id', currentUser.id)
-            .single();
-
-        if (error) throw error;
-
-        if (profile) {
-            // Csak a változót frissítjük a memóriában
-            window.userIsRestricted = profile.is_restricted;
-            if (window.userProfile) userProfile.is_restricted = profile.is_restricted;
-        }
-    } catch (e) {
-        console.error("Háttér ellenőrzés hiba:", e);
-    }
-}
-
-// 3 másodpercenkénti frissítés indítása
-setInterval(runStatusCheck, 3000);
 </script>
 </body>
 </html>
