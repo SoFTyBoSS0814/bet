@@ -1430,14 +1430,13 @@ window.addEventListener('load', startRealtimeDeadlineCheck);
             if (!isNaN(deadlineTime) && now > deadlineTime) {
                 if (!btn.disabled) {
                     btn.disabled = true;
-                    btn.innerText = "CLOSED";
                     btn.style.opacity = "0.5";
                     btn.style.cursor = "not-allowed";
                     console.log("Valós idejű tiltás: egy piac lezárult.");
                 }
             }
         });
-    }, 5000); // 5 másodpercenként ellenőriz
+    }, 1000); // 5 másodpercenként ellenőriz
 }
 
 // EZ NAGYON FONTOS: El kell indítani a figyelőt!
