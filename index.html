@@ -974,13 +974,13 @@ function openBet(mId, n, o, t, dl) {
     if (btn) {
         btn.disabled = false;
         btn.innerText = "PLACE BET";
-
+        {
              // ALERT HELYETT TOAST:
     if (!isNaN(deadlineTime) && now > deadlineTime) {
         showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
         setTimeout(() => { location.reload(); }, 2000);
         return;
-    }
+    
     document.getElementById('bet-on').innerText = n; 
     document.getElementById('bet-odds').innerText = "x" + o;
     document.getElementById('betModal').classList.remove('hidden'); 
