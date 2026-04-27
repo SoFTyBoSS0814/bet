@@ -1410,6 +1410,38 @@ function startRealtimeDeadlineCheck() {
     }, 5000); // 5 másodpercenként frissít gombnyomás nélkül is
 }
 window.addEventListener('load', startRealtimeDeadlineCheck);
+
+    function startRealtimeButtonWatcher() {
+    setInterval(() => {
+        const now = new Date().getTime();
+        // Megkeressük az összes odds gombot
+        const allButtons = document.querySelectorAll('button[onclick^="openBet"]');
+
+        allButtons.forEach(btn => {
+            // Megkeressük a dátumot az onclick szövegében
+            // Példa: openBet('...', '...', 1.5, 'REAL', '2024-05-20 10:00')
+            const onclickContent = btn.getAttribute('onclick');
+            const parts = onclickContent.split("'");
+            // A dátum általában az utolsó előtti elem a listában
+            const dateStr = parts[parts.length - 2]; 
+            
+            const deadlineTime = new Date(dateStr).getTime();
+
+            if (!isNaN(deadlineTime) && now > deadlineTime) {
+                if (!btn.disabled) {
+                    btn.disabled = true;
+                    btn.innerText = "CLOSED";
+                    btn.style.opacity = "0.5";
+                    btn.style.cursor = "not-allowed";
+                    console.log("Valós idejű tiltás: egy piac lezárult.");
+                }
+            }
+        });
+    }, 5000); // 5 másodpercenként ellenőriz
+}
+
+// EZ NAGYON FONTOS: El kell indítani a figyelőt!
+window.addEventListener('load', startRealtimeButtonWatcher);
 </script>
 </body>
 </html>
