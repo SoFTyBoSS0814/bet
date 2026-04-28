@@ -40,31 +40,6 @@
     flex-shrink: 0; /* Ne engedje a vonalat összenyomni */
 }
 
-        .btn-modern {
-    background-color: #213743; /* Sötétkék/szürke háttér, mint a Stake-nél */
-    color: #00e7ff;           /* Neon kék szöveg */
-    border: none;
-    padding: 10px 25px;
-    border-radius: 4px;       /* Enyhén lekerekített sarkok */
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease; /* Finom átmenet az animációhoz */
-    text-transform: uppercase;
-    font-size: 14px;
-    min-width: 140px;
-}
-
-.btn-modern:hover {
-    background-color: #2f4553; /* Világosabb szürke hovernél */
-    color: #ffffff;           /* Fehérre vált a szöveg */
-    box-shadow: 0 4px 15px rgba(0, 231, 255, 0.2); /* Kis neon ragyogás */
-    transform: translateY(-2px); /* Kicsit "kiemelkedik" */
-}
-
-.btn-modern:active {
-    transform: translateY(0); /* Kattintáskor visszaugrik */
-}
-
 /* Az egyenleg csoportok (szám + felirat) belső stílusa */
 .wallet-group {
     display: flex;
@@ -252,8 +227,8 @@
         <h2 style="text-align:center; margin-bottom:20px;" data-i18n="users_list">Community</h2>
         
         <div style="display:flex; justify-content:center; gap:10px; margin-bottom:25px;">
-            <button class="lang-btn" class="btn-modern" onclick="loadUsers('all')" style="flex:1" data-i18n="browse">Böngészés</button>
-            <button class="lang-btn" class="btn-modern" onclick="loadUsers('newest')" style="flex:1" data-i18n="newest">Legújabb</button>
+            <button class="lang-btn" onclick="loadUsers('all')" style="flex:1" data-i18n="browse">Böngészés</button>
+            <button class="lang-btn" onclick="loadUsers('newest')" style="flex:1" data-i18n="newest">Legújabb</button>
         </div>
 
         <div id="user-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
