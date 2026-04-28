@@ -1485,6 +1485,64 @@ function showErrorToast(message) {
         }, 400);
     }, 3000);
 }
+
+    /**
+ * STAKEFORGE - GOMB MODERNIZÁLÓ ÉS FORDÍTÓ MODUL
+ * Csak másold a script végére!
+ */
+(function() {
+    // 1. STÍLUS KÉNYSZERÍTÉSE (Hogy ne kelljen CSS-sel bajlódni)
+    const applyButtonStyle = (btnId) => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.style.backgroundColor = "#213743";
+            btn.style.color = "#00e7ff";
+            btn.style.border = "1px solid #2f4553";
+            btn.style.padding = "12px 25px";
+            btn.style.borderRadius = "6px";
+            btn.style.fontWeight = "bold";
+            btn.style.cursor = "pointer";
+            btn.style.textTransform = "uppercase";
+            btn.style.fontSize = "13px";
+            btn.style.minWidth = "140px";
+            btn.style.transition = "0.3s";
+            btn.style.margin = "0 5px"; // Hogy ne érjenek össze
+
+            // Hover effekt JS-ből
+            btn.onmouseover = () => {
+                btn.style.backgroundColor = "#2f4553";
+                btn.style.color = "#ffffff";
+            };
+            btn.onmouseout = () => {
+                btn.style.backgroundColor = "#213743";
+                btn.style.color = "#00e7ff";
+            };
+        }
+    };
+
+    // Alapértelmezett stílus alkalmazása az induláskor
+    applyButtonStyle('btn-browse');
+    applyButtonStyle('btn-new');
+
+    // 2. AUTOMATIKUS FORDÍTÁS FIGYELŐ
+    // Ez a rész figyeli, ha a fő oldaladon nyelvet váltasz
+    const originalChangeLang = window.changeLanguage; // Feltételezve, hogy ez a függvényneved
+    
+    // Ha van egy központi fordító függvényed, "beakasztjuk" magunkat
+    window.updateSpecialButtons = function(langData) {
+        const browseBtn = document.getElementById('btn-browse');
+        const newBtn = document.getElementById('btn-new');
+        const msgElem = document.getElementById('user-list-container')?.querySelector('p');
+
+        if (browseBtn && langData.btn_browse) browseBtn.innerText = langData.btn_browse;
+        if (newBtn && langData.btn_new) newBtn.innerText = langData.btn_new;
+        if (msgElem && langData.user_list_msg) msgElem.innerText = langData.user_list_msg;
+    };
+
+    // 3. EGY KIS TRÜKK: 
+    // Ha a meglévő fordító függvényed lefut, hívja meg a miénket is.
+    // Ezt abba a részbe kell beillesztened a kódodban, ahol a nyelveket váltod!
+})();
 </script>
 </body>
 </html>
