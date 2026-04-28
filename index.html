@@ -226,10 +226,43 @@
     <div class="market-card" style="max-width:800px; margin:auto;">
         <h2 style="text-align:center; margin-bottom:20px;" data-i18n="users_list">Community</h2>
         
-        <div style="display:flex; justify-content:center; gap:10px; margin-bottom:25px;">
-            <button class="lang-btn" onclick="loadUsers('all')" style="flex:1" data-i18n="browse">Böngészés</button>
-            <button class="lang-btn" onclick="loadUsers('newest')" style="flex:1" data-i18n="newest">Legújabb</button>
-        </div>
+      <div style="display:flex; justify-content:center; gap:12px; margin-bottom:30px;">
+    <button class="lang-btn" onclick="loadUsers('all')" data-i18n="browse" style="
+        flex: 1;
+        background-color: #213743;
+        color: #00e7ff;
+        border: 1px solid #2f4553;
+        padding: 14px;
+        border-radius: 6px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    " onmouseover="this.style.backgroundColor='#2f4553'; this.style.color='#ffffff'; this.style.borderColor='#00e7ff';" 
+       onmouseout="this.style.backgroundColor='#213743'; this.style.color='#00e7ff'; this.style.borderColor='#2f4553';">
+        Böngészés
+    </button>
+
+    <button class="lang-btn" onclick="loadUsers('newest')" data-i18n="newest" style="
+        flex: 1;
+        background-color: #213743;
+        color: #00e7ff;
+        border: 1px solid #2f4553;
+        padding: 14px;
+        border-radius: 6px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    " onmouseover="this.style.backgroundColor='#2f4553'; this.style.color='#ffffff'; this.style.borderColor='#00e7ff';" 
+       onmouseout="this.style.backgroundColor='#213743'; this.style.color='#00e7ff'; this.style.borderColor='#2f4553';">
+        Legújabb
+    </button>
+</div>
 
         <div id="user-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
             <p style="text-align:center; grid-column: 1/-1; color:#666; padding: 20px;">
