@@ -1485,49 +1485,6 @@ function showErrorToast(message) {
         }, 400);
     }, 3000);
 }
-
-(function() {
-    const styleButtons = () => {
-        const buttons = [
-            { id: 'btn-browse', color: '#00e7ff' },
-            { id: 'btn-new', color: '#00e7ff' }
-        ];
-
-        buttons.forEach(btnInfo => {
-            const btn = document.getElementById(btnInfo.id);
-            if (btn) {
-                // Kényszerített stílusok - felülbírál mindent
-                btn.style.setProperty('background-color', '#213743', 'important');
-                btn.style.setProperty('color', btnInfo.color, 'important');
-                btn.style.setProperty('border', '1px solid #2f4553', 'important');
-                btn.style.setProperty('padding', '10px 20px', 'important');
-                btn.style.setProperty('border-radius', '4px', 'important');
-                btn.style.setProperty('font-weight', 'bold', 'important');
-                btn.style.setProperty('text-transform', 'uppercase', 'important');
-                btn.style.setProperty('cursor', 'pointer', 'important');
-                btn.style.setProperty('appearance', 'none', 'important'); // Ez kiveszi a Windows/Mac alap kinézetet
-                btn.style.setProperty('-webkit-appearance', 'none', 'important');
-                btn.style.setProperty('box-shadow', 'none', 'important');
-                
-                // Hover hatás
-                btn.onmouseover = () => {
-                    btn.style.setProperty('background-color', '#2f4553', 'important');
-                    btn.style.setProperty('color', '#ffffff', 'important');
-                };
-                btn.onmouseout = () => {
-                    btn.style.setProperty('background-color', '#213743', 'important');
-                    btn.style.setProperty('color', '#00e7ff', 'important');
-                };
-            }
-        });
-    };
-
-    // Lefuttatjuk azonnal
-    styleButtons();
-
-    // És biztonság kedvéért fél másodperc múlva is, ha a Supabase lassabban töltene be
-    setTimeout(styleButtons, 500);
-})();
 </script>
 </body>
 </html>
