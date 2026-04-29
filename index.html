@@ -1569,70 +1569,78 @@ window.addEventListener('load', () => {
 });
 globalRefresh();
 
-async function finalNotificationCheck() {
+/**
+ * EGYESÍTETT RENDSZER: UI FRISSÍTÉS + ÉRTESÍTŐ
+ */
+async function syncAndNotify() {
     try {
         const userRaw = localStorage.getItem('user');
         if (!userRaw) return;
         const user = JSON.parse(userRaw);
         const username = user.username || user;
 
-        // Használjuk a 'supabase' változót, mert a képeiden ez működik
+        // Használjuk a 'supabase' változót, mert a képeiden ez az élő kapcsolat
         if (typeof supabase === 'undefined') return;
 
-        // 1. Csak a bets táblát nézzük, semmi mást!
+        // 1. LEKÉRÉS
         const { data: bets, error: fetchError } = await supabase
             .from('bets')
             .select('*')
             .eq('username', username)
             .eq('notified', false);
 
-        if (fetchError || !bets || bets.length === 0) return;
+        if (fetchError) {
+            console.error("Hiba a lekérésnél:", fetchError.message);
+            return;
+        }
 
-        for (const bet of bets) {
-            // Csak ha már le van zárva (van eredmény)
-            if (bet.result === null || bet.result === undefined) continue;
+        // 2. HA VAN ÚJ EREDMÉNY, MEGJELENÍTJÜK
+        if (bets && bets.length > 0) {
+            for (const bet of bets) {
+                if (bet.result !== null && bet.result !== undefined) {
+                    
+                    const isWin = String(bet.result) === String(bet.picked_side);
+                    const money = isWin ? bet.payout : bet.amount;
 
-            // 2. Értesítés megjelenítése
-            const isWin = String(bet.result) === String(bet.picked_side);
-            const money = isWin ? bet.payout : bet.amount;
-            
-            createNotificationUI(isWin, money);
+                    // Értesítés létrehozása
+                    const toast = document.createElement('div');
+                    toast.style.cssText = `
+                        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+                        z-index: 999999; padding: 20px 40px; border-radius: 50px;
+                        color: white; font-weight: bold; font-family: sans-serif;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.8); text-align: center;
+                        background: ${isWin ? '#28a745' : '#dc3545'};
+                        border: 3px solid white;
+                    `;
+                    toast.innerText = isWin ? `🎉 GRATULÁLUNK! NYERTÉL ${money} €-t! 🎉` : `😔 SAJNOS VESZTETTÉL ${money} €-t.`;
+                    document.body.appendChild(toast);
+                    
+                    // 3. UPDATE KÉNYSZERÍTÉSE
+                    // Ha ez nem fut le, a notified FALSE marad a Supabase-ben!
+                    const { error: updErr } = await supabase
+                        .from('bets')
+                        .update({ notified: true })
+                        .eq('id', bet.id);
 
-            // 3. UPDATE kényszerítése és naplózása
-            console.log(`Attempting to update bet ID: ${bet.id}`);
-            
-            const { error: updateError } = await supabase
-                .from('bets')
-                .update({ notified: true })
-                .eq('id', bet.id);
+                    if (updErr) console.error("!!! RLS HIBA: Nem tudom menteni a notified állapotot!", updErr.message);
 
-            if (updateError) {
-                console.error("❌ SUPABASE UPDATE HIBA:", updateError.message);
-                console.error("Segítség: Ellenőrizd az RLS Policy-t a Supabase-ben!");
-            } else {
-                console.log(`✅ SIKER: Bet ${bet.id} notified = true-ra állítva.`);
+                    setTimeout(() => toast.remove(), 5000);
+                }
             }
         }
+
+        // 4. A MÁR MŰKÖDŐ FRISSÍTÉSED MEGHÍVÁSA
+        if (typeof globalRefresh === 'function') {
+            await globalRefresh();
+        }
+
     } catch (e) {
-        console.error("Kritikus hiba:", e);
+        console.error("Váratlan hiba:", e);
     }
 }
 
-function createNotificationUI(isWin, amount) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed; bottom: 30px; right: 30px; z-index: 10000;
-        padding: 20px; border-radius: 12px; color: white; font-weight: bold;
-        background: ${isWin ? 'linear-gradient(135deg, #28a745, #1e7e34)' : 'linear-gradient(135deg, #dc3545, #a71d2a)'};
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: sans-serif;
-    `;
-    toast.innerText = isWin ? `NYERTÉL: ${amount} €!` : `VESZTETTÉL: ${amount} €!`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 6000);
-}
-
-// 5 másodpercenként futtatjuk
-setInterval(finalNotificationCheck, 5000);
+// 5 másodpercenként futtatjuk az egészet egyben
+setInterval(syncAndNotify, 5000);
 </script>
 </body>
 </html>
