@@ -1525,71 +1525,44 @@ function showErrorToast(message) {
  * Kitakarítja a HTML-t és újraindítja a betöltő függvényeket.
  */
 
-async function globalRefresh() {
-    console.log("🔄 Kényszerített szinkronizálás és Cache-törlés...");
+async function simpleRefresh() {
+    console.log("🔄 Buta frissítés indítása...");
 
-    try {
-        // 1. Konténerek kiürítése
-        const containers = [
-            document.getElementById('active-markets'),
-            document.getElementById('markets-container'),
-            document.getElementById('bets-container'),
-            document.getElementById('history-container')
-        ];
-        containers.forEach(c => { if (c) c.innerHTML = ''; });
+    // 1. Letakarítjuk a kijelzőt
+    const ids = ['active-markets', 'markets-container', 'bets-container', 'history-container'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = ''; 
+    });
 
-        // 2. Alapadatok betöltése
-        if (typeof loadMarkets === 'function') await loadMarkets();
-        if (typeof loadUserBets === 'function') await loadUserBets();
+    // 2. Újratöltjük a listákat a te alap függvényeiddel
+    if (typeof loadMarkets === 'function') await loadMarkets();
+    if (typeof loadUserBets === 'function') await loadUserBets();
 
-        // 3. EGYENLEG FRISSÍTÉSE - CACHE-GYILKOS MÓDSZER
-        const userRaw = localStorage.getItem('user');
-        if (userRaw) {
-            const userData = JSON.parse(userRaw);
-            const username = userData.username || userData;
+    // 3. EGYENLEG FRISSÍTÉSE - Egyszerűen és gyorsan
+    // Itt ne változót használj, hanem írd be ugyanazt, amit a bejelentkezésnél!
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+        // Közvetlen lekérés, mint egy sima lekérdezésnél
+        const { data } = await supabase
+            .from('profiles')
+            .select('balance')
+            .eq('username', user.username || user)
+            .single();
 
-            const sb = window.supabase || supabase;
-            if (sb) {
-                // A titok: hozzáadunk egy random szűrőt, hogy ne a cache-ből jöjjön az adat
-                const { data, error } = await sb
-                    .from('profiles') 
-                    .select('balance')
-                    .eq('username', username)
-                    .abortSignal(AbortSignal.timeout(5000)) // Időtúllépés védelem
-                    .maybeSingle();
-
-                if (!error && data) {
-                    console.log("💰 Valós idejű egyenleg a szerverről:", data.balance);
-                    
-                    // Minden lehetséges helyen átírjuk a kijelzőt
-                    const selectors = ['user-balance', 'wallet-balance', 'balance-amount'];
-                    selectors.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) {
-                            // Csak akkor írjuk át, ha tényleg változott, hogy ne villogjon feleslegesen
-                            if (el.innerText !== `${data.balance} €`) {
-                                el.innerText = `${data.balance} €`;
-                                el.style.color = "#00ff88"; // Zöld villanás ha változik
-                                setTimeout(() => el.style.color = "", 2000);
-                            }
-                        }
-                    });
-                }
-            }
+        if (data) {
+            // Beírjuk minden létező helyre, ahol az egyenleged lehet
+            const b1 = document.getElementById('user-balance');
+            const b2 = document.getElementById('wallet-balance');
+            if (b1) b1.innerText = `${data.balance} €`;
+            if (b2) b2.innerText = `${data.balance} €`;
+            console.log("💰 Egyenleg frissítve:", data.balance);
         }
-
-        if (typeof fetchBalances === 'function') await fetchBalances();
-        console.log("✅ UI frissítve.");
-    } catch (err) {
-        console.error("Hiba:", err);
     }
 }
 
-// Intervallum marad a régi
-setInterval(() => { if (!document.hidden) globalRefresh(); }, 8000);
-
-// Azonnali indítás
-globalRefresh();
+// 5 másodpercenként futtatjuk
+setInterval(simpleRefresh, 5000);
 
 </script>
 </body>
