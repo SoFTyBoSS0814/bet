@@ -1520,98 +1520,64 @@ function showErrorToast(message) {
 }
 
 async function checkNotifications() {
-    console.log("🔔 Értesítések ellenőrzése...");
+    const userWallet = localStorage.getItem('userWallet') || localStorage.getItem('wallet');
+    if (!userWallet) return;
 
-    // 1. Felhasználó azonosítása (ha nálad nem 'userWallet' a kulcs, írd át!)
-    const userWallet = localStorage.getItem('userWallet');
-    if (!userWallet) {
-        console.warn("⚠️ Nincs bejelentkezett felhasználó, az ellenőrzés leállt.");
-        return;
-    }
-
-    // 2. CSS Injektálása (hogy ne kelljen külön fájl)
+    // 1. CSS a jobb alsó sarokba (Minimalista stílus)
     if (!document.getElementById('notify-style')) {
         const style = document.createElement('style');
         style.id = 'notify-style';
         style.innerHTML = `
             .n-toast { 
-                position: fixed; top: 20px; right: 20px; background: #1a1d23; color: #fff; 
-                padding: 20px; border-radius: 12px; border-left: 6px solid #00e7ff; 
-                box-shadow: 0 15px 35px rgba(0,0,0,0.7); z-index: 99999; 
-                font-family: 'Segoe UI', Roboto, sans-serif; min-width: 280px;
-                transform: translateX(120%); transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                position: fixed; bottom: 20px; right: 20px; 
+                padding: 15px 20px; border-radius: 8px; color: white;
+                font-family: sans-serif; font-weight: bold; z-index: 100000;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                transform: translateY(100px); opacity: 0; transition: 0.5s;
             }
-            .n-toast.show { transform: translateX(0); }
-            .n-win { border-left-color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.3); }
-            .n-loss { border-left-color: #ff4444; }
-            .n-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; margin-bottom: 5px; }
-            .n-market { font-weight: bold; font-size: 15px; margin-bottom: 8px; color: #fff; }
-            .n-msg { font-size: 14px; color: #ccc; }
+            .n-toast.show { transform: translateY(0); opacity: 1; }
+            .n-win { background: #28a745; border-right: 5px solid #1e7e34; }
+            .n-loss { background: #dc3545; border-right: 5px solid #bd2130; }
         `;
         document.head.appendChild(style);
     }
 
-    // 3. Adatok lekérése a Supabase-ből
-    // Fontos: a 'markets(title)' feltételezi, hogy a két tábla össze van kötve (Foreign Key)
-    const { data: bets, error } = await supabase
+    // 2. Adatlekérés
+    const { data: bets } = await supabase
         .from('bets')
         .select('id, amount, payout, picked_side, result, markets(title)')
         .eq('user_id', userWallet)
         .eq('notified', false)
         .not('result', 'is', null);
 
-    if (error) {
-        console.error("❌ Supabase hiba az értesítéseknél:", error.message);
-        return;
-    }
+    if (!bets || bets.length === 0) return;
 
-    if (!bets || bets.length === 0) {
-        console.log("ℹ️ Nincs új értesítés.");
-        return;
-    }
-
-    console.log(`✅ ${bets.length} új értesítés érkezik!`);
-
-    // 4. Megjelenítés és Adatbázis frissítés
-    for (const bet of bets) {
+    // 3. Megjelenítés
+    bets.forEach(async (bet) => {
         const isWin = String(bet.result) === String(bet.picked_side);
-        const prize = isWin ? bet.payout : bet.amount;
-        const statusClass = isWin ? 'n-win' : 'n-loss';
-        const resultText = isWin ? `NYERTÉL: ${prize} €` : `VESZTETTÉL: ${prize} €`;
-        const marketName = bet.markets ? bet.markets.title : "Ismeretlen esemény";
-
-        // Toast elem létrehozása
+        const amount = isWin ? bet.payout : bet.amount;
+        const marketName = bet.markets ? bet.markets.title : "piacon";
+        
         const toast = document.createElement('div');
-        toast.className = `n-toast ${statusClass}`;
-        toast.innerHTML = `
-            <div class="n-title">Rendszerüzenet</div>
-            <div class="n-market">${marketName}</div>
-            <div class="n-msg">${resultText}</div>
-        `;
+        toast.className = `n-toast ${isWin ? 'n-win' : 'n-loss'}`;
+        toast.innerText = `${amount} €-t ${isWin ? 'nyertél' : 'vesztettél'} a ${marketName} piacon!`;
+        
         document.body.appendChild(toast);
-
-        // Kis késleltetés az animációnak
         setTimeout(() => toast.classList.add('show'), 100);
 
-        // 5. Megjelölés értesítettnek a Supabase-ben
-        const { error: updateError } = await supabase
-            .from('bets')
-            .update({ notified: true })
-            .eq('id', bet.id);
+        // Supabase frissítés (hogy ne jöjjön elő újra)
+        await supabase.from('bets').update({ notified: true }).eq('id', bet.id);
 
-        if (updateError) console.error("Hiba a notified frissítésekor:", updateError);
-
-        // 6. Eltüntetés 7 másodperc után
+        // 5 mp után eltűnik
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 600);
-        }, 7000);
-    }
+            setTimeout(() => toast.remove(), 500);
+        }, 5000);
+    });
 }
 
-// 🚀 FÜGGVÉNY MEGHÍVÁSA
-// Egy kis késleltetést teszünk bele, hogy a Supabase kapcsolat biztosan kész legyen
-setTimeout(checkNotifications, 1500);
+// Futtatás (Adjunk neki 2 mp-et, hogy minden betöltsön)
+setTimeout(checkNotifications, 2000);
 </script>
 </body>
 </html>
