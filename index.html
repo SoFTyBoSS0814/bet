@@ -1520,104 +1520,65 @@ function showErrorToast(message) {
 }
 
 /**
- * REFRESH & NOTIFICATION SYSTEM - FULL BUNDLE
- * Minden egyben: UI frissítés + € értesítés + Automatikus indítás
+ * REAL-TIME UI FRISSÍTŐ RENDSZER (F5 NÉLKÜL)
+ * Ez a kód figyeli a Supabase változásait és minden nyitott böngészőben 
+ * azonnal áthelyezi a lezárt meccseket a History-ba.
  */
 
+// 1. A fő frissítő függvény
 async function refreshApp() {
-    console.log("🔄 UI frissítése és értesítések ellenőrzése...");
+    console.log("🔄 Távoli jel érkezett: UI frissítése...");
     
-    // 1. UI újratöltése (hogy F5 nélkül kerüljenek át a dolgok a helyükre)
+    // Meghívjuk a betöltő függvényeidet, hogy újragenerálják a listákat
     if (typeof loadMarkets === 'function') await loadMarkets();
     if (typeof loadUserBets === 'function') await loadUserBets();
     if (typeof fetchBalances === 'function') await fetchBalances();
-    
-    // 2. Értesítések azonnali ellenőrzése
-    await checkNotifications();
 }
 
-async function checkNotifications() {
-    // Felhasználó kinyerése a LocalStorage-ból (SoFTy JSON fix)
-    const userRaw = localStorage.getItem('user');
-    if (!userRaw) return;
-    
-    let currentUsername = "";
-    try {
-        const parsed = JSON.parse(userRaw);
-        currentUsername = parsed.username || parsed;
-    } catch(e) {
-        currentUsername = userRaw;
-    }
-
-    if (!currentUsername || currentUsername === "undefined") return;
-
-    // Supabase kliens azonosítása (window objektumból is)
+// 2. Realtime Figyelő (Ez felel azért, hogy a másik böngészőben is történjen valami)
+function setupRealtimeListener() {
     const sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
-    if (!sb || typeof sb.from !== 'function') {
-        console.warn("Supabase még nem elérhető.");
-        return;
-    }
+    if (!sb) return;
 
-    // CSS Stílus a jobb alsó sarokba
-    if (!document.getElementById('notify-style')) {
-        const style = document.createElement('style');
-        style.id = 'notify-style';
-        style.innerHTML = `
-            .n-toast { 
-                position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; 
-                border-radius: 10px; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; 
-                font-weight: bold; z-index: 9999999; box-shadow: 0 4px 25px rgba(0,0,0,0.6);
-                opacity: 0; transform: translateY(30px); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    console.log("📡 Realtime figyelő elindítva...");
+
+    // Figyeljük a 'markets' tábla változásait
+    sb.channel('public:markets')
+        .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'markets' 
+        }, (payload) => {
+            console.log("💡 Változás észlelve a piacokban:", payload.new);
+            // Ha a státusz 'settled' vagy 'closed' lett, frissítünk mindenkinél
+            if (payload.new.status === 'settled' || payload.new.result !== null) {
+                refreshApp();
             }
-            .n-toast.show { opacity: 1; transform: translateY(0); }
-            .n-win { background: #28a745; border-left: 6px solid #1e7e34; }
-            .n-loss { background: #dc3545; border-left: 6px solid #a71d2a; }
-        `;
-        document.head.appendChild(style);
-    }
+        })
+        .subscribe();
 
-    // Lekérdezés a Supabase-ből
-    const { data: bets, error } = await sb
-        .from('bets')
-        .select('id, amount, payout, picked_side, result, markets(title)')
-        .eq('username', currentUsername)
-        .eq('notified', false)
-        .not('result', 'is', null);
-
-    if (error || !bets || bets.length === 0) return;
-
-    // Megjelenítés
-    for (const bet of bets) {
-        const isWin = String(bet.result) === String(bet.picked_side);
-        const prize = isWin ? bet.payout : bet.amount;
-        const marketName = bet.markets ? bet.markets.title : "eseményen";
-        
-        const toast = document.createElement('div');
-        toast.className = `n-toast ${isWin ? 'n-win' : 'n-loss'}`;
-        toast.innerText = `${prize} €-t ${isWin ? 'nyertél' : 'vesztettél'} a ${marketName} piacon!`;
-        
-        document.body.appendChild(toast);
-        
-        // Animált megjelenítés
-        setTimeout(() => toast.classList.add('show'), 100);
-
-        // Adatbázis frissítés: notified = true
-        await sb.from('bets').update({ notified: true }).eq('id', bet.id);
-
-        // 6 másodperc után eltüntetés
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 600);
-        }, 6000);
-    }
+    // Figyeljük a 'bets' tábla változásait is (ha pl. ott történik a settle)
+    sb.channel('public:bets')
+        .on('postgres_changes', { 
+            event: 'UPDATE', 
+            schema: 'public', 
+            table: 'bets' 
+        }, (payload) => {
+            console.log("💡 Fogadás frissítve:", payload.new);
+            if (payload.new.result !== null) {
+                refreshApp();
+            }
+        })
+        .subscribe();
 }
 
-// --- FÜGGVÉNYEK MEGHÍVÁSA ---
-
-// 1. Automatikus indítás az oldal betöltése után (hogy látszódjon az elmaradt eredmény)
+// 3. Automatikus indítás az oldal betöltésekor
 window.addEventListener('load', () => {
-    console.log("🚀 Értesítő rendszer élesítve...");
-    setTimeout(refreshApp, 3000);
+    // Várunk egy kicsit, hogy a Supabase kliens biztosan készen álljon
+    setTimeout(() => {
+        setupRealtimeListener();
+        refreshApp(); // Első betöltéskori frissítés
+    }, 2000);
 });
 </script>
 </body>
