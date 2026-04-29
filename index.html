@@ -1520,57 +1520,63 @@ function showErrorToast(message) {
 }
 
 /**
- * AUTOMATA UI FRISSÍTŐ (POLLING RENDSZER)
- * Ez a megoldás F5 nélkül, minden megnyitott böngészőben szinkronizálja a listákat.
- * Ha az Admin lezár egy piacot, a Usernél is eltűnik/átkerül a History-ba.
+ * BRUTÁL UI SZINKRON (POLLING)
+ * Kényszerített lista-ürítéssel, hogy F5 nélkül is eltűnjenek a lezárt meccsek.
  */
 
-// 1. A központi frissítő függvény
 async function refreshAppUI() {
-    // Ellenőrizzük, hogy be van-e jelentkezve valaki (SoFTy JSON fix)
     const userRaw = localStorage.getItem('user');
     if (!userRaw) return;
 
-    // Supabase kliens elérése (biztonságos elérés)
     const sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
     if (!sb || typeof sb.from !== 'function') return;
 
     try {
-        // Meghívjuk a meglévő logikáidat, amik a kártyákat generálják
-        // Ezek pakolják át a meccseket az Active-ból a History-ba az új státusz alapján
-        if (typeof loadMarkets === 'function') await loadMarkets();
-        if (typeof loadUserBets === 'function') await loadUserBets();
-        if (typeof fetchBalances === 'function') await fetchBalances();
-        
-        console.log("🔄 UI szinkronizálva a szerverrel (F5 nélkül)");
+        console.log("🔍 Ellenőrzés: Kell-e valamit áthelyezni a History-ba?");
+
+        // 1. ELŐSZÖR KITAKARÍTJUK A JELENLEGI LISTÁKAT (ID-k alapján)
+        // Cseréld le ezeket az ID-kat azokra, amikbe a kártyákat generálod!
+        const activeContainer = document.getElementById('active-markets-container') || document.getElementById('markets-list');
+        const historyContainer = document.getElementById('history-markets-container') || document.getElementById('history-list');
+
+        if (activeContainer) activeContainer.innerHTML = ''; // Törlés
+        if (historyContainer) historyContainer.innerHTML = ''; // Törlés
+
+        // 2. ÚJRATÖLTÉS A SZERVERRŐL
+        // Ez a két függvényed fogja újraépíteni a listákat a friss adatokkal
+        if (typeof loadMarkets === 'function') {
+            await loadMarkets();
+        }
+        if (typeof loadUserBets === 'function') {
+            await loadUserBets();
+        }
+        if (typeof fetchBalances === 'function') {
+            await fetchBalances();
+        }
+
+        console.log("✨ UI sikeresen frissítve, a lezárt meccsek elvileg átkerültek.");
     } catch (err) {
-        console.error("Hiba a háttérfrissítés közben:", err);
+        console.error("Hiba a kényszerített frissítésnél:", err);
     }
 }
 
-// 2. Automatikus háttér-ellenőrzés indítása
+// 5 másodperces automata hurok
 function startAutoSync() {
-    console.log("📡 Automata szinkronizálás elindítva (5s)...");
-    
     setInterval(async () => {
-        // Csak akkor dolgozunk, ha a felhasználó épp az oldalt nézi
         if (!document.hidden) {
             await refreshAppUI();
         }
-    }, 5000); // 5 másodperces időköz
+    }, 5000);
 }
 
-// 3. VÉGREHAJTÁS (Azonnali indítás és időzítő beállítása)
+// AZONNALI INDÍTÁS
 window.addEventListener('load', () => {
-    // Várunk 2 másodpercet a betöltés után, hogy a Supabase stabil legyen
     setTimeout(async () => {
-        await refreshAppUI(); // Első azonnali frissítés
-        startAutoSync();      // Automata hurok indítása
+        await refreshAppUI(); // Első takarítás/töltés
+        startAutoSync();      // Hurok indítása
     }, 2000);
 });
-
-// Manuális hívás lehetősége (pl. settle gomb végére)
-// Ha te magad zárod le a piacot, hívd meg ezt: refreshAppUI();
+refreshAppUI();
 </script>
 </body>
 </html>
