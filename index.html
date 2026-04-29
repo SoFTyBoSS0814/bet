@@ -1569,15 +1569,15 @@ window.addEventListener('load', () => {
 });
 globalRefresh();
 
-    /**
- * ÉRTESÍTÉSI RENDSZER (NYEREMÉNY/VESZTESÉG)
- * Csak akkor ugrik fel, ha új eredmény született.
+/**
+ * BIZTONSÁGOS ÉRTESÍTÉSI RENDSZER
+ * Úgy van megírva, hogy a globalRefresh törlése NE érintse.
  */
 
 async function checkWinningNotifications() {
-    // 1. Felhasználó azonosítása
     const userRaw = localStorage.getItem('user');
     if (!userRaw) return;
+    
     let currentUsername = "";
     try {
         const parsed = JSON.parse(userRaw);
@@ -1586,39 +1586,48 @@ async function checkWinningNotifications() {
 
     if (!currentUsername || currentUsername === "undefined") return;
 
-    // 2. Supabase elérése
     const sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
     if (!sb || typeof sb.from !== 'function') return;
 
-    // 3. Lekérjük azokat a fogadásokat, amiknek van eredménye, de még nem küldtünk róluk értesítést
+    // 1. Lekérés
     const { data: bets, error } = await sb
         .from('bets')
         .select('id, amount, payout, picked_side, result, markets(title)')
         .eq('username', currentUsername)
-        .eq('notified', false) // Csak az új, még nem látott eredmények
+        .eq('notified', false)
         .not('result', 'is', null);
 
     if (error || !bets || bets.length === 0) return;
 
-    // 4. CSS Injektálása (ha még nincs ott)
+    // 2. Konténer az értesítéseknek (ha még nincs), ez KÍVÜL van a törölt div-eken!
+    let notifyContainer = document.getElementById('permanent-notify-layer');
+    if (!notifyContainer) {
+        notifyContainer = document.createElement('div');
+        notifyContainer.id = 'permanent-notify-layer';
+        notifyContainer.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 10000000;";
+        document.body.appendChild(notifyContainer);
+    }
+
+    // 3. Stílus
     if (!document.getElementById('notify-style')) {
         const style = document.createElement('style');
         style.id = 'notify-style';
         style.innerHTML = `
             .n-toast { 
-                position: fixed; bottom: 20px; right: 20px; padding: 16px 24px; 
-                border-radius: 12px; color: white; font-family: 'Segoe UI', sans-serif; 
-                font-weight: bold; z-index: 9999999; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                opacity: 0; transform: translateX(100%); transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                margin-top: 10px; padding: 16px 24px; border-radius: 12px; 
+                color: white; font-family: sans-serif; font-weight: bold; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                transform: translateX(120%); transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                min-width: 250px;
             }
-            .n-toast.show { opacity: 1; transform: translateX(0); }
+            .n-toast.show { transform: translateX(0); }
             .n-win { background: linear-gradient(135deg, #28a745, #1e7e34); border-left: 8px solid #00ff88; }
             .n-loss { background: linear-gradient(135deg, #dc3545, #a71d2a); border-left: 8px solid #ff4444; }
         `;
         document.head.appendChild(style);
     }
 
-    // 5. Értesítések megjelenítése sorban
+    // 4. Megjelenítés ciklusban
     for (const bet of bets) {
         const isWin = String(bet.result) === String(bet.picked_side);
         const amount = isWin ? bet.payout : bet.amount;
@@ -1626,22 +1635,19 @@ async function checkWinningNotifications() {
         
         const toast = document.createElement('div');
         toast.className = `n-toast ${isWin ? 'n-win' : 'n-loss'}`;
+        toast.innerText = isWin 
+            ? `Gratulálunk! ${amount} €-t nyertél a ${marketName} eseményen!` 
+            : `${amount} €-t vesztettél a ${marketName} eseményen!`;
         
-        if (isWin) {
-            toast.innerText = `Gratulálunk! ${amount} €-t nyertél a ${marketName} eseményen!`;
-        } else {
-            toast.innerText = `${amount} €-t vesztettél a ${marketName} eseményen!`;
-        }
+        notifyContainer.appendChild(toast);
         
-        document.body.appendChild(toast);
-        
-        // Megjelenítés
+        // Animáció indítása
         setTimeout(() => toast.classList.add('show'), 100);
 
-        // Adatbázis frissítése: notified = true (hogy ne ugorjon fel többször)
+        // Supabase frissítés azonnal, hogy ne jöjjön elő többször
         await sb.from('bets').update({ notified: true }).eq('id', bet.id);
 
-        // 7 másodperc után eltüntetés
+        // Eltüntetés 7 mp után
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 600);
@@ -1649,13 +1655,10 @@ async function checkWinningNotifications() {
     }
 }
 
-// 6. Beépítés a meglévő automata frissítőbe
-// Módosítsuk a korábbi setInterval-t, hogy ezt is hívja meg!
-setInterval(async () => {
-    if (!document.hidden) {
-        await checkWinningNotifications();
-    }
-}, 4000); // 4 másodpercenként néz rá az új nyereményekre
+// 5. Indítás: 4 másodpercenként nézzük meg, van-e új nyeremény
+setInterval(() => {
+    if (!document.hidden) checkWinningNotifications();
+}, 4000);
 </script>
 </body>
 </html>
