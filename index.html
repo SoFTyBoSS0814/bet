@@ -1520,10 +1520,11 @@ function showErrorToast(message) {
 }
 
 async function checkNotifications() {
-    // 1. Felhasználó kinyerése a talált JSON-ból
-    const userRaw = localStorage.getItem('user') || localStorage.getItem('username');
+    // 1. Felhasználó kinyerése a JSON-ból (ahogy a képen láttuk)
+    const userRaw = localStorage.getItem('user');
+    if (!userRaw) return;
+
     let currentUsername = "";
-    
     try {
         const parsed = JSON.parse(userRaw);
         currentUsername = parsed.username || parsed;
@@ -1531,35 +1532,32 @@ async function checkNotifications() {
         currentUsername = userRaw;
     }
 
-    if (!currentUsername || currentUsername === "undefined") return;
+    if (!currentUsername) return;
 
-    // 2. BIZTONSÁGI ELLENŐRZÉS: Megvárjuk, amíg a supabase objektum elérhető lesz
-    if (typeof supabase === 'undefined' || typeof supabase.from !== 'function') {
-        console.log("Supabase még tölt... újrapróbálkozás 1 mp múlva.");
-        setTimeout(checkNotifications, 1000);
-        return;
-    }
-
-    // 3. CSS (Jobb alsó sarok)
+    // 2. CSS - Fixen a jobb alsó sarokba
     if (!document.getElementById('notify-style')) {
         const style = document.createElement('style');
         style.id = 'notify-style';
         style.innerHTML = `
             .n-toast { 
-                position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; 
-                border-radius: 10px; color: white; font-family: sans-serif; 
-                font-weight: bold; z-index: 999999; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-                transform: translateY(100px); opacity: 0; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                position: fixed; bottom: 20px; right: 20px; padding: 16px 24px; 
+                border-radius: 8px; color: white; font-family: sans-serif; 
+                font-weight: bold; z-index: 1000000; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+                opacity: 0; transform: translateY(20px); transition: 0.5s;
             }
-            .n-toast.show { transform: translateY(0); opacity: 1; }
-            .n-win { background: #2ecc71; border-left: 6px solid #27ae60; }
-            .n-loss { background: #e74c3c; border-left: 5px solid #c0392b; }
+            .n-toast.show { opacity: 1; transform: translateY(0); }
+            .n-win { background: #28a745; border-left: 6px solid #1e7e34; }
+            .n-loss { background: #dc3545; border-left: 6px solid #a71d2a; }
         `;
         document.head.appendChild(style);
     }
 
-    // 4. Lekérdezés
-    const { data: bets, error } = await supabase
+    // 3. Lekérdezés (Használjuk a globális ablakban lévő supabase-t)
+    const sb = window.supabase || supabase; 
+    
+    if (!sb || typeof sb.from !== 'function') return;
+
+    const { data: bets, error } = await sb
         .from('bets')
         .select('id, amount, payout, picked_side, result, markets(title)')
         .eq('username', currentUsername)
@@ -1568,11 +1566,11 @@ async function checkNotifications() {
 
     if (error || !bets || bets.length === 0) return;
 
-    // 5. Megjelenítés
+    // 4. Megjelenítés
     bets.forEach(async (bet) => {
         const isWin = String(bet.result) === String(bet.picked_side);
         const amount = isWin ? bet.payout : bet.amount;
-        const marketName = bet.markets ? bet.markets.title : "eseményen";
+        const marketName = bet.markets ? bet.markets.title : "esemény";
         
         const toast = document.createElement('div');
         toast.className = `n-toast ${isWin ? 'n-win' : 'n-loss'}`;
@@ -1581,18 +1579,21 @@ async function checkNotifications() {
         document.body.appendChild(toast);
         setTimeout(() => toast.classList.add('show'), 100);
 
-        // Supabase frissítés
-        await supabase.from('bets').update({ notified: true }).eq('id', bet.id);
+        // Adatbázisban jelezzük, hogy látta
+        await sb.from('bets').update({ notified: true }).eq('id', bet.id);
+
+        // 5. Frissítjük az egyenleget a kijelzőn (ha van ilyen függvényed)
+        if (typeof fetchBalances === 'function') fetchBalances();
 
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 600);
-        }, 5000);
+        }, 6000);
     });
 }
 
-// Indítás
-setTimeout(checkNotifications, 3000);
+// Indítás EGYSZER, 4 másodperccel az oldalbetöltés után
+setTimeout(checkNotifications, 4000);
 </script>
 </body>
 </html>
