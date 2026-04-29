@@ -1570,35 +1570,55 @@ window.addEventListener('load', () => {
 globalRefresh();
 
 
-    async function globalRefresh() {
-    console.log("🔄 Teljes szinkronizálás indítása (egyenleggel)...");
+async function globalRefresh() {
+    console.log("🔄 Kényszerített teljes frissítés...");
 
     try {
-        // 1. A szokásos konténer ürítés (hogy ne duplázódjon semmi)
+        // 1. Meglévő konténerek takarítása
         const ids = ['active-markets', 'markets-container', 'bets-container', 'history-container'];
         ids.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = ''; 
         });
 
-        // 2. ADATOK ÚJRATÖLTÉSE
+        // 2. Alapadatok (piacok, fogadások) újratöltése
         if (typeof loadMarkets === 'function') await loadMarkets();
         if (typeof loadUserBets === 'function') await loadUserBets();
 
-        // 3. EGYENLEG FRISSÍTÉSE - KIS KÉSLELTETÉSSEL
-        // Kell egy kis idő (500ms), amíg a Settle után a DB tényleg frissül
-        setTimeout(async () => {
-            if (typeof fetchBalances === 'function') {
-                console.log("💰 Egyenleg frissítése...");
-                await fetchBalances(); 
-                
-                // Ha a fetchBalances-en belül van a DOM frissítés (pl. #wallet-balance),
-                // akkor itt már látnod kell az új összeget!
+        // 3. EGYENLEG FRISSÍTÉSE - AGRESSZÍV MÓD
+        // Lekérjük a usert a localStorage-ból, hogy biztosan tudjuk, kiről van szó
+        const userRaw = localStorage.getItem('user');
+        if (userRaw) {
+            const userData = JSON.parse(userRaw);
+            const username = userData.username || userData;
+
+            // Közvetlenül a Supabase-ből rántjuk le az egyenleget, nem várunk a fetchBalances-re
+            const sb = window.supabase || supabase;
+            if (sb && typeof sb.from === 'function') {
+                const { data, error } = await sb
+                    .from('profiles') // VAGY 'users', amiben a balance-od van!
+                    .select('balance')
+                    .eq('username', username)
+                    .single();
+
+                if (!error && data) {
+                    console.log("💰 Friss egyenleg a szerverről:", data.balance);
+                    
+                    // Kézzel beleírjuk a HTML-be, hogy véletlenül se maradjon a régi
+                    // Cseréld le a 'user-balance' ID-t arra, ami nálad a kijelző!
+                    const balanceDisplay = document.getElementById('user-balance') || document.getElementById('wallet-balance');
+                    if (balanceDisplay) {
+                        balanceDisplay.innerText = `${data.balance} €`;
+                    }
+                    
+                    // Ha van ilyen függvényed, ezt is meghívjuk a biztonság kedvéért
+                    if (typeof fetchBalances === 'function') await fetchBalances();
+                }
             }
-        }, 500);
+        }
 
     } catch (err) {
-        console.error("Hiba a globalRefresh közben:", err);
+        console.error("Hiba a kényszerített frissítésnél:", err);
     }
 }
 </script>
