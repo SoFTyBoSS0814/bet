@@ -1570,49 +1570,63 @@ window.addEventListener('load', () => {
 globalRefresh();
 
 /**
- * BRUTÁL EGYSZERŰ ÉRTESÍTŐ - DEBUG MÓDDAL
+ * VÉGLEGES ÉRTESÍTŐ - FIX SUPABASE HÍVÁSSAL
  */
-async function checkNotif() {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || !user.username) return;
+async function checkNotifSafe() {
+    try {
+        // 1. Felhasználó kinyerése
+        const userRaw = localStorage.getItem('user');
+        if (!userRaw) return;
+        const user = JSON.parse(userRaw);
+        const username = user.username || user;
 
-    // A lehető legegyszerűbb Supabase elérés
-    const sb = window.supabase || supabase;
-    if (!sb) return;
+        // 2. Közvetlen hívás a globális 'supabase' változóra
+        // Ha nálad a kód elején más a név (pl. sb), írd át az összes 'supabase.from'-ot arra!
+        const { data: bets, error } = await supabase
+            .from('bets')
+            .select('*')
+            .eq('username', username)
+            .eq('notified', false);
 
-    // 1. LEKÉRÉS: Csak a legfontosabbakat kérjük le
-    // Kivettem a markets(title)-t, hátha az rontja el a Relation miatt
-    const { data: bets, error } = await sb
-        .from('bets')
-        .select('*') 
-        .eq('username', user.username)
-        .eq('notified', false);
+        if (error || !bets || bets.length === 0) return;
 
-    if (error) return;
-    if (!bets || bets.length === 0) return;
+        for (const bet of bets) {
+            // Csak ha már van eredmény (0 vagy 1)
+            if (bet.result === null || bet.result === undefined) continue;
 
-    for (const bet of bets) {
-        // Csak akkor szólunk, ha már van eredmény (result nem null)
-        if (bet.result === null || bet.result === undefined) continue;
+            const isWin = String(bet.result) === String(bet.picked_side);
+            const money = isWin ? bet.payout : bet.amount;
 
-        const isWin = String(bet.result) === String(bet.picked_side);
-        const amount = isWin ? bet.payout : bet.amount;
-        
-        // 2. MEGJELENÍTÉS: Sima window.alert-tel teszteljük!
-        // Ha ez felugrik, akkor a kód jó, csak a design nem látszott.
-        const msg = isWin 
-            ? `GRATULÁLUNK! ${amount} €-t nyertél!` 
-            : `Sajnos vesztettél: ${amount} €-t.`;
-        
-        alert(msg);
+            // 3. Megjelenítés - Egyszerű, fixen működő doboz
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed; bottom: 30px; right: 30px; z-index: 999999;
+                padding: 20px 30px; border-radius: 15px; color: white; font-weight: bold;
+                font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                background: ${isWin ? 'linear-gradient(135deg, #28a745, #1e7e34)' : 'linear-gradient(135deg, #dc3545, #a71d2a)'};
+                border-left: 10px solid ${isWin ? '#00ff88' : '#ff4444'};
+            `;
+            
+            toast.innerText = isWin 
+                ? `Gratulálunk! ${money} €-t nyertél!` 
+                : `Sajnos ${money} €-t vesztettél.`;
 
-        // 3. AZONNALI UPDATE
-        await sb.from('bets').update({ notified: true }).eq('id', bet.id);
+            document.body.appendChild(toast);
+
+            // 4. Update - Hogy ne jöjjön elő többször
+            await supabase.from('bets').update({ notified: true }).eq('id', bet.id);
+
+            // 6 mp után eltűnik
+            setTimeout(() => toast.remove(), 6000);
+        }
+    } catch (e) {
+        // Ha még mindig 'is not a function' hibát kapsz, 
+        // nézd meg a kódod legtetején, hogy mi a supabase változó pontos neve!
     }
 }
 
-// 5 másodpercenként futtatjuk
-setInterval(checkNotif, 5000);
+// 5 másodpercenként ellenőrizzük
+setInterval(checkNotifSafe, 5000);
 </script>
 </body>
 </html>
