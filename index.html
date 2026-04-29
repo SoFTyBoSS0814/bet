@@ -1526,11 +1526,10 @@ function showErrorToast(message) {
  */
 
 async function globalRefresh() {
-    console.log("🔄 Kényszerített szinkronizálás indítása...");
+    console.log("🔄 Kényszerített szinkronizálás indítása (Kártyák + Egyenleg)...");
 
     try {
-        // 1. Megkeressük a konténereket (írd át az ID-kat, ha nálad más!)
-        // Tipp: Nézd meg a HTML-ben, mi a neve a div-nek, amibe a kártyák mennek.
+        // 1. Konténerek megkeresése és KIÜRÍTÉSE
         const containers = [
             document.getElementById('active-markets'),
             document.getElementById('markets-container'),
@@ -1538,89 +1537,72 @@ async function globalRefresh() {
             document.getElementById('history-container')
         ];
 
-        // 2. Brutális takarítás: mielőtt újratöltünk, mindent kiszórunk
         containers.forEach(container => {
             if (container) container.innerHTML = ''; 
         });
 
-        // 3. A te saját függvényeid újrahívása
-        // Ezek a függvények fogják újra lekérni a Supabase-ből a friss adatokat
+        // 2. A saját betöltő függvényeid hívása
         if (typeof loadMarkets === 'function') await loadMarkets();
         if (typeof loadUserBets === 'function') await loadUserBets();
+        
+        // 3. EGYENLEG FRISSÍTÉSE (Közvetlenül a Supabase-ből, nem csak a függvényeddel)
+        const userRaw = localStorage.getItem('user');
+        if (userRaw) {
+            const userData = JSON.parse(userRaw);
+            const username = userData.username || userData;
+
+            // Használjuk a 'supabase' változót (vagy sb-t, ha nálad az a neve)
+            const sb = (typeof supabase !== 'undefined') ? supabase : (typeof sb !== 'undefined' ? sb : window.supabase);
+            
+            if (sb && typeof sb.from === 'function') {
+                const { data, error } = await sb
+                    .from('profiles') // <--- ELLENŐRIZD: profiles vagy users nálad?
+                    .select('balance')
+                    .eq('username', username)
+                    .single();
+
+                if (!error && data) {
+                    console.log(`💰 Új egyenleg észlelve: ${data.balance} €`);
+                    
+                    // Minden lehetséges egyenleg-kijelzőt frissítünk a HTML-ben
+                    const balanceSelectors = ['user-balance', 'wallet-balance', 'balance-amount', 'current-balance'];
+                    balanceSelectors.forEach(id => {
+                        const el = document.getElementById(id) || document.querySelector('.' + id);
+                        if (el) {
+                            el.innerText = `${data.balance} €`;
+                            // Egy kis vizuális visszajelzés (zöld villanás)
+                            el.style.color = "#00ff88";
+                            setTimeout(() => el.style.color = "", 2000);
+                        }
+                    });
+                }
+            }
+        }
+
+        // 4. Biztonsági mentés: a te eredeti függvényedet is meghívjuk
         if (typeof fetchBalances === 'function') await fetchBalances();
 
-        console.log("✅ UI sikeresen újraépítve a friss adatokkal.");
+        console.log("✅ UI és Egyenleg sikeresen újraépítve.");
     } catch (err) {
         console.error("Hiba a kényszerített frissítésnél:", err);
     }
 }
 
-// 4. AUTOMATA FIGYELŐ (Polling)
-// 8 másodpercenként "megrázza" az oldalt, hogy eltűnjenek a lezárt dolgok
+// 4. AUTOMATA FIGYELŐ (Polling) - 8 másodperc
 let autoRefreshInterval = setInterval(() => {
     if (!document.hidden) {
         globalRefresh();
     }
 }, 8000);
 
-// 5. AZONNALI INDÍTÁS
+// 5. AZONNALI INDÍTÁS betöltéskor
 window.addEventListener('load', () => {
     setTimeout(globalRefresh, 1000);
 });
+
+// Első hívás azonnal a szkript betöltésekor
 globalRefresh();
 
-
-async function globalRefresh() {
-    console.log("🔄 Kényszerített teljes frissítés...");
-
-    try {
-        // 1. Meglévő konténerek takarítása
-        const ids = ['active-markets', 'markets-container', 'bets-container', 'history-container'];
-        ids.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerHTML = ''; 
-        });
-
-        // 2. Alapadatok (piacok, fogadások) újratöltése
-        if (typeof loadMarkets === 'function') await loadMarkets();
-        if (typeof loadUserBets === 'function') await loadUserBets();
-
-        // 3. EGYENLEG FRISSÍTÉSE - AGRESSZÍV MÓD
-        // Lekérjük a usert a localStorage-ból, hogy biztosan tudjuk, kiről van szó
-        const userRaw = localStorage.getItem('user');
-        if (userRaw) {
-            const userData = JSON.parse(userRaw);
-            const username = userData.username || userData;
-
-            // Közvetlenül a Supabase-ből rántjuk le az egyenleget, nem várunk a fetchBalances-re
-            const sb = window.supabase || supabase;
-            if (sb && typeof sb.from === 'function') {
-                const { data, error } = await sb
-                    .from('profiles') // VAGY 'users', amiben a balance-od van!
-                    .select('balance')
-                    .eq('username', username)
-                    .single();
-
-                if (!error && data) {
-                    console.log("💰 Friss egyenleg a szerverről:", data.balance);
-                    
-                    // Kézzel beleírjuk a HTML-be, hogy véletlenül se maradjon a régi
-                    // Cseréld le a 'user-balance' ID-t arra, ami nálad a kijelző!
-                    const balanceDisplay = document.getElementById('user-balance') || document.getElementById('wallet-balance');
-                    if (balanceDisplay) {
-                        balanceDisplay.innerText = `${data.balance} €`;
-                    }
-                    
-                    // Ha van ilyen függvényed, ezt is meghívjuk a biztonság kedvéért
-                    if (typeof fetchBalances === 'function') await fetchBalances();
-                }
-            }
-        }
-
-    } catch (err) {
-        console.error("Hiba a kényszerített frissítésnél:", err);
-    }
-}
 </script>
 </body>
 </html>
