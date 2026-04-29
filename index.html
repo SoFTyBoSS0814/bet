@@ -1519,12 +1519,6 @@ function showErrorToast(message) {
     }, 3000);
 }
 
-Ez már dühítő lehet, de ne aggódj, módszeresen megtaláljuk, hol szivárog el az adat. Ha a kód ott van a script alján, és mégsem történik semmi, akkor a hiba az adatbázis-kapcsolat vagy a lekért adatok körül lesz.
-
-Csináljunk egy "Hardcore Debug" verziót. Ez nem csak a notifikációt próbálja feldobni, hanem telepakolja a konzolt (F12) válaszokkal, amik elárulják, pontosan hol akad el a folyamat.
-
-Cseréld le a függvényt erre:
-JavaScript
 async function checkNotifications() {
     // 1. Ellenőrizzük, látja-e a Supabase-t
     if (typeof supabase === 'undefined') {
