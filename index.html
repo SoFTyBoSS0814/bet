@@ -1519,45 +1519,69 @@ function showErrorToast(message) {
     }, 3000);
 }
 
-async function checkNotifications() {
-    const userWallet = localStorage.getItem('userWallet') || localStorage.getItem('wallet');
-    if (!userWallet) return;
+Ez már dühítő lehet, de ne aggódj, módszeresen megtaláljuk, hol szivárog el az adat. Ha a kód ott van a script alján, és mégsem történik semmi, akkor a hiba az adatbázis-kapcsolat vagy a lekért adatok körül lesz.
 
-    // 1. CSS a jobb alsó sarokba (Minimalista stílus)
+Csináljunk egy "Hardcore Debug" verziót. Ez nem csak a notifikációt próbálja feldobni, hanem telepakolja a konzolt (F12) válaszokkal, amik elárulják, pontosan hol akad el a folyamat.
+
+Cseréld le a függvényt erre:
+JavaScript
+async function checkNotifications() {
+    // 1. Ellenőrizzük, látja-e a Supabase-t
+    if (typeof supabase === 'undefined') {
+        console.error("DEBUG: A 'supabase' objektum nem létezik! A script sorrendje rossz.");
+        return;
+    }
+
+    // 2. Wallet kulcs keresése (minden lehetőséget kipróbálunk)
+    const userWallet = localStorage.getItem('userWallet') || localStorage.getItem('wallet') || localStorage.getItem('address');
+    console.log("DEBUG: Bejelentkezett wallet:", userWallet);
+
+    if (!userWallet) {
+        console.warn("DEBUG: Nincs wallet a localStorage-ban. Be vagy jelentkezve?");
+        return;
+    }
+
+    // 3. CSS injektálás (marad a régi)
     if (!document.getElementById('notify-style')) {
         const style = document.createElement('style');
         style.id = 'notify-style';
         style.innerHTML = `
-            .n-toast { 
-                position: fixed; bottom: 20px; right: 20px; 
-                padding: 15px 20px; border-radius: 8px; color: white;
-                font-family: sans-serif; font-weight: bold; z-index: 100000;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-                transform: translateY(100px); opacity: 0; transition: 0.5s;
-            }
+            .n-toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 20px; border-radius: 8px; color: white; font-family: sans-serif; font-weight: bold; z-index: 100000; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transform: translateY(100px); opacity: 0; transition: 0.5s; }
             .n-toast.show { transform: translateY(0); opacity: 1; }
-            .n-win { background: #28a745; border-right: 5px solid #1e7e34; }
-            .n-loss { background: #dc3545; border-right: 5px solid #bd2130; }
+            .n-win { background: #28a745; } .n-loss { background: #dc3545; }
         `;
         document.head.appendChild(style);
     }
 
-    // 2. Adatlekérés
-    const { data: bets } = await supabase
+    // 4. LEKÉRÉS TESZTELÉSE
+    console.log("DEBUG: Lekérés indítása a Supabase-ből...");
+    const { data: bets, error } = await supabase
         .from('bets')
-        .select('id, amount, payout, picked_side, result, markets(title)')
+        .select('*, markets(title)')
         .eq('user_id', userWallet)
         .eq('notified', false)
         .not('result', 'is', null);
 
-    if (!bets || bets.length === 0) return;
+    if (error) {
+        console.error("DEBUG: Supabase hiba történt:", error.message);
+        return;
+    }
 
-    // 3. Megjelenítés
+    console.log("DEBUG: Megtalált fogadások adatai:", bets);
+
+    if (!bets || bets.length === 0) {
+        console.log("DEBUG: Nincs olyan fogadás, ami (1) ehhez a wallethez tartozik, (2) már van eredménye, de (3) még nem volt értesítve.");
+        return;
+    }
+
+    // 5. MEGJELENÍTÉS
     bets.forEach(async (bet) => {
         const isWin = String(bet.result) === String(bet.picked_side);
         const amount = isWin ? bet.payout : bet.amount;
-        const marketName = bet.markets ? bet.markets.title : "piacon";
+        const marketName = bet.markets ? bet.markets.title : "ismeretlen";
         
+        console.log(`DEBUG: Toast megjelenítése: ${marketName} - ${isWin ? 'NYERT' : 'VESZTETT'}`);
+
         const toast = document.createElement('div');
         toast.className = `n-toast ${isWin ? 'n-win' : 'n-loss'}`;
         toast.innerText = `${amount} €-t ${isWin ? 'nyertél' : 'vesztettél'} a ${marketName} piacon!`;
@@ -1565,10 +1589,10 @@ async function checkNotifications() {
         document.body.appendChild(toast);
         setTimeout(() => toast.classList.add('show'), 100);
 
-        // Supabase frissítés (hogy ne jöjjön elő újra)
-        await supabase.from('bets').update({ notified: true }).eq('id', bet.id);
+        // Adatbázis frissítés
+        const { error: updErr } = await supabase.from('bets').update({ notified: true }).eq('id', bet.id);
+        if(updErr) console.error("DEBUG: Nem sikerült frissíteni a notified státuszt:", updErr);
 
-        // 5 mp után eltűnik
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 500);
@@ -1576,8 +1600,8 @@ async function checkNotifications() {
     });
 }
 
-// Futtatás (Adjunk neki 2 mp-et, hogy minden betöltsön)
-setTimeout(checkNotifications, 2000);
+// Futtatás
+setTimeout(checkNotifications, 2500);
 </script>
 </body>
 </html>
