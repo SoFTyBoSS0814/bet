@@ -1519,23 +1519,64 @@ function showErrorToast(message) {
     }, 3000);
 }
 
+/**
+ * REFRESH & NOTIFICATION SYSTEM - FULL BUNDLE
+ * Minden egyben: UI frissítés + € értesítés + Automatikus indítás
+ */
+
+async function refreshApp() {
+    console.log("🔄 UI frissítése és értesítések ellenőrzése...");
+    
+    // 1. UI újratöltése (hogy F5 nélkül kerüljenek át a dolgok a helyükre)
+    if (typeof loadMarkets === 'function') await loadMarkets();
+    if (typeof loadUserBets === 'function') await loadUserBets();
+    if (typeof fetchBalances === 'function') await fetchBalances();
+    
+    // 2. Értesítések azonnali ellenőrzése
+    await checkNotifications();
+}
+
 async function checkNotifications() {
-    // 1. Felhasználó kinyerése
+    // Felhasználó kinyerése a LocalStorage-ból (SoFTy JSON fix)
     const userRaw = localStorage.getItem('user');
     if (!userRaw) return;
+    
     let currentUsername = "";
     try {
         const parsed = JSON.parse(userRaw);
         currentUsername = parsed.username || parsed;
-    } catch(e) { currentUsername = userRaw; }
+    } catch(e) {
+        currentUsername = userRaw;
+    }
 
-    if (!currentUsername) return;
+    if (!currentUsername || currentUsername === "undefined") return;
 
-    // 2. Supabase kliens ellenőrzése (window.supabase-t használva, hogy ne legyen hiba)
-    const sb = window.supabase;
-    if (!sb) return;
+    // Supabase kliens azonosítása (window objektumból is)
+    const sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
+    if (!sb || typeof sb.from !== 'function') {
+        console.warn("Supabase még nem elérhető.");
+        return;
+    }
 
-    // 3. Lekérdezés
+    // CSS Stílus a jobb alsó sarokba
+    if (!document.getElementById('notify-style')) {
+        const style = document.createElement('style');
+        style.id = 'notify-style';
+        style.innerHTML = `
+            .n-toast { 
+                position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; 
+                border-radius: 10px; color: white; font-family: 'Segoe UI', Tahoma, sans-serif; 
+                font-weight: bold; z-index: 9999999; box-shadow: 0 4px 25px rgba(0,0,0,0.6);
+                opacity: 0; transform: translateY(30px); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .n-toast.show { opacity: 1; transform: translateY(0); }
+            .n-win { background: #28a745; border-left: 6px solid #1e7e34; }
+            .n-loss { background: #dc3545; border-left: 6px solid #a71d2a; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Lekérdezés a Supabase-ből
     const { data: bets, error } = await sb
         .from('bets')
         .select('id, amount, payout, picked_side, result, markets(title)')
@@ -1545,46 +1586,39 @@ async function checkNotifications() {
 
     if (error || !bets || bets.length === 0) return;
 
-    // 4. Toast stílus (ha még nincs)
-    if (!document.getElementById('notify-style')) {
-        const style = document.createElement('style');
-        style.id = 'notify-style';
-        style.innerHTML = `
-            .n-toast { 
-                position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; 
-                border-radius: 8px; color: white; font-family: sans-serif; 
-                font-weight: bold; z-index: 9999999; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-                opacity: 0; transform: translateY(20px); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            }
-            .n-toast.show { opacity: 1; transform: translateY(0); }
-            .n-win { background: #28a745; border-left: 6px solid #1e7e34; }
-            .n-loss { background: #dc3545; border-left: 6px solid #a71d2a; }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // 5. Megjelenítés
+    // Megjelenítés
     for (const bet of bets) {
         const isWin = String(bet.result) === String(bet.picked_side);
-        const amount = isWin ? bet.payout : bet.amount;
+        const prize = isWin ? bet.payout : bet.amount;
         const marketName = bet.markets ? bet.markets.title : "eseményen";
         
         const toast = document.createElement('div');
         toast.className = `n-toast ${isWin ? 'n-win' : 'n-loss'}`;
-        toast.innerText = `${amount} €-t ${isWin ? 'nyertél' : 'vesztettél'} a ${marketName} piacon!`;
+        toast.innerText = `${prize} €-t ${isWin ? 'nyertél' : 'vesztettél'} a ${marketName} piacon!`;
         
         document.body.appendChild(toast);
+        
+        // Animált megjelenítés
         setTimeout(() => toast.classList.add('show'), 100);
 
-        // Adatbázis update, hogy ne jöjjön újra
+        // Adatbázis frissítés: notified = true
         await sb.from('bets').update({ notified: true }).eq('id', bet.id);
 
+        // 6 másodperc után eltüntetés
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 600);
         }, 6000);
     }
 }
+
+// --- FÜGGVÉNYEK MEGHÍVÁSA ---
+
+// 1. Automatikus indítás az oldal betöltése után (hogy látszódjon az elmaradt eredmény)
+window.addEventListener('load', () => {
+    console.log("🚀 Értesítő rendszer élesítve...");
+    setTimeout(refreshApp, 3000);
+});
 </script>
 </body>
 </html>
