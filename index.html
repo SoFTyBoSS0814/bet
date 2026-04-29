@@ -1520,66 +1520,57 @@ function showErrorToast(message) {
 }
 
 /**
- * REAL-TIME UI FRISSÍTŐ RENDSZER (F5 NÉLKÜL)
- * Ez a kód figyeli a Supabase változásait és minden nyitott böngészőben 
- * azonnal áthelyezi a lezárt meccseket a History-ba.
+ * AUTOMATA UI FRISSÍTŐ (POLLING RENDSZER)
+ * Ez a megoldás F5 nélkül, minden megnyitott böngészőben szinkronizálja a listákat.
+ * Ha az Admin lezár egy piacot, a Usernél is eltűnik/átkerül a History-ba.
  */
 
-// 1. A fő frissítő függvény
-async function refreshApp() {
-    console.log("🔄 Távoli jel érkezett: UI frissítése...");
-    
-    // Meghívjuk a betöltő függvényeidet, hogy újragenerálják a listákat
-    if (typeof loadMarkets === 'function') await loadMarkets();
-    if (typeof loadUserBets === 'function') await loadUserBets();
-    if (typeof fetchBalances === 'function') await fetchBalances();
-}
+// 1. A központi frissítő függvény
+async function refreshAppUI() {
+    // Ellenőrizzük, hogy be van-e jelentkezve valaki (SoFTy JSON fix)
+    const userRaw = localStorage.getItem('user');
+    if (!userRaw) return;
 
-// 2. Realtime Figyelő (Ez felel azért, hogy a másik böngészőben is történjen valami)
-function setupRealtimeListener() {
+    // Supabase kliens elérése (biztonságos elérés)
     const sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
-    if (!sb) return;
+    if (!sb || typeof sb.from !== 'function') return;
 
-    console.log("📡 Realtime figyelő elindítva...");
-
-    // Figyeljük a 'markets' tábla változásait
-    sb.channel('public:markets')
-        .on('postgres_changes', { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'markets' 
-        }, (payload) => {
-            console.log("💡 Változás észlelve a piacokban:", payload.new);
-            // Ha a státusz 'settled' vagy 'closed' lett, frissítünk mindenkinél
-            if (payload.new.status === 'settled' || payload.new.result !== null) {
-                refreshApp();
-            }
-        })
-        .subscribe();
-
-    // Figyeljük a 'bets' tábla változásait is (ha pl. ott történik a settle)
-    sb.channel('public:bets')
-        .on('postgres_changes', { 
-            event: 'UPDATE', 
-            schema: 'public', 
-            table: 'bets' 
-        }, (payload) => {
-            console.log("💡 Fogadás frissítve:", payload.new);
-            if (payload.new.result !== null) {
-                refreshApp();
-            }
-        })
-        .subscribe();
+    try {
+        // Meghívjuk a meglévő logikáidat, amik a kártyákat generálják
+        // Ezek pakolják át a meccseket az Active-ból a History-ba az új státusz alapján
+        if (typeof loadMarkets === 'function') await loadMarkets();
+        if (typeof loadUserBets === 'function') await loadUserBets();
+        if (typeof fetchBalances === 'function') await fetchBalances();
+        
+        console.log("🔄 UI szinkronizálva a szerverrel (F5 nélkül)");
+    } catch (err) {
+        console.error("Hiba a háttérfrissítés közben:", err);
+    }
 }
 
-// 3. Automatikus indítás az oldal betöltésekor
+// 2. Automatikus háttér-ellenőrzés indítása
+function startAutoSync() {
+    console.log("📡 Automata szinkronizálás elindítva (5s)...");
+    
+    setInterval(async () => {
+        // Csak akkor dolgozunk, ha a felhasználó épp az oldalt nézi
+        if (!document.hidden) {
+            await refreshAppUI();
+        }
+    }, 5000); // 5 másodperces időköz
+}
+
+// 3. VÉGREHAJTÁS (Azonnali indítás és időzítő beállítása)
 window.addEventListener('load', () => {
-    // Várunk egy kicsit, hogy a Supabase kliens biztosan készen álljon
-    setTimeout(() => {
-        setupRealtimeListener();
-        refreshApp(); // Első betöltéskori frissítés
+    // Várunk 2 másodpercet a betöltés után, hogy a Supabase stabil legyen
+    setTimeout(async () => {
+        await refreshAppUI(); // Első azonnali frissítés
+        startAutoSync();      // Automata hurok indítása
     }, 2000);
 });
+
+// Manuális hívás lehetősége (pl. settle gomb végére)
+// Ha te magad zárod le a piacot, hívd meg ezt: refreshAppUI();
 </script>
 </body>
 </html>
