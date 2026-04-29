@@ -1520,44 +1520,49 @@ function showErrorToast(message) {
 }
 
 async function checkNotifications() {
-    // 1. Megnézzük, ki van bejelentkezve (Username alapján)
-    // Ha nálad nem 'username' a kulcs a localStorage-ban, írd át arra, amivel a belépést kezeled!
-    const currentUsername = localStorage.getItem('username'); 
+    // 1. Megkeressük a júzert több lehetséges kulcs alapján
+    const currentUsername = localStorage.getItem('username') || 
+                            localStorage.getItem('user') || 
+                            localStorage.getItem('currentUser') ||
+                            localStorage.getItem('loggedUser');
 
     if (!currentUsername) {
-        console.warn("DEBUG: Nincs bejelentkezett felhasználónév. Az értesítések nem indulnak el.");
+        // Ha még mindig semmi, kiírjuk a konzolba a TALÁLT kulcsokat segítségnek
+        console.warn("DEBUG: Még mindig nem találom a nevet. LocalStorage kulcsai:", Object.keys(localStorage));
         return;
     }
 
-    // 2. CSS (Jobb alsó sarok, tiszta színek)
+    console.log("🔔 Értesítések ellenőrzése: " + currentUsername);
+
+    // 2. CSS (Vékony, elegáns csík a jobb alsó sarokba)
     if (!document.getElementById('notify-style')) {
         const style = document.createElement('style');
         style.id = 'notify-style';
         style.innerHTML = `
             .n-toast { 
                 position: fixed; bottom: 20px; right: 20px; 
-                padding: 15px 25px; border-radius: 10px; color: white;
-                font-family: 'Segoe UI', sans-serif; font-weight: bold; z-index: 100000;
-                box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-                transform: translateY(100px); opacity: 0; transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                padding: 12px 20px; border-radius: 6px; color: white;
+                font-family: sans-serif; font-size: 14px; font-weight: 600; z-index: 999999;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                transform: translateY(100px); opacity: 0; transition: 0.4s ease;
             }
             .n-toast.show { transform: translateY(0); opacity: 1; }
-            .n-win { background: #2ecc71; border-right: 6px solid #27ae60; }
-            .n-loss { background: #e74c3c; border-right: 6px solid #c0392b; }
+            .n-win { background: #27ae60; border-left: 5px solid #1e8449; }
+            .n-loss { background: #c0392b; border-left: 5px solid #922b21; }
         `;
         document.head.appendChild(style);
     }
 
-    // 3. Lekérdezés: Aki FOGADOTT (username alapján) és az eseménynek már van eredménye (result nem null)
+    // 3. Lekérdezés a Supabase-ből
     const { data: bets, error } = await supabase
         .from('bets')
         .select('id, amount, payout, picked_side, result, markets(title)')
-        .eq('username', currentUsername) // USERNAME alapján szűrünk!
+        .eq('username', currentUsername) // Itt 'username' az oszlop neve a DB-ben
         .eq('notified', false)
         .not('result', 'is', null);
 
     if (error) {
-        console.error("DEBUG: Supabase hiba:", error.message);
+        console.error("Supabase hiba:", error.message);
         return;
     }
 
@@ -1566,27 +1571,30 @@ async function checkNotifications() {
     // 4. Megjelenítés
     bets.forEach(async (bet) => {
         const isWin = String(bet.result) === String(bet.picked_side);
-        const prize = isWin ? bet.payout : bet.amount;
-        const marketName = bet.markets ? bet.markets.title : "eseményen";
+        const amount = isWin ? bet.payout : bet.amount;
+        const marketName = bet.markets ? bet.markets.title : "piacon";
         
         const toast = document.createElement('div');
         toast.className = `n-toast ${isWin ? 'n-win' : 'n-loss'}`;
-        toast.innerText = `${prize} €-t ${isWin ? 'nyertél' : 'vesztettél'} a ${marketName} piacon!`;
+        toast.innerText = `${amount} €-t ${isWin ? 'nyertél' : 'vesztettél'} a ${marketName} piacon!`;
         
         document.body.appendChild(toast);
+        
+        // Megjelenítés kis késleltetéssel
         setTimeout(() => toast.classList.add('show'), 100);
 
-        // Adatbázisban átírjuk, hogy megkapta
+        // Notified átírása TRUE-ra
         await supabase.from('bets').update({ notified: true }).eq('id', bet.id);
 
+        // Eltüntetés
         setTimeout(() => {
             toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 600);
-        }, 5000);
+            setTimeout(() => toast.remove(), 500);
+        }, 6000);
     });
 }
 
-// Futtatás (2 mp várakozás, hogy a Supabase betöltsön)
+// Futtatás
 setTimeout(checkNotifications, 2000);
 </script>
 </body>
