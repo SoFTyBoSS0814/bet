@@ -1556,12 +1556,12 @@ async function globalRefresh() {
 }
 
 // 4. AUTOMATA FIGYELŐ (Polling)
-// 5 másodpercenként "megrázza" az oldalt, hogy eltűnjenek a lezárt dolgok
+// 8 másodpercenként "megrázza" az oldalt, hogy eltűnjenek a lezárt dolgok
 let autoRefreshInterval = setInterval(() => {
     if (!document.hidden) {
         globalRefresh();
     }
-}, 5000);
+}, 8000);
 
 // 5. AZONNALI INDÍTÁS
 window.addEventListener('load', () => {
