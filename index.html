@@ -1570,92 +1570,60 @@ window.addEventListener('load', () => {
 globalRefresh();
 
 /**
- * VÉGLEGES ÉRTESÍTÉSI RENDSZER - JAVÍTOTT SUPABASE ELÉRÉSSEL
+ * EGYSZERŰ ÉRTESÍTÉSEK
  */
+async function simpleNotify() {
+    // 1. Csak akkor futunk, ha van bejelentkezett júzer
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user || !user.username) return;
 
-async function checkWinningNotifications() {
-    // 1. Felhasználó azonosítása
-    const userRaw = localStorage.getItem('user');
-    if (!userRaw) return;
-    let currentUsername = "";
-    try {
-        const parsed = JSON.parse(userRaw);
-        currentUsername = parsed.username || parsed;
-    } catch(e) { currentUsername = userRaw; }
-
-    if (!currentUsername || currentUsername === "undefined") return;
-
-    // 2. SUPABASE KLÍENS KERESÉSE (Képek alapján javítva)
-    // Megpróbáljuk minden lehetséges néven elérni
-    const sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
-    
-    // BIZTONSÁGI ELLENŐRZÉS: Ha nem függvény a .from, megállunk
-    if (!sb || typeof sb.from !== 'function') {
-        console.log("⚠️ Supabase kliens (sb) még nem inicializált vagy rossz változó.");
-        return;
-    }
+    // 2. Megkeressük a Supabase-t ott, ahol a bejelentkezésed is használja
+    const sb = window.supabase; 
+    if (!sb || typeof sb.from !== 'function') return;
 
     try {
-        // 3. Lekérjük az új eredményeket
-        const { data: bets, error } = await sb
+        // 3. Lekérjük a friss eredményeket
+        const { data: bets } = await sb
             .from('bets')
             .select('id, amount, payout, picked_side, result, markets(title)')
-            .eq('username', currentUsername)
+            .eq('username', user.username)
             .eq('notified', false)
             .not('result', 'is', null);
 
-        if (error) throw error;
         if (!bets || bets.length === 0) return;
 
-        // 4. Értesítési réteg biztosítása (hogy ne törölje le a frissítés)
-        let notifyLayer = document.getElementById('permanent-notify-layer');
-        if (!notifyLayer) {
-            notifyLayer = document.createElement('div');
-            notifyLayer.id = 'permanent-notify-layer';
-            notifyLayer.style.cssText = "position: fixed; bottom: 20px; right: 20px; z-index: 10000000; pointer-events: none;";
-            document.body.appendChild(notifyLayer);
-        }
-
-        // 5. Megjelenítés
         for (const bet of bets) {
             const isWin = String(bet.result) === String(bet.picked_side);
-            const amount = isWin ? bet.payout : bet.amount;
-            const marketTitle = bet.markets ? bet.markets.title : "eseményen";
-            
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                pointer-events: auto; margin-top: 10px; padding: 18px 25px; border-radius: 12px; 
-                color: white; font-family: sans-serif; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                transition: 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); transform: translateX(150%);
-                min-width: 300px; border-left: 10px solid ${isWin ? '#00ff88' : '#ff4444'};
-                background: ${isWin ? 'linear-gradient(135deg, #28a745, #1e7e34)' : 'linear-gradient(135deg, #dc3545, #a71d2a)'};
-            `;
-            
-            toast.innerText = isWin 
-                ? `Gratulálunk! ${amount} €-t nyertél a ${marketTitle} eseményen!` 
-                : `${amount} €-t vesztettél a ${marketTitle} eseményen!`;
-            
-            notifyLayer.appendChild(toast);
-            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            const money = isWin ? bet.payout : bet.amount;
+            const text = isWin 
+                ? `Gratulálunk! ${money} €-t nyertél: ${bet.markets.title}` 
+                : `${money} €-t vesztettél: ${bet.markets.title}`;
 
-            // 6. ADATBÁZIS FRISSÍTÉS (Hogy ne jöjjön újra)
+            // 4. Sima böngészős értesítés (vagy csinálhatsz div-et is)
+            showSimpleToast(text, isWin);
+
+            // 5. Azonnal lekapcsoljuk a jelet a Supabase-ben
             await sb.from('bets').update({ notified: true }).eq('id', bet.id);
-
-            // Törlés a képernyőről 8mp után
-            setTimeout(() => {
-                toast.style.transform = 'translateX(150%)';
-                setTimeout(() => toast.remove(), 700);
-            }, 8000);
         }
-    } catch (err) {
-        console.error("❌ Hiba az értesítésnél:", err.message);
-    }
+    } catch (e) { /* Csendben maradunk, ha hiba van */ }
 }
 
-// AUTOMATA INDÍTÁS
-setInterval(() => {
-    if (!document.hidden) checkWinningNotifications();
-}, 4000);
+// Egy nagyon egyszerű, fix kinézetű ablak
+function showSimpleToast(msg, win) {
+    const t = document.createElement('div');
+    t.innerHTML = msg;
+    t.style.cssText = `
+        position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+        padding: 20px; border-radius: 10px; color: white; font-weight: bold;
+        background: ${win ? '#28a745' : '#dc3545'};
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    `;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 6000);
+}
+
+// 5 másodpercenként ránézünk, de csak ha nem laggol a gép
+setInterval(simpleNotify, 5000);
 </script>
 </body>
 </html>
