@@ -1525,45 +1525,49 @@ function showErrorToast(message) {
  * Kitakarítja a HTML-t és újraindítja a betöltő függvényeket.
  */
 
-async function simpleRefresh() {
-    console.log("🔄 Buta frissítés indítása...");
+async function globalRefresh() {
+    console.log("🔄 Kényszerített szinkronizálás indítása...");
 
-    // 1. Letakarítjuk a kijelzőt
-    const ids = ['active-markets', 'markets-container', 'bets-container', 'history-container'];
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = ''; 
-    });
+    try {
+        // 1. Megkeressük a konténereket (írd át az ID-kat, ha nálad más!)
+        // Tipp: Nézd meg a HTML-ben, mi a neve a div-nek, amibe a kártyák mennek.
+        const containers = [
+            document.getElementById('active-markets'),
+            document.getElementById('markets-container'),
+            document.getElementById('bets-container'),
+            document.getElementById('history-container')
+        ];
 
-    // 2. Újratöltjük a listákat a te alap függvényeiddel
-    if (typeof loadMarkets === 'function') await loadMarkets();
-    if (typeof loadUserBets === 'function') await loadUserBets();
+        // 2. Brutális takarítás: mielőtt újratöltünk, mindent kiszórunk
+        containers.forEach(container => {
+            if (container) container.innerHTML = ''; 
+        });
 
-    // 3. EGYENLEG FRISSÍTÉSE - Egyszerűen és gyorsan
-    // Itt ne változót használj, hanem írd be ugyanazt, amit a bejelentkezésnél!
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-        // Közvetlen lekérés, mint egy sima lekérdezésnél
-        const { data } = await supabase
-            .from('profiles')
-            .select('balance')
-            .eq('username', user.username || user)
-            .single();
+        // 3. A te saját függvényeid újrahívása
+        // Ezek a függvények fogják újra lekérni a Supabase-ből a friss adatokat
+        if (typeof loadMarkets === 'function') await loadMarkets();
+        if (typeof loadUserBets === 'function') await loadUserBets();
+        if (typeof fetchBalances === 'function') await fetchBalances();
 
-        if (data) {
-            // Beírjuk minden létező helyre, ahol az egyenleged lehet
-            const b1 = document.getElementById('user-balance');
-            const b2 = document.getElementById('wallet-balance');
-            if (b1) b1.innerText = `${data.balance} €`;
-            if (b2) b2.innerText = `${data.balance} €`;
-            console.log("💰 Egyenleg frissítve:", data.balance);
-        }
+        console.log("✅ UI sikeresen újraépítve a friss adatokkal.");
+    } catch (err) {
+        console.error("Hiba a kényszerített frissítésnél:", err);
     }
 }
 
-// 5 másodpercenként futtatjuk
-setInterval(simpleRefresh, 5000);
+// 4. AUTOMATA FIGYELŐ (Polling)
+// 8 másodpercenként "megrázza" az oldalt, hogy eltűnjenek a lezárt dolgok
+let autoRefreshInterval = setInterval(() => {
+    if (!document.hidden) {
+        globalRefresh();
+    }
+}, 8000);
 
+// 5. AZONNALI INDÍTÁS
+window.addEventListener('load', () => {
+    setTimeout(globalRefresh, 1000);
+});
+globalRefresh();
 </script>
 </body>
 </html>
