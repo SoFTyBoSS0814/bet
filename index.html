@@ -1126,6 +1126,7 @@ async function finalSubmitSettle() {
     const btn = document.getElementById('finalize-btn');
     btn.disabled = true;
     btn.innerText = "Processing...";
+    globalRefresh();
 
     let winners = [];
     currentSettleGroups.forEach(g =>
@@ -1520,63 +1521,53 @@ function showErrorToast(message) {
 }
 
 /**
- * BRUTÁL UI SZINKRON (POLLING)
- * Kényszerített lista-ürítéssel, hogy F5 nélkül is eltűnjenek a lezárt meccsek.
+ * FORCE REFRESH SYSTEM
+ * Kitakarítja a HTML-t és újraindítja a betöltő függvényeket.
  */
 
-async function refreshAppUI() {
-    const userRaw = localStorage.getItem('user');
-    if (!userRaw) return;
-
-    const sb = window.supabase || (typeof supabase !== 'undefined' ? supabase : null);
-    if (!sb || typeof sb.from !== 'function') return;
+async function globalRefresh() {
+    console.log("🔄 Kényszerített szinkronizálás indítása...");
 
     try {
-        console.log("🔍 Ellenőrzés: Kell-e valamit áthelyezni a History-ba?");
+        // 1. Megkeressük a konténereket (írd át az ID-kat, ha nálad más!)
+        // Tipp: Nézd meg a HTML-ben, mi a neve a div-nek, amibe a kártyák mennek.
+        const containers = [
+            document.getElementById('active-markets'),
+            document.getElementById('markets-container'),
+            document.getElementById('bets-container'),
+            document.getElementById('history-container')
+        ];
 
-        // 1. ELŐSZÖR KITAKARÍTJUK A JELENLEGI LISTÁKAT (ID-k alapján)
-        // Cseréld le ezeket az ID-kat azokra, amikbe a kártyákat generálod!
-        const activeContainer = document.getElementById('active-markets-container') || document.getElementById('markets-list');
-        const historyContainer = document.getElementById('history-markets-container') || document.getElementById('history-list');
+        // 2. Brutális takarítás: mielőtt újratöltünk, mindent kiszórunk
+        containers.forEach(container => {
+            if (container) container.innerHTML = ''; 
+        });
 
-        if (activeContainer) activeContainer.innerHTML = ''; // Törlés
-        if (historyContainer) historyContainer.innerHTML = ''; // Törlés
+        // 3. A te saját függvényeid újrahívása
+        // Ezek a függvények fogják újra lekérni a Supabase-ből a friss adatokat
+        if (typeof loadMarkets === 'function') await loadMarkets();
+        if (typeof loadUserBets === 'function') await loadUserBets();
+        if (typeof fetchBalances === 'function') await fetchBalances();
 
-        // 2. ÚJRATÖLTÉS A SZERVERRŐL
-        // Ez a két függvényed fogja újraépíteni a listákat a friss adatokkal
-        if (typeof loadMarkets === 'function') {
-            await loadMarkets();
-        }
-        if (typeof loadUserBets === 'function') {
-            await loadUserBets();
-        }
-        if (typeof fetchBalances === 'function') {
-            await fetchBalances();
-        }
-
-        console.log("✨ UI sikeresen frissítve, a lezárt meccsek elvileg átkerültek.");
+        console.log("✅ UI sikeresen újraépítve a friss adatokkal.");
     } catch (err) {
         console.error("Hiba a kényszerített frissítésnél:", err);
     }
 }
 
-// 5 másodperces automata hurok
-function startAutoSync() {
-    setInterval(async () => {
-        if (!document.hidden) {
-            await refreshAppUI();
-        }
-    }, 5000);
-}
+// 4. AUTOMATA FIGYELŐ (Polling)
+// 5 másodpercenként "megrázza" az oldalt, hogy eltűnjenek a lezárt dolgok
+let autoRefreshInterval = setInterval(() => {
+    if (!document.hidden) {
+        globalRefresh();
+    }
+}, 5000);
 
-// AZONNALI INDÍTÁS
+// 5. AZONNALI INDÍTÁS
 window.addEventListener('load', () => {
-    setTimeout(async () => {
-        await refreshAppUI(); // Első takarítás/töltés
-        startAutoSync();      // Hurok indítása
-    }, 2000);
+    setTimeout(globalRefresh, 1000);
 });
-refreshAppUI();
+globalRefresh();
 </script>
 </body>
 </html>
