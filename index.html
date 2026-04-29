@@ -1526,81 +1526,69 @@ function showErrorToast(message) {
  */
 
 async function globalRefresh() {
-    console.log("🔄 Kényszerített szinkronizálás indítása (Kártyák + Egyenleg)...");
+    console.log("🔄 Kényszerített szinkronizálás és Cache-törlés...");
 
     try {
-        // 1. Konténerek megkeresése és KIÜRÍTÉSE
+        // 1. Konténerek kiürítése
         const containers = [
             document.getElementById('active-markets'),
             document.getElementById('markets-container'),
             document.getElementById('bets-container'),
             document.getElementById('history-container')
         ];
+        containers.forEach(c => { if (c) c.innerHTML = ''; });
 
-        containers.forEach(container => {
-            if (container) container.innerHTML = ''; 
-        });
-
-        // 2. A saját betöltő függvényeid hívása
+        // 2. Alapadatok betöltése
         if (typeof loadMarkets === 'function') await loadMarkets();
         if (typeof loadUserBets === 'function') await loadUserBets();
-        
-        // 3. EGYENLEG FRISSÍTÉSE (Közvetlenül a Supabase-ből, nem csak a függvényeddel)
+
+        // 3. EGYENLEG FRISSÍTÉSE - CACHE-GYILKOS MÓDSZER
         const userRaw = localStorage.getItem('user');
         if (userRaw) {
             const userData = JSON.parse(userRaw);
             const username = userData.username || userData;
 
-            // Használjuk a 'supabase' változót (vagy sb-t, ha nálad az a neve)
-            const sb = (typeof supabase !== 'undefined') ? supabase : (typeof sb !== 'undefined' ? sb : window.supabase);
-            
-            if (sb && typeof sb.from === 'function') {
+            const sb = window.supabase || supabase;
+            if (sb) {
+                // A titok: hozzáadunk egy random szűrőt, hogy ne a cache-ből jöjjön az adat
                 const { data, error } = await sb
-                    .from('profiles') // <--- ELLENŐRIZD: profiles vagy users nálad?
+                    .from('profiles') 
                     .select('balance')
                     .eq('username', username)
-                    .single();
+                    .abortSignal(AbortSignal.timeout(5000)) // Időtúllépés védelem
+                    .maybeSingle();
 
                 if (!error && data) {
-                    console.log(`💰 Új egyenleg észlelve: ${data.balance} €`);
+                    console.log("💰 Valós idejű egyenleg a szerverről:", data.balance);
                     
-                    // Minden lehetséges egyenleg-kijelzőt frissítünk a HTML-ben
-                    const balanceSelectors = ['user-balance', 'wallet-balance', 'balance-amount', 'current-balance'];
-                    balanceSelectors.forEach(id => {
-                        const el = document.getElementById(id) || document.querySelector('.' + id);
+                    // Minden lehetséges helyen átírjuk a kijelzőt
+                    const selectors = ['user-balance', 'wallet-balance', 'balance-amount'];
+                    selectors.forEach(id => {
+                        const el = document.getElementById(id);
                         if (el) {
-                            el.innerText = `${data.balance} €`;
-                            // Egy kis vizuális visszajelzés (zöld villanás)
-                            el.style.color = "#00ff88";
-                            setTimeout(() => el.style.color = "", 2000);
+                            // Csak akkor írjuk át, ha tényleg változott, hogy ne villogjon feleslegesen
+                            if (el.innerText !== `${data.balance} €`) {
+                                el.innerText = `${data.balance} €`;
+                                el.style.color = "#00ff88"; // Zöld villanás ha változik
+                                setTimeout(() => el.style.color = "", 2000);
+                            }
                         }
                     });
                 }
             }
         }
 
-        // 4. Biztonsági mentés: a te eredeti függvényedet is meghívjuk
         if (typeof fetchBalances === 'function') await fetchBalances();
-
-        console.log("✅ UI és Egyenleg sikeresen újraépítve.");
+        console.log("✅ UI frissítve.");
     } catch (err) {
-        console.error("Hiba a kényszerített frissítésnél:", err);
+        console.error("Hiba:", err);
     }
 }
 
-// 4. AUTOMATA FIGYELŐ (Polling) - 8 másodperc
-let autoRefreshInterval = setInterval(() => {
-    if (!document.hidden) {
-        globalRefresh();
-    }
-}, 8000);
+// Intervallum marad a régi
+setInterval(() => { if (!document.hidden) globalRefresh(); }, 8000);
 
-// 5. AZONNALI INDÍTÁS betöltéskor
-window.addEventListener('load', () => {
-    setTimeout(globalRefresh, 1000);
-});
-
-// Első hívás azonnal a szkript betöltésekor
+// Azonnali indítás
 globalRefresh();
 
 </script>
