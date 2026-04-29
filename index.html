@@ -1570,60 +1570,49 @@ window.addEventListener('load', () => {
 globalRefresh();
 
 /**
- * EGYSZERŰ ÉRTESÍTÉSEK
+ * BRUTÁL EGYSZERŰ ÉRTESÍTŐ - DEBUG MÓDDAL
  */
-async function simpleNotify() {
-    // 1. Csak akkor futunk, ha van bejelentkezett júzer
+async function checkNotif() {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user || !user.username) return;
 
-    // 2. Megkeressük a Supabase-t ott, ahol a bejelentkezésed is használja
-    const sb = window.supabase; 
-    if (!sb || typeof sb.from !== 'function') return;
+    // A lehető legegyszerűbb Supabase elérés
+    const sb = window.supabase || supabase;
+    if (!sb) return;
 
-    try {
-        // 3. Lekérjük a friss eredményeket
-        const { data: bets } = await sb
-            .from('bets')
-            .select('id, amount, payout, picked_side, result, markets(title)')
-            .eq('username', user.username)
-            .eq('notified', false)
-            .not('result', 'is', null);
+    // 1. LEKÉRÉS: Csak a legfontosabbakat kérjük le
+    // Kivettem a markets(title)-t, hátha az rontja el a Relation miatt
+    const { data: bets, error } = await sb
+        .from('bets')
+        .select('*') 
+        .eq('username', user.username)
+        .eq('notified', false);
 
-        if (!bets || bets.length === 0) return;
+    if (error) return;
+    if (!bets || bets.length === 0) return;
 
-        for (const bet of bets) {
-            const isWin = String(bet.result) === String(bet.picked_side);
-            const money = isWin ? bet.payout : bet.amount;
-            const text = isWin 
-                ? `Gratulálunk! ${money} €-t nyertél: ${bet.markets.title}` 
-                : `${money} €-t vesztettél: ${bet.markets.title}`;
+    for (const bet of bets) {
+        // Csak akkor szólunk, ha már van eredmény (result nem null)
+        if (bet.result === null || bet.result === undefined) continue;
 
-            // 4. Sima böngészős értesítés (vagy csinálhatsz div-et is)
-            showSimpleToast(text, isWin);
+        const isWin = String(bet.result) === String(bet.picked_side);
+        const amount = isWin ? bet.payout : bet.amount;
+        
+        // 2. MEGJELENÍTÉS: Sima window.alert-tel teszteljük!
+        // Ha ez felugrik, akkor a kód jó, csak a design nem látszott.
+        const msg = isWin 
+            ? `GRATULÁLUNK! ${amount} €-t nyertél!` 
+            : `Sajnos vesztettél: ${amount} €-t.`;
+        
+        alert(msg);
 
-            // 5. Azonnal lekapcsoljuk a jelet a Supabase-ben
-            await sb.from('bets').update({ notified: true }).eq('id', bet.id);
-        }
-    } catch (e) { /* Csendben maradunk, ha hiba van */ }
+        // 3. AZONNALI UPDATE
+        await sb.from('bets').update({ notified: true }).eq('id', bet.id);
+    }
 }
 
-// Egy nagyon egyszerű, fix kinézetű ablak
-function showSimpleToast(msg, win) {
-    const t = document.createElement('div');
-    t.innerHTML = msg;
-    t.style.cssText = `
-        position: fixed; bottom: 20px; right: 20px; z-index: 9999;
-        padding: 20px; border-radius: 10px; color: white; font-weight: bold;
-        background: ${win ? '#28a745' : '#dc3545'};
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    `;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 6000);
-}
-
-// 5 másodpercenként ránézünk, de csak ha nem laggol a gép
-setInterval(simpleNotify, 5000);
+// 5 másodpercenként futtatjuk
+setInterval(checkNotif, 5000);
 </script>
 </body>
 </html>
