@@ -1569,64 +1569,70 @@ window.addEventListener('load', () => {
 });
 globalRefresh();
 
-/**
- * VÉGLEGES ÉRTESÍTŐ - FIX SUPABASE HÍVÁSSAL
- */
-async function checkNotifSafe() {
+async function finalNotificationCheck() {
     try {
-        // 1. Felhasználó kinyerése
         const userRaw = localStorage.getItem('user');
         if (!userRaw) return;
         const user = JSON.parse(userRaw);
         const username = user.username || user;
 
-        // 2. Közvetlen hívás a globális 'supabase' változóra
-        // Ha nálad a kód elején más a név (pl. sb), írd át az összes 'supabase.from'-ot arra!
-        const { data: bets, error } = await supabase
+        // Használjuk a 'supabase' változót, mert a képeiden ez működik
+        if (typeof supabase === 'undefined') return;
+
+        // 1. Csak a bets táblát nézzük, semmi mást!
+        const { data: bets, error: fetchError } = await supabase
             .from('bets')
             .select('*')
             .eq('username', username)
             .eq('notified', false);
 
-        if (error || !bets || bets.length === 0) return;
+        if (fetchError || !bets || bets.length === 0) return;
 
         for (const bet of bets) {
-            // Csak ha már van eredmény (0 vagy 1)
+            // Csak ha már le van zárva (van eredmény)
             if (bet.result === null || bet.result === undefined) continue;
 
+            // 2. Értesítés megjelenítése
             const isWin = String(bet.result) === String(bet.picked_side);
             const money = isWin ? bet.payout : bet.amount;
-
-            // 3. Megjelenítés - Egyszerű, fixen működő doboz
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed; bottom: 30px; right: 30px; z-index: 999999;
-                padding: 20px 30px; border-radius: 15px; color: white; font-weight: bold;
-                font-family: sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-                background: ${isWin ? 'linear-gradient(135deg, #28a745, #1e7e34)' : 'linear-gradient(135deg, #dc3545, #a71d2a)'};
-                border-left: 10px solid ${isWin ? '#00ff88' : '#ff4444'};
-            `;
             
-            toast.innerText = isWin 
-                ? `Gratulálunk! ${money} €-t nyertél!` 
-                : `Sajnos ${money} €-t vesztettél.`;
+            createNotificationUI(isWin, money);
 
-            document.body.appendChild(toast);
+            // 3. UPDATE kényszerítése és naplózása
+            console.log(`Attempting to update bet ID: ${bet.id}`);
+            
+            const { error: updateError } = await supabase
+                .from('bets')
+                .update({ notified: true })
+                .eq('id', bet.id);
 
-            // 4. Update - Hogy ne jöjjön elő többször
-            await supabase.from('bets').update({ notified: true }).eq('id', bet.id);
-
-            // 6 mp után eltűnik
-            setTimeout(() => toast.remove(), 6000);
+            if (updateError) {
+                console.error("❌ SUPABASE UPDATE HIBA:", updateError.message);
+                console.error("Segítség: Ellenőrizd az RLS Policy-t a Supabase-ben!");
+            } else {
+                console.log(`✅ SIKER: Bet ${bet.id} notified = true-ra állítva.`);
+            }
         }
     } catch (e) {
-        // Ha még mindig 'is not a function' hibát kapsz, 
-        // nézd meg a kódod legtetején, hogy mi a supabase változó pontos neve!
+        console.error("Kritikus hiba:", e);
     }
 }
 
-// 5 másodpercenként ellenőrizzük
-setInterval(checkNotifSafe, 5000);
+function createNotificationUI(isWin, amount) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed; bottom: 30px; right: 30px; z-index: 10000;
+        padding: 20px; border-radius: 12px; color: white; font-weight: bold;
+        background: ${isWin ? 'linear-gradient(135deg, #28a745, #1e7e34)' : 'linear-gradient(135deg, #dc3545, #a71d2a)'};
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: sans-serif;
+    `;
+    toast.innerText = isWin ? `NYERTÉL: ${amount} €!` : `VESZTETTÉL: ${amount} €!`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 6000);
+}
+
+// 5 másodpercenként futtatjuk
+setInterval(finalNotificationCheck, 5000);
 </script>
 </body>
 </html>
