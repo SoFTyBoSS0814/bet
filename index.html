@@ -1601,7 +1601,6 @@ async function loadMyBetsData() {
     
     if (!activeList || !settledList) return;
 
-    // 1. Felhasználó azonosítása
     const userRaw = localStorage.getItem('user');
     if (!userRaw) {
         activeList.innerHTML = '<div style="color:red; padding:20px;">Jelentkezz be!</div>';
@@ -1612,16 +1611,8 @@ async function loadMyBetsData() {
     const username = user.username || user;
 
     try {
-        // MEGOLDÁS: Megkeressük a működő Supabase kapcsolatot (lehet supabase vagy supabaseClient)
-        const sb = (typeof supabase !== 'undefined' && supabase.from) ? supabase : 
-                   (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
-
-        if (!sb) {
-            throw new Error("A Supabase kapcsolat (kliens) nem található. Ellenőrizd a változó nevét a kódban!");
-        }
-
-        // 2. Lekérdezés a 'bets' táblából
-        const { data: bets, error } = await sb
+        // Itt most már a TE változónevedet használjuk: _supabase
+        const { data: bets, error } = await _supabase
             .from('bets')
             .select('*') 
             .eq('username', username)
@@ -1629,7 +1620,6 @@ async function loadMyBetsData() {
 
         if (error) throw error;
 
-        // 3. Listák ürítése
         activeList.innerHTML = '';
         settledList.innerHTML = '';
 
@@ -1639,7 +1629,6 @@ async function loadMyBetsData() {
             return;
         }
 
-        // 4. Kártyák generálása
         bets.forEach(bet => {
             const isSettled = bet.result !== null && bet.result !== undefined;
             const isWin = isSettled && String(bet.result) === String(bet.picked_side);
@@ -1657,13 +1646,10 @@ async function loadMyBetsData() {
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             `;
 
-            // Market cím kezelése (ha a market_title mező létezik, azt használjuk)
-            const displayTitle = bet.market_title || "Fogadás";
-
             card.innerHTML = `
                 <div style="flex: 1;">
                     <div style="font-size: 11px; color: #848e9c; text-transform: uppercase; margin-bottom: 4px;">
-                        ${displayTitle}
+                        ${bet.market_title || "Fogadás"}
                     </div>
                     <div style="font-size: 15px; font-weight: bold; color: white;">
                         Tipp: <span style="color: #00d4ff;">${bet.picked_side}</span>
@@ -1689,10 +1675,10 @@ async function loadMyBetsData() {
             }
         });
 
-        console.log("✅ My Bets sikeresen betöltve.");
+        console.log("✅ Sikeres betöltés!");
 
     } catch (err) {
-        console.error("DEBUG:", err);
+        console.error("Hiba:", err);
         activeList.innerHTML = `<div style="color:red; padding:20px;">Hiba: ${err.message}</div>`;
     }
 }
