@@ -1598,7 +1598,6 @@ async function loadMyBetsData() {
     
     const activeList = document.getElementById('active-bets-list');
     const settledList = document.getElementById('settled-bets-list');
-    
     if (!activeList || !settledList) return;
 
     const userRaw = localStorage.getItem('user');
@@ -1608,15 +1607,15 @@ async function loadMyBetsData() {
     }
     
     const user = JSON.parse(userRaw);
-    const username = user.username || user;
+    // FIGYELEM: Itt az ID-t kell használnunk, mert a tábládban UUID (user_id) van!
+    const userId = user.id || user; 
 
     try {
-        // Itt most már a TE változónevedet használjuk: _supabase
         const { data: bets, error } = await _supabase
             .from('bets')
             .select('*') 
-            .eq('username', username)
-            .order('created_at', { ascending: false });
+            .eq('user_id', userId) // Átírva user_id-ra a kép alapján
+            .order('id', { ascending: false });
 
         if (error) throw error;
 
@@ -1630,8 +1629,9 @@ async function loadMyBetsData() {
         }
 
         bets.forEach(bet => {
-            const isSettled = bet.result !== null && bet.result !== undefined;
-            const isWin = isSettled && String(bet.result) === String(bet.picked_side);
+            // A kép alapján a 'status' oszlop mondja meg, mi történt (pl. 'win', 'loss', 'pending')
+            const isSettled = bet.status !== 'pending' && bet.status !== null;
+            const isWin = bet.status === 'win';
             
             const card = document.createElement('div');
             card.style.cssText = `
@@ -1643,16 +1643,16 @@ async function loadMyBetsData() {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             `;
 
             card.innerHTML = `
                 <div style="flex: 1;">
                     <div style="font-size: 11px; color: #848e9c; text-transform: uppercase; margin-bottom: 4px;">
-                        ${bet.market_title || "Fogadás"}
+                        Market ID: ${bet.market_id.substring(0,8)}...
                     </div>
                     <div style="font-size: 15px; font-weight: bold; color: white;">
-                        Tipp: <span style="color: #00d4ff;">${bet.picked_side}</span>
+                        Tipp: <span style="color: #00d4ff;">${bet.outcome_name}</span> 
+                        <span style="font-size: 12px; color: #848e9c;">(@${bet.odds})</span>
                     </div>
                     <div style="font-size: 12px; color: #848e9c; margin-top: 4px;">
                         Tét: ${bet.amount} €
@@ -1660,10 +1660,10 @@ async function loadMyBetsData() {
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size: 18px; font-weight: 800; color: ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};">
-                        ${isSettled ? (isWin ? '+' + (bet.payout || 0) : '-' + bet.amount) : 'FOLYAMATBAN'}
+                        ${isSettled ? (isWin ? '+' + (bet.amount * bet.odds).toFixed(2) : '-' + bet.amount) : 'FOLYAMATBAN'}
                     </div>
                     <div style="font-size: 10px; color: #4e5563; margin-top: 6px;">
-                        ${new Date(bet.created_at).toLocaleDateString()}
+                        Típus: ${bet.type}
                     </div>
                 </div>
             `;
@@ -1674,8 +1674,6 @@ async function loadMyBetsData() {
                 activeList.appendChild(card);
             }
         });
-
-        console.log("✅ Sikeres betöltés!");
 
     } catch (err) {
         console.error("Hiba:", err);
