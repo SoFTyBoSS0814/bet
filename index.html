@@ -1593,7 +1593,7 @@ window.addEventListener('load', () => {
 });
 globalRefresh();
 
-  async function loadMyBetsData() {
+async function loadMyBetsData() {
     console.log("📥 Saját fogadások betöltése...");
     
     const activeList = document.getElementById('active-bets-list');
@@ -1601,6 +1601,7 @@ globalRefresh();
     
     if (!activeList || !settledList) return;
 
+    // 1. Felhasználó azonosítása
     const userRaw = localStorage.getItem('user');
     if (!userRaw) {
         activeList.innerHTML = '<div style="color:red; padding:20px;">Jelentkezz be!</div>';
@@ -1611,9 +1612,16 @@ globalRefresh();
     const username = user.username || user;
 
     try {
-        // 2. MÓDOSÍTOTT LEKÉRDEZÉS: Csak a bets táblából kérünk mindent
-        // Ha korábban hiba volt, a markets(title) elhagyása megoldja
-        const { data: bets, error } = await supabase
+        // MEGOLDÁS: Megkeressük a működő Supabase kapcsolatot (lehet supabase vagy supabaseClient)
+        const sb = (typeof supabase !== 'undefined' && supabase.from) ? supabase : 
+                   (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
+
+        if (!sb) {
+            throw new Error("A Supabase kapcsolat (kliens) nem található. Ellenőrizd a változó nevét a kódban!");
+        }
+
+        // 2. Lekérdezés a 'bets' táblából
+        const { data: bets, error } = await sb
             .from('bets')
             .select('*') 
             .eq('username', username)
@@ -1621,6 +1629,7 @@ globalRefresh();
 
         if (error) throw error;
 
+        // 3. Listák ürítése
         activeList.innerHTML = '';
         settledList.innerHTML = '';
 
@@ -1630,9 +1639,8 @@ globalRefresh();
             return;
         }
 
+        // 4. Kártyák generálása
         bets.forEach(bet => {
-            // Ellenőrizzük, hogy a te adatbázisodban 'result' vagy 'status' oszlop van-e
-            // Ha nálad nem 'result' néven van a kimenetel, írd át itt:
             const isSettled = bet.result !== null && bet.result !== undefined;
             const isWin = isSettled && String(bet.result) === String(bet.picked_side);
             
@@ -1646,12 +1654,16 @@ globalRefresh();
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             `;
+
+            // Market cím kezelése (ha a market_title mező létezik, azt használjuk)
+            const displayTitle = bet.market_title || "Fogadás";
 
             card.innerHTML = `
                 <div style="flex: 1;">
                     <div style="font-size: 11px; color: #848e9c; text-transform: uppercase; margin-bottom: 4px;">
-                        ${bet.market_title || 'Fogadás'} 
+                        ${displayTitle}
                     </div>
                     <div style="font-size: 15px; font-weight: bold; color: white;">
                         Tipp: <span style="color: #00d4ff;">${bet.picked_side}</span>
@@ -1677,10 +1689,10 @@ globalRefresh();
             }
         });
 
-        console.log("✅ Adatok sikeresen kirakva a felületre.");
+        console.log("✅ My Bets sikeresen betöltve.");
 
     } catch (err) {
-        console.error("DEBUG - Részletes hiba:", err);
+        console.error("DEBUG:", err);
         activeList.innerHTML = `<div style="color:red; padding:20px;">Hiba: ${err.message}</div>`;
     }
 }
