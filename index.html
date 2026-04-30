@@ -1593,7 +1593,7 @@ window.addEventListener('load', () => {
 });
 globalRefresh();
 
-    async function loadMyBetsData() {
+  async function loadMyBetsData() {
     console.log("📥 Saját fogadások betöltése...");
     
     const activeList = document.getElementById('active-bets-list');
@@ -1601,10 +1601,9 @@ globalRefresh();
     
     if (!activeList || !settledList) return;
 
-    // 1. Felhasználó azonosítása
     const userRaw = localStorage.getItem('user');
     if (!userRaw) {
-        activeList.innerHTML = '<div style="color:red; padding:20px;">Jelentkezz be a fogadások megtekintéséhez!</div>';
+        activeList.innerHTML = '<div style="color:red; padding:20px;">Jelentkezz be!</div>';
         return;
     }
     
@@ -1612,16 +1611,16 @@ globalRefresh();
     const username = user.username || user;
 
     try {
-        // 2. Adatok lekérése a Supabase-ből (összekötve a markets táblával a címért)
+        // 2. MÓDOSÍTOTT LEKÉRDEZÉS: Csak a bets táblából kérünk mindent
+        // Ha korábban hiba volt, a markets(title) elhagyása megoldja
         const { data: bets, error } = await supabase
             .from('bets')
-            .select('*, markets(title)')
+            .select('*') 
             .eq('username', username)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        // 3. Konténerek ürítése (Eltűnik a "Loading...")
         activeList.innerHTML = '';
         settledList.innerHTML = '';
 
@@ -1631,12 +1630,12 @@ globalRefresh();
             return;
         }
 
-        // 4. Fogadások feldolgozása
         bets.forEach(bet => {
-            const isSettled = bet.result !== null;
+            // Ellenőrizzük, hogy a te adatbázisodban 'result' vagy 'status' oszlop van-e
+            // Ha nálad nem 'result' néven van a kimenetel, írd át itt:
+            const isSettled = bet.result !== null && bet.result !== undefined;
             const isWin = isSettled && String(bet.result) === String(bet.picked_side);
             
-            // Kártya létrehozása
             const card = document.createElement('div');
             card.style.cssText = `
                 background: #1e222d; 
@@ -1647,14 +1646,12 @@ globalRefresh();
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             `;
 
-            // HTML tartalom összeállítása
             card.innerHTML = `
                 <div style="flex: 1;">
-                    <div style="font-size: 11px; color: #848e9c; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
-                        ${bet.markets?.title || 'Esemény'}
+                    <div style="font-size: 11px; color: #848e9c; text-transform: uppercase; margin-bottom: 4px;">
+                        ${bet.market_title || 'Fogadás'} 
                     </div>
                     <div style="font-size: 15px; font-weight: bold; color: white;">
                         Tipp: <span style="color: #00d4ff;">${bet.picked_side}</span>
@@ -1665,15 +1662,14 @@ globalRefresh();
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size: 18px; font-weight: 800; color: ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};">
-                        ${isSettled ? (isWin ? '+' + bet.payout : '-' + bet.amount) : 'FOLYAMATBAN'}
+                        ${isSettled ? (isWin ? '+' + (bet.payout || 0) : '-' + bet.amount) : 'FOLYAMATBAN'}
                     </div>
                     <div style="font-size: 10px; color: #4e5563; margin-top: 6px;">
-                        ${new Date(bet.created_at).toLocaleDateString()} ${new Date(bet.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        ${new Date(bet.created_at).toLocaleDateString()}
                     </div>
                 </div>
             `;
 
-            // Megfelelő listába helyezés
             if (isSettled) {
                 settledList.appendChild(card);
             } else {
@@ -1681,9 +1677,11 @@ globalRefresh();
             }
         });
 
+        console.log("✅ Adatok sikeresen kirakva a felületre.");
+
     } catch (err) {
-        console.error("Hiba a betöltés során:", err);
-        activeList.innerHTML = `<div style="color:red; padding:20px;">Hiba történt az adatok lekérésekor.</div>`;
+        console.error("DEBUG - Részletes hiba:", err);
+        activeList.innerHTML = `<div style="color:red; padding:20px;">Hiba: ${err.message}</div>`;
     }
 }
 </script>
