@@ -147,105 +147,7 @@
         </select>
     </div>
 </div>
-
-<div class="container">
-    <div id="section-markets" class="section active">
-        <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
-            <h2 data-i18n="live_markets">Live Markets</h2>
-            <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
-        </div>
-        <div id="market-list" data-i18n="loading">Loading...</div>
-    </div>
-
-    <div id="section-history" class="section">
-        <h2 data-i18n="settled_markets_title">Settled Markets</h2>
-        <div id="history-list"></div>
-    </div>
-
- async function loadMyBetsData() {
-    console.log("📥 Saját fogadások lekérése...");
     
-    const activeList = document.getElementById('active-bets-list');
-    const settledList = document.getElementById('settled-bets-list');
-    
-    // 1. Felhasználó ellenőrzése
-    const userRaw = localStorage.getItem('user');
-    if (!userRaw) {
-        console.error("Nincs bejelentkezett felhasználó!");
-        return;
-    }
-    const user = JSON.parse(userRaw);
-    const username = user.username || user; // Kezeljük, ha csak egy string a user
-
-    try {
-        // 2. Lekérdezés a Supabase-ből
-        // Itt összekötjük a fogadást (bets) a piac nevével (markets)
-        const { data: bets, error } = await supabase
-            .from('bets')
-            .select('*, markets(title)') 
-            .eq('username', username)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // 3. Listák ürítése
-        activeList.innerHTML = '';
-        settledList.innerHTML = '';
-
-        if (!bets || bets.length === 0) {
-            activeList.innerHTML = '<div style="color:gray; padding:10px;">Nincs aktív fogadásod.</div>';
-            settledList.innerHTML = '<div style="color:gray; padding:10px;">Nincs lezárt fogadásod.</div>';
-            return;
-        }
-
-        // 4. Fogadások szétválogatása és megjelenítése
-        bets.forEach(bet => {
-            const isSettled = bet.result !== null;
-            const isWin = isSettled && String(bet.result) === String(bet.picked_side);
-            
-            const card = document.createElement('div');
-            card.style.cssText = `
-                background: #1e222d; 
-                border-radius: 10px; 
-                padding: 15px; 
-                margin-bottom: 10px;
-                border-left: 5px solid ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            `;
-
-            // Kártya belső tartalma
-            card.innerHTML = `
-                <div>
-                    <div style="font-size: 11px; color: #848e9c; text-transform: uppercase;">${bet.markets?.title || 'Ismeretlen meccs'}</div>
-                    <div style="font-size: 14px; font-weight: bold; margin-top: 4px;">Tipp: ${bet.picked_side}</div>
-                    <div style="font-size: 12px; color: #848e9c;">Tét: ${bet.amount} €</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 16px; font-weight: bold; color: ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};">
-                        ${isSettled ? (isWin ? '+' + bet.payout : '-' + bet.amount) : 'FOLYAMATBAN'}
-                    </div>
-                    <div style="font-size: 10px; color: #444; margin-top: 5px;">
-                        ${new Date(bet.created_at).toLocaleDateString()}
-                    </div>
-                </div>
-            `;
-
-            if (isSettled) {
-                settledList.appendChild(card);
-            } else {
-                activeList.appendChild(card);
-            }
-        });
-
-        console.log("✅ Fogadások sikeresen betöltve.");
-    } catch (err) {
-        console.error("Hiba a My Bets betöltésekor:", err.message);
-        activeList.innerHTML = `<div style="color:red;">Hiba: ${err.message}</div>`;
-    }
-}
-
     <div id="section-wallet" class="section">
         <div class="market-card" style="max-width:500px; margin:auto; text-align:center;">
             <h2 data-i18n="balances">Balances</h2>
@@ -1653,6 +1555,90 @@ window.addEventListener('load', () => {
     setTimeout(globalRefresh, 1000);
 });
 globalRefresh();
+
+    async function loadMyBetsData() {
+    console.log("📥 Saját fogadások lekérése...");
+    
+    const activeList = document.getElementById('active-bets-list');
+    const settledList = document.getElementById('settled-bets-list');
+    
+    // 1. Felhasználó ellenőrzése
+    const userRaw = localStorage.getItem('user');
+    if (!userRaw) {
+        console.error("Nincs bejelentkezett felhasználó!");
+        return;
+    }
+    const user = JSON.parse(userRaw);
+    const username = user.username || user; // Kezeljük, ha csak egy string a user
+
+    try {
+        // 2. Lekérdezés a Supabase-ből
+        // Itt összekötjük a fogadást (bets) a piac nevével (markets)
+        const { data: bets, error } = await supabase
+            .from('bets')
+            .select('*, markets(title)') 
+            .eq('username', username)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // 3. Listák ürítése
+        activeList.innerHTML = '';
+        settledList.innerHTML = '';
+
+        if (!bets || bets.length === 0) {
+            activeList.innerHTML = '<div style="color:gray; padding:10px;">Nincs aktív fogadásod.</div>';
+            settledList.innerHTML = '<div style="color:gray; padding:10px;">Nincs lezárt fogadásod.</div>';
+            return;
+        }
+
+        // 4. Fogadások szétválogatása és megjelenítése
+        bets.forEach(bet => {
+            const isSettled = bet.result !== null;
+            const isWin = isSettled && String(bet.result) === String(bet.picked_side);
+            
+            const card = document.createElement('div');
+            card.style.cssText = `
+                background: #1e222d; 
+                border-radius: 10px; 
+                padding: 15px; 
+                margin-bottom: 10px;
+                border-left: 5px solid ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            `;
+
+            // Kártya belső tartalma
+            card.innerHTML = `
+                <div>
+                    <div style="font-size: 11px; color: #848e9c; text-transform: uppercase;">${bet.markets?.title || 'Ismeretlen meccs'}</div>
+                    <div style="font-size: 14px; font-weight: bold; margin-top: 4px;">Tipp: ${bet.picked_side}</div>
+                    <div style="font-size: 12px; color: #848e9c;">Tét: ${bet.amount} €</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 16px; font-weight: bold; color: ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};">
+                        ${isSettled ? (isWin ? '+' + bet.payout : '-' + bet.amount) : 'FOLYAMATBAN'}
+                    </div>
+                    <div style="font-size: 10px; color: #444; margin-top: 5px;">
+                        ${new Date(bet.created_at).toLocaleDateString()}
+                    </div>
+                </div>
+            `;
+
+            if (isSettled) {
+                settledList.appendChild(card);
+            } else {
+                activeList.appendChild(card);
+            }
+        });
+
+        console.log("✅ Fogadások sikeresen betöltve.");
+    } catch (err) {
+        console.error("Hiba a My Bets betöltésekor:", err.message);
+        activeList.innerHTML = `<div style="color:red;">Hiba: ${err.message}</div>`;
+    }
+}
 </script>
 </body>
 </html>
