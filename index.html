@@ -1604,9 +1604,10 @@ async function loadMyBetsData() {
     const userId = user.id || user;
 
     try {
+        // MÓDOSÍTOTT LEKÉRDEZÉS: Behúzzuk a piac címét a markets táblából
         const { data: bets, error } = await _supabase
             .from('bets')
-            .select('*')
+            .select('*, markets(title)') 
             .eq('user_id', userId)
             .order('id', { ascending: false });
 
@@ -1621,10 +1622,9 @@ async function loadMyBetsData() {
             const typeColor = bet.type === 'REAL' ? '#00d1ff' : '#f5a623';
             const dlDate = new Date(bet.created_at);
             
-            // Piacnév kezelése: Ha nincs megadva, üres marad, de nem írja ki, hogy MARKET
-            const displayTitle = bet.market_title || "";
+            // A piac neve a beágyazott markets objektumból jön
+            const displayTitle = bet.markets?.title || bet.market_title || "Ismeretlen piac";
 
-            // Gombok struktúrája a beküldött minta alapján
             const buttonsHTML = `
                 <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
                     <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${bet.market_id}')">💬 KOMMENTEK (0)</button>
@@ -1641,10 +1641,10 @@ async function loadMyBetsData() {
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1;">
-                            <div style="margin-bottom: 8px; display: flex; align-items: center;">
-                                <span style="font-size:10px; padding: 2px 6px; background: #e94b4b; border-radius: 4px; color: white; text-transform: uppercase; font-weight: bold; margin-right: 10px;">SETTLED</span>
-                                <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold; display: inline;">${displayTitle}</h2>
-                                <span style="color:#4a90e2; font-size: 14px; margin-left:8px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span>
+                            <div style="margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <span style="font-size:10px; padding: 2px 6px; background: #e94b4b; border-radius: 4px; color: white; text-transform: uppercase; font-weight: bold;">SETTLED</span>
+                                <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
+                                <span style="color:#4a90e2; font-size: 14px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span>
                             </div>
                             <div style="line-height:1.6;">
                                 <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">SoFTy</span></small>
@@ -1660,14 +1660,12 @@ async function loadMyBetsData() {
                     <div style="margin-top:15px; background:#0d141b; padding:15px; border-radius:8px; border: 1px solid #1c2630;">
                         <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">GYŐZTES</small>
                         
-                        <!-- A kimenetel -->
                         <div class="history-item ${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
                              style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
                             <span style="color:white; font-weight:bold; font-size: 16px;">A</span>
                             <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'A' ? bet.status : ''}</b>
                         </div>
 
-                        <!-- B kimenetel -->
                         <div class="history-item ${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
                              style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'B' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
                             <span style="color:white; font-weight:bold; font-size: 16px;">B</span>
@@ -1676,7 +1674,6 @@ async function loadMyBetsData() {
                     </div>`;
                 settledList.appendChild(card);
             } else {
-                // Aktív fogadás nézet
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1;">
@@ -1700,7 +1697,7 @@ async function loadMyBetsData() {
             }
         });
     } catch (e) {
-        console.error("Hiba a betöltés során:", e);
+        console.error("Hiba:", e);
     }
 }
 </script>
