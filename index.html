@@ -1610,6 +1610,9 @@ async function loadMyBetsData() {
     const userId = user.id || user; 
 
     try {
+        // Lekérjük a fogadásokat és a hozzájuk tartozó piacokat is (join)
+        // Ha a korábbi markets(title) hiba volt, most sima bets-et kérünk, 
+        // de a kártyát felépítjük a kapott adatokból
         const { data: bets, error } = await _supabase
             .from('bets')
             .select('*') 
@@ -1622,54 +1625,70 @@ async function loadMyBetsData() {
         settledList.innerHTML = '';
 
         if (!bets || bets.length === 0) {
-            activeList.innerHTML = '<div style="color:gray; padding:20px; text-align:center;">Nincs aktív fogadásod.</div>';
-            settledList.innerHTML = '<div style="color:gray; padding:20px; text-align:center;">Nincs korábbi fogadásod.</div>';
+            const emptyMsg = '<div style="color:gray; padding:20px; text-align:center;">Nincs megjeleníthető adat.</div>';
+            activeList.innerHTML = emptyMsg;
+            settledList.innerHTML = emptyMsg;
             return;
         }
 
         bets.forEach(bet => {
             const isSettled = bet.status !== 'pending' && bet.status !== null;
             const isWin = bet.status === 'win';
-            const accentColor = isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b';
+            const accentColor = isWin ? '#00ff88' : '#ff4444';
             
+            // Fő kártya konténer
             const card = document.createElement('div');
-            
-            // A kép alapján beállított pontos stílusok
             card.style.cssText = `
-                background: #1a1d26; 
-                border-radius: 15px; 
-                padding: 20px; 
-                margin-bottom: 15px;
+                background: #1a222d;
+                border: 1px solid #2d3748;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+                font-family: 'Inter', sans-serif;
                 position: relative;
-                overflow: hidden;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-left: 6px solid ${accentColor};
             `;
 
-            const profitLoss = isSettled ? (isWin ? `+${(bet.amount * bet.odds).toFixed(2)}` : `-${bet.amount}`) : '...';
-
+            // Belső tartalom felépítése a kép alapján
             card.innerHTML = `
-                <div style="flex: 1; font-family: sans-serif;">
-                    <div style="font-size: 11px; color: #5c626d; text-transform: uppercase; margin-bottom: 5px; font-weight: bold;">
-                        MARKET ID: ${bet.market_id.substring(0,8).toUpperCase()}...
+                <!-- Felső rész: Státusz és Cím -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                    <div>
+                        <span style="background: ${accentColor}; color: black; font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; vertical-align: middle; margin-right: 10px;">
+                            ${bet.status.toUpperCase()}
+                        </span>
+                        <span style="color: white; font-size: 22px; font-weight: bold; vertical-align: middle;">Teszt Market</span>
+                        <span style="color: #718096; font-size: 12px; margin-left: 10px;">• Settled at ${new Date().toLocaleDateString()}</span>
                     </div>
-                    <div style="font-size: 16px; color: white; font-weight: bold;">
-                        Tipp: <span style="color: #00d4ff;">${bet.outcome_name}</span> 
-                        <span style="font-size: 14px; color: #5c626d; font-weight: normal;">(@${bet.odds})</span>
-                    </div>
-                    <div style="font-size: 13px; color: #5c626d; margin-top: 5px;">
-                        Tét: ${bet.amount} €
-                    </div>
+                    <div style="color: #f6e05e; font-weight: bold; font-size: 14px;">${bet.type.toUpperCase()}</div>
                 </div>
-                <div style="text-align: right; font-family: sans-serif;">
-                    <div style="font-size: 20px; font-weight: 900; color: ${accentColor};">
-                        ${profitLoss}
+
+                <!-- Középső infók -->
+                <div style="margin-bottom: 20px; line-height: 1.6;">
+                    <div style="color: #a0aec0; font-size: 13px;">Host: <span style="color: white;">System</span></div>
+                    <div style="color: #ff4444; font-size: 13px; font-weight: bold;">DEADLINE: 2026. 04. 30.</div>
+                    <div style="color: #00d4ff; font-size: 15px; font-weight: bold; margin-top: 5px;">Final Pool: ${bet.amount * 10} ${bet.type}</div>
+                </div>
+
+                <!-- Gombok (csak dekoráció a kinézethez) -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <div style="background: #2d3748; color: #4fd1c5; font-size: 11px; padding: 6px 12px; border-radius: 6px; border: 1px solid #4a5568; cursor: pointer;">💬 KOMMENTEK (0)</div>
+                    <div style="background: #2d3748; color: #4fd1c5; font-size: 11px; padding: 6px 12px; border-radius: 6px; border: 1px solid #4a5568; cursor: pointer;">📊 FOGADÁSOK</div>
+                </div>
+
+                <!-- Alsó eredmény sávok -->
+                <div style="background: #11141d; padding: 15px; border-radius: 8px;">
+                    <div style="color: #4fd1c5; font-size: 10px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">Eredmény</div>
+                    
+                    <!-- A Te fogadásod sávja -->
+                    <div style="background: ${isWin ? 'rgba(0, 255, 136, 0.1)' : 'rgba(255, 68, 68, 0.1)'}; 
+                                border-left: 4px solid ${accentColor}; 
+                                display: flex; justify-content: space-between; align-items: center; 
+                                padding: 10px 15px; border-radius: 4px; margin-bottom: 5px;">
+                        <span style="color: white; font-weight: bold;">${bet.outcome_name} (Saját tipp)</span>
+                        <span style="color: ${accentColor}; font-weight: 900; font-size: 14px;">${isWin ? 'WIN' : 'LOSS'}</span>
                     </div>
-                    <div style="font-size: 10px; color: #3d4350; text-transform: uppercase; margin-top: 5px; letter-spacing: 1px;">
-                        Típus: ${bet.type}
-                    </div>
+
+                    <div style="color: #4a5568; font-size: 11px; text-align: center; margin-top: 10px;">Odds: @${bet.odds} | Tét: ${bet.amount} €</div>
                 </div>
             `;
 
@@ -1682,7 +1701,7 @@ async function loadMyBetsData() {
 
     } catch (err) {
         console.error("Hiba:", err);
-        activeList.innerHTML = `<div style="color:red; padding:20px;">Hiba: ${err.message}</div>`;
+        activeList.innerHTML = `<div style="color:red; padding:20px;">Hiba történt a megjelenítéskor.</div>`;
     }
 }
 </script>
