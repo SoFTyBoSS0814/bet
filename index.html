@@ -1243,12 +1243,15 @@ async function finalSubmitSettle() {
         document.getElementById('reward-msg').innerText = dict.won + win + " DEMO!"; fetchProfile();
     }
 
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById('section-' + id).classList.add('active');
-        document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
-        document.getElementById('link-' + id).classList.add('active');
+function showSection(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+    document.querySelectorAll('.nav-links span').forEach(s => s.classList.remove('active'));
+    document.getElementById('link-' + id).classList.add('active');
+    if (id === 'mybets') {
+        loadMyBetsData();
     }
+}
 
 async function loadUsers(mode) {
     const container = document.getElementById('user-list-container');
