@@ -1607,14 +1607,13 @@ async function loadMyBetsData() {
     }
     
     const user = JSON.parse(userRaw);
-    // FIGYELEM: Itt az ID-t kell használnunk, mert a tábládban UUID (user_id) van!
     const userId = user.id || user; 
 
     try {
         const { data: bets, error } = await _supabase
             .from('bets')
             .select('*') 
-            .eq('user_id', userId) // Átírva user_id-ra a kép alapján
+            .eq('user_id', userId)
             .order('id', { ascending: false });
 
         if (error) throw error;
@@ -1629,40 +1628,46 @@ async function loadMyBetsData() {
         }
 
         bets.forEach(bet => {
-            // A kép alapján a 'status' oszlop mondja meg, mi történt (pl. 'win', 'loss', 'pending')
             const isSettled = bet.status !== 'pending' && bet.status !== null;
             const isWin = bet.status === 'win';
+            const accentColor = isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b';
             
             const card = document.createElement('div');
+            
+            // A kép alapján beállított pontos stílusok
             card.style.cssText = `
-                background: #1e222d; 
-                border-radius: 12px; 
-                padding: 16px; 
-                margin-bottom: 12px;
-                border-left: 5px solid ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};
+                background: #1a1d26; 
+                border-radius: 15px; 
+                padding: 20px; 
+                margin-bottom: 15px;
+                position: relative;
+                overflow: hidden;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                border-left: 6px solid ${accentColor};
             `;
 
+            const profitLoss = isSettled ? (isWin ? `+${(bet.amount * bet.odds).toFixed(2)}` : `-${bet.amount}`) : '...';
+
             card.innerHTML = `
-                <div style="flex: 1;">
-                    <div style="font-size: 11px; color: #848e9c; text-transform: uppercase; margin-bottom: 4px;">
-                        Market ID: ${bet.market_id.substring(0,8)}...
+                <div style="flex: 1; font-family: sans-serif;">
+                    <div style="font-size: 11px; color: #5c626d; text-transform: uppercase; margin-bottom: 5px; font-weight: bold;">
+                        MARKET ID: ${bet.market_id.substring(0,8).toUpperCase()}...
                     </div>
-                    <div style="font-size: 15px; font-weight: bold; color: white;">
+                    <div style="font-size: 16px; color: white; font-weight: bold;">
                         Tipp: <span style="color: #00d4ff;">${bet.outcome_name}</span> 
-                        <span style="font-size: 12px; color: #848e9c;">(@${bet.odds})</span>
+                        <span style="font-size: 14px; color: #5c626d; font-weight: normal;">(@${bet.odds})</span>
                     </div>
-                    <div style="font-size: 12px; color: #848e9c; margin-top: 4px;">
+                    <div style="font-size: 13px; color: #5c626d; margin-top: 5px;">
                         Tét: ${bet.amount} €
                     </div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 18px; font-weight: 800; color: ${isSettled ? (isWin ? '#00ff88' : '#ff4444') : '#f0b90b'};">
-                        ${isSettled ? (isWin ? '+' + (bet.amount * bet.odds).toFixed(2) : '-' + bet.amount) : 'FOLYAMATBAN'}
+                <div style="text-align: right; font-family: sans-serif;">
+                    <div style="font-size: 20px; font-weight: 900; color: ${accentColor};">
+                        ${profitLoss}
                     </div>
-                    <div style="font-size: 10px; color: #4e5563; margin-top: 6px;">
+                    <div style="font-size: 10px; color: #3d4350; text-transform: uppercase; margin-top: 5px; letter-spacing: 1px;">
                         Típus: ${bet.type}
                     </div>
                 </div>
