@@ -735,14 +735,6 @@ async function loadMarkets() {
     card.className = 'market-card';
     card.style.cursor = 'pointer';
 
-    // Ha a kártyára kattintanak, átvisz az esemény oldalára
-    card.onclick = (e) => {
-        // Csak akkor váltunk oldalt, ha nem konkrétan egy gombra kattintott a user
-        if (e.target.tagName !== 'BUTTON') {
-            window.location.href = `event.html?id=${m.id}`;
-        }
-    };
-
     const buttonsHTML = `
         <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
             <button type="button" 
