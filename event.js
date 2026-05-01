@@ -1,18 +1,11 @@
-// 1. Supabase inicializálása a te projekt adataiddal
 const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co';
 const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b';
-
-// A "supabase" változót a CDN-ből kapjuk, mi pedig létrehozzuk az ügyfelet _supabase néven
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-/**
- * Betölti az esemény adatait az ID alapján
- */
 async function loadEventData(id) {
     console.log("Adatok lekérése a következő ID-hoz:", id);
 
     try {
-        // 2. Adatlekérés a 'markets' táblából
         const { data, error } = await _supabase
             .from('markets') 
             .select('*')
@@ -20,67 +13,57 @@ async function loadEventData(id) {
             .single();
 
         if (error) {
-            console.error("Hiba az adatok betöltésekor:", error);
+            console.error("Hiba:", error);
             document.getElementById('teams').innerText = "Esemény nem található.";
             return;
         }
 
         if (data) {
-            // 3. A főcím beállítása (pl. Real Madrid - Barcelona)
-            const teamTitle = document.getElementById('teams');
-            if (teamTitle) teamTitle.innerText = `${data.home_team} - ${data.away_team}`;
+            // A főcím nálad a 'title' oszlop
+            document.getElementById('teams').innerText = data.title;
 
-            // 4. A csapatnevek beírása a gombokra (biztonsági ellenőrzéssel)
-            const homeNameEl = document.getElementById('home-name');
-            const awayNameEl = document.getElementById('away-name');
-            
-            if (homeNameEl) homeNameEl.innerText = data.home_team;
-            if (awayNameEl) awayNameEl.innerText = data.away_team;
+            // A 'note' oszlopodban van az infó JSON formátumban, dolgozzuk fel:
+            try {
+                const details = JSON.parse(data.note || "[]");
+                // Feltételezzük az első csoport adatait használjuk
+                const marketData = details[0] || {};
+                const outcomes = marketData.outcomes || [];
 
-            // 5. Az oddsok beírása
-            const homeOddsEl = document.getElementById('home-odds');
-            const awayOddsEl = document.getElementById('away-odds');
-            
-            if (homeOddsEl) homeOddsEl.innerText = data.home_odds;
-            if (awayOddsEl) awayOddsEl.innerText = data.away_odds;
-            
-            // 6. Böngésző fül címének frissítése
-            document.title = `StakeForge | ${data.home_team} vs ${data.away_team}`;
-            
-            console.log("Sikeres betöltés:", data.home_team, "vs", data.away_team);
+                // Első kimenetel (pl. 7,5 Felett vagy Tisza)
+                if (outcomes[0]) {
+                    document.getElementById('home-name').innerText = outcomes[0].n || "Hazai";
+                    document.getElementById('home-odds').innerText = outcomes[0].o || "--";
+                }
+
+                // Második kimenetel (pl. 7,5 Alatt vagy Fidesz)
+                if (outcomes[1]) {
+                    document.getElementById('away-name').innerText = outcomes[1].n || "Vendég";
+                    document.getElementById('away-odds').innerText = outcomes[1].o || "--";
+                }
+            } catch (jsonErr) {
+                console.error("Hiba a note mező értelmezésekor:", jsonErr);
+                // Ha nem JSON, akkor maradnak az alapértelmezett értékek
+            }
+
+            document.title = `StakeForge | ${data.title}`;
         }
     } catch (err) {
         console.error("Váratlan hiba:", err);
     }
 }
 
-/**
- * URL paraméter kinyerése (pl. event.html?id=123)
- */
 const urlParams = new URLSearchParams(window.location.search);
 const eventId = urlParams.get('id');
 
-// Ha van ID az URL-ben, indítjuk a betöltést
 if (eventId) {
     loadEventData(eventId);
 } else {
-    const teamTitle = document.getElementById('teams');
-    if (teamTitle) teamTitle.innerText = "Nincs megadva esemény ID.";
-    console.warn("Hiányzó event ID az URL-ből!");
+    document.getElementById('teams').innerText = "Nincs megadva esemény ID.";
 }
 
-/**
- * Fogadási függvény - Kezeli a gombnyomásokat
- */
 function placeBet(side) {
-    console.log("Fogadás kiválasztva:", side);
-    
-    // Lekérjük a csapat nevét a gomb alapján a felületről
     const teamName = side === 'home' 
         ? document.getElementById('home-name').innerText 
         : document.getElementById('away-name').innerText;
-
-    alert(`Fogadás rögzítése: ${teamName}\nSikeresen kiválasztva! A fogadási panel hamarosan érkezik.`);
-    
-    // Itt folytathatjuk majd a valódi egyenleglevonással
+    alert(`Fogadás rögzítése: ${teamName}`);
 }
