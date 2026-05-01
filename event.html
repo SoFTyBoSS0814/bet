@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StakeForge - Esemény részletei</title>
-    <!-- Ide behívhatod a saját CSS fájlodat is, ha van (pl. style.css) -->
     <style>
         :root {
             --bg-color: #0f172a;
@@ -12,6 +11,7 @@
             --text-main: #f8fafc;
             --primary: #38bdf8;
             --accent: #f43f5e;
+            --meta-text: #94a3b8;
         }
         body {
             background-color: var(--bg-color);
@@ -40,7 +40,22 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             text-align: center;
         }
-        h1 { margin: 0 0 20px 0; font-size: 1.5rem; }
+        h1 { margin: 0 0 10px 0; font-size: 1.5rem; }
+        
+        /* Új stílus az extra adatoknak */
+        .event-meta {
+            color: var(--meta-text);
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .pool-value {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
         .odds-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -71,7 +86,17 @@
         <a href="index.html" class="back-link">← Vissza a piacokhoz</a>
 
         <div class="event-card">
+            <!-- Cím -->
             <h1 id="teams">Esemény betöltése...</h1>
+
+            <!-- Meta adatok: Host, Deadline, Pool -->
+            <div class="event-meta">
+                <div id="event-deadline">⌛ Határidő: --</div>
+                <div>
+                    Host: <span id="event-host">--</span> | 
+                    Pool: <span id="event-pool" class="pool-value">--</span>
+                </div>
+            </div>
             
             <div class="odds-grid">
                 <button class="btn-bet" onclick="placeBet('home')">
@@ -88,7 +113,7 @@
     </div>
 
     <!-- Supabase és logika -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="event.js"></script>
 </body>
 </html>
