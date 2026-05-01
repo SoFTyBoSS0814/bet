@@ -1,17 +1,93 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <title>StakeForge - Esemény</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge - Esemény részletei</title>
+    <!-- Ide behívhatod a saját CSS fájlodat is, ha van (pl. style.css) -->
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --primary: #38bdf8;
+            --accent: #f43f5e;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        .back-link {
+            color: var(--primary);
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .event-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h1 { margin: 0 0 20px 0; font-size: 1.5rem; }
+        .odds-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .btn-bet {
+            background: #334155;
+            border: 2px solid transparent;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+        .btn-bet:hover {
+            border-color: var(--primary);
+            background: #475569;
+        }
+        .team-name { display: block; font-size: 0.9rem; opacity: 0.7; margin-bottom: 5px; }
+        .odds-value { font-weight: bold; color: var(--primary); font-size: 1.2rem; }
+    </style>
 </head>
 <body>
-    <!-- Ezeket az ID-kat fogja feltölteni a JS -->
-    <h1 id="teams">Betöltés...</h1>
-    <div>
-        <button id="home-odds">--</button>
-        <button id="away-odds">--</button>
+
+    <div class="container">
+        <a href="index.html" class="back-link">← Vissza a piacokhoz</a>
+
+        <div class="event-card">
+            <h1 id="teams">Esemény betöltése...</h1>
+            
+            <div class="odds-grid">
+                <button class="btn-bet" onclick="placeBet('home')">
+                    <span id="home-name" class="team-name">Hazai</span>
+                    <span id="home-odds" class="odds-value">--</span>
+                </button>
+                
+                <button class="btn-bet" onclick="placeBet('away')">
+                    <span id="away-name" class="team-name">Vendég</span>
+                    <span id="away-odds" class="odds-value">--</span>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Fontos: A Supabase scriptet és a sajátodat is be kell hívni -->
+    <!-- Supabase és logika -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="event.js"></script>
 </body>
