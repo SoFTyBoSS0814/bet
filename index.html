@@ -723,31 +723,23 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
         
-     markets.forEach(m => {
-    const groups = JSON.parse(m.note || "[]");
-    const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
-    const symbol = m.type === 'REAL' ? '€' : 'DEMO';
-    const dlDate = new Date(m.deadline);
-    const isExpired = dlDate < new Date();
-    const cCount = commentCounts[m.id] || 0;
-    
-    const card = document.createElement('div');
-    card.className = 'market-card';
-    card.style.cursor = 'pointer';
+        markets.forEach(m => {
+            const groups = JSON.parse(m.note || "[]");
+            const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
+            const symbol = m.type === 'REAL' ? '€' : 'DEMO';
+            const dlDate = new Date(m.deadline);
+            const isExpired = dlDate < new Date();
+            const cCount = commentCounts[m.id] || 0;
+            
+            const card = document.createElement('div');
+            card.className = 'market-card';
 
-    const buttonsHTML = `
-        <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
-            <button type="button" 
-                style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" 
-                onclick="event.stopPropagation(); openComments('${m.id}')">
-                💬 KOMMENTEK (${cCount})
-            </button>
-            <button type="button" 
-                style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" 
-                📊 FOGADÁSOK
-            </button>
-        </div>
-    `;
+            const buttonsHTML = `
+                <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
+                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
+                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
+                </div>
+            `;
 
             if(m.status === 'active') {
                 card.innerHTML = `
