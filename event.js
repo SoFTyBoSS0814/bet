@@ -2,7 +2,7 @@ const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co';
 const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b';
 const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-let currentMarketLiquidity = 0; // Itt tároljuk a piac likviditását
+let currentMarketLiquidity = 0;
 
 async function loadEventData(id) {
     try {
@@ -15,7 +15,7 @@ async function loadEventData(id) {
         if (error) throw error;
 
         if (data) {
-            currentMarketLiquidity = data.initial_liquidity; // Elmentjük a poolt ellenőrzéshez
+            currentMarketLiquidity = data.initial_liquidity;
 
             if (document.getElementById('teams')) document.getElementById('teams').innerText = data.title;
             if (document.getElementById('event-host')) document.getElementById('event-host').innerText = data.creator_name || 'admin';
@@ -43,61 +43,63 @@ async function loadEventData(id) {
             }
         }
     } catch (err) {
-        console.error("Hiba az adatoknál:", err);
+        console.error("Hiba:", err);
     }
 }
 
 const eventId = new URLSearchParams(window.location.search).get('id');
 if (eventId) loadEventData(eventId);
 
+// --- FOGADÁSI LOGIKA ---
+
 function placeBet(side) {
-    const name = document.getElementById(side + '-name').innerText;
-    const odds = document.getElementById(side + '-odds').innerText;
+    const nameEl = document.getElementById(side + '-name');
+    const oddsEl = document.getElementById(side + '-odds');
     const slip = document.getElementById('bet-slip');
     const msg = document.getElementById('slip-message');
-    
-    // Alaphelyzetbe állítás
+    const btn = document.getElementById('confirm-btn');
+
+    if (!nameEl || !oddsEl || !slip) return;
+
+    // Reset ablak állapota
     msg.style.display = 'none';
-    document.getElementById('confirm-btn').style.display = 'block';
+    btn.style.display = 'block';
     
-    document.getElementById('slip-team').innerText = name;
-    document.getElementById('slip-odds').innerText = odds;
+    document.getElementById('slip-team').innerText = nameEl.innerText;
+    document.getElementById('slip-odds').innerText = oddsEl.innerText;
     slip.style.display = 'block';
 }
 
 function confirmBet() {
-    const amount = parseFloat(document.getElementById('bet-amount').value);
-    const msg = document.getElementById('slip-message');
+    const amountInput = document.getElementById('bet-amount');
+    const amount = parseFloat(amountInput.value);
     const btn = document.getElementById('confirm-btn');
 
-    // 1. Üres vagy érvénytelen tét ellenőrzése
     if (isNaN(amount) || amount <= 0) {
         showMessage("Érvénytelen tét!", "#f43f5e");
         return;
     }
 
-    // 2. Likviditás (Pool) ellenőrzése
     if (amount > currentMarketLiquidity) {
-        showMessage("Hiba: Nincs elég likviditás a poolban!", "#f43f5e");
+        showMessage("Hiba: Nincs elég likviditás!", "#f43f5e");
         return;
     }
 
-    // 3. Siker (Szimuláció)
-    // Itt küldenénk el a Supabase-nek a fogadást
+    // Siker visszajelzés
     showMessage("✓ Sikeres fogadás!", "#10b981");
-    btn.style.display = 'none'; // Elrejtjük a gombot, hogy ne küldhesse be újra
+    btn.style.display = 'none';
 
-    // 3 másodperc múlva bezárjuk a szelvényt automatikusan
     setTimeout(() => {
         document.getElementById('bet-slip').style.display = 'none';
-    }, 3000);
+    }, 2500);
 }
 
-// Segédfüggvény az üzenetek kiírásához
 function showMessage(text, color) {
     const msg = document.getElementById('slip-message');
-    msg.innerText = text;
-    msg.style.backgroundColor = color + "22"; // Átlátszó háttér
-    msg.style.color = color;
-    msg.style.display = 'block';
+    if (msg) {
+        msg.innerText = text;
+        msg.style.backgroundColor = color + "22"; 
+        msg.style.color = color;
+        msg.style.display = 'block';
+    }
 }
