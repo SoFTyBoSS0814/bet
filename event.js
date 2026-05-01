@@ -13,25 +13,21 @@ async function loadEventData(id) {
         if (error) throw error;
 
         if (data) {
-            // 1. Cím beállítása
-            if (document.getElementById('teams')) {
-                document.getElementById('teams').innerText = data.title;
-            }
-
-            // 2. Extra adatok (csak ha léteznek a HTML-ben!)
-            if (document.getElementById('event-host')) {
-                document.getElementById('event-host').innerText = data.creator_name || 'admin';
-            }
+            // Cím és Meta adatok beállítása
+            if (document.getElementById('teams')) document.getElementById('teams').innerText = data.title;
+            if (document.getElementById('event-host')) document.getElementById('event-host').innerText = data.creator_name || 'admin';
+            
             if (document.getElementById('event-pool')) {
                 const currency = data.type === 'REAL' ? '€' : 'DEMO';
                 document.getElementById('event-pool').innerText = `${data.initial_liquidity} ${currency}`;
             }
+
             if (document.getElementById('event-deadline') && data.deadline) {
                 const d = new Date(data.deadline);
                 document.getElementById('event-deadline').innerText = `⌛ DEADLINE: ${d.toLocaleString('hu-HU')}`;
             }
 
-            // 3. Oddsok kibontása a note oszlopból
+            // Oddsok és nevek kinyerése a note (JSON) mezőből
             const details = JSON.parse(data.note || "[]");
             const outcomes = details[0]?.outcomes || [];
 
@@ -51,17 +47,39 @@ async function loadEventData(id) {
     }
 }
 
-// URL paraméter és indítás
+// URL-ből az ID kinyerése és indítás
 const eventId = new URLSearchParams(window.location.search).get('id');
-if (eventId) {
-    loadEventData(eventId);
+if (eventId) loadEventData(eventId);
+
+// --- ÚJ FOGADÁSI LOGIKA (NEM ALERT) ---
+
+function placeBet(side) {
+    const name = document.getElementById(side + '-name').innerText;
+    const odds = document.getElementById(side + '-odds').innerText;
+    
+    // Megkeressük a HTML-be rakott szelvényt
+    const slip = document.getElementById('bet-slip');
+    
+    // Behelyettesítjük az adatokat a szelvénybe
+    document.getElementById('slip-team').innerText = name;
+    document.getElementById('slip-odds').innerText = odds;
+    
+    // Megjelenítjük az ablakot
+    slip.style.display = 'block';
 }
 
-// Fogadás gomb
-function placeBet(side) {
-    const nameEl = document.getElementById(side + '-name');
-    const oddsEl = document.getElementById(side + '-odds');
-    if (nameEl && oddsEl) {
-        alert(`Fogadás rögzítése:\n${nameEl.innerText}\nOdds: ${oddsEl.innerText}`);
-    }
+function confirmBet() {
+    const team = document.getElementById('slip-team').innerText;
+    const amount = document.getElementById('bet-amount').value;
+    const odds = document.getElementById('slip-odds').innerText;
+
+    // Itt egyelőre egy barátságos visszajelzés jön (nem rendszerszintű alert)
+    // Később ide jön a Supabase-be való mentés
+    console.log("Fogadás elküldve:", { team, amount, odds });
+    
+    // Bezárjuk a szelvényt
+    document.getElementById('bet-slip').style.display = 'none';
+    
+    // Opcionális: egy kis értesítés, hogy sikerült
+    alert("Sikeres fogadás!"); 
 }
