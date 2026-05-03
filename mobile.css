@@ -1,74 +1,63 @@
-/* 1. Az oldal egésze stabil marad */
+/* mobile.css - Vízszintes csúszkálás javítása */
+
+/* Globális fix a túlcsordulás ellen */
 html, body {
     max-width: 100% !important;
-    overflow-x: hidden !important;
-    margin: 0;
-    padding: 0;
+    overflow-x: hidden !important; /* Ez megállítja az oldalra ugrálást */
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 @media (max-width: 768px) {
     
-    /* 2. A kategória sáv (a Feed, Browse stílus) */
+    /* 1. Konténer fixek */
+    .container, .header-container, main, section {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important; /* Beleszámolja a paddingot a szélességbe */
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+        margin: 0 auto !important;
+    }
+
+    /* 2. Menü (Navbar) - Ne tolja el az oldalt */
     nav, .nav-menu {
         display: flex !important;
-        /* Engedélyezzük a görgetést vízszintesen */
-        overflow-x: auto !important; 
-        overflow-y: hidden !important;
-        /* Ez kell, hogy ne törje meg a sorokat */
+        width: 100% !important;
+        overflow-x: auto !important; /* Csak a menü legyen görgethető, az oldal ne! */
         white-space: nowrap !important;
-        background: #2d3e50 !important; /* Sötétebb háttér mint a képen */
-        padding: 12px 10px !important;
-        gap: 20px !important;
-        /* Sima görgetés ujjhúzásra */
-        -webkit-overflow-scrolling: touch !important;
-        border-bottom: 2px solid #38bdf8 !important;
+        gap: 15px !important;
+        padding: 10px 0 !important;
+        box-sizing: border-box !important;
     }
 
-    /* Elrejtjük a görgetősávot, hogy tiszta legyen a dizájn */
-    nav::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* A menüpontok egyenként */
-    nav a, .nav-item {
-        display: inline-block !important;
-        color: #94a3b8 !important; /* Szürkébb betű */
-        text-decoration: none !important;
-        font-size: 0.9rem !important;
-        font-weight: 600 !important;
-        flex-shrink: 0 !important; /* Fontos: ne préselje össze őket! */
-        padding-bottom: 5px !important;
-    }
-
-    /* Aktív menüpont aláhúzása (mint a képen a sárga csík, itt kék) */
-    nav a.active, nav a:first-child {
-        color: white !important;
-        border-bottom: 3px solid #38bdf8 !important;
-    }
-
-    /* 3. Tartalom elrendezése */
+    /* 3. A Címsor és Gomb elrendezése */
     .section-header {
         display: flex !important;
-        flex-direction: row !important; /* Egymás mellett maradnak */
-        justify-content: space-between !important;
+        flex-direction: column !important; /* Egymás alá kerülnek */
         align-items: center !important;
-        padding: 15px !important;
         width: 100% !important;
+        gap: 10px !important;
+        text-align: center !important;
     }
 
-    h1 { font-size: 1.2rem !important; margin: 0 !important; }
-
-    /* A kék gomb legyen kisebb és férjen el a cím mellett */
-    .create-btn, button[onclick*="Modal"] {
-        width: auto !important;
-        padding: 8px 15px !important;
-        font-size: 0.8rem !important;
-        margin: 0 !important;
+    /* 4. A kék gomb ne lógjon ki */
+    .create-btn, button {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 
-    /* Kártyák igazítása */
-    .market-card {
-        width: calc(100% - 20px) !important;
-        margin: 10px auto !important;
+    /* 5. Egyenleg panel (Balance) */
+    .balance-panel {
+        display: flex !important;
+        flex-wrap: wrap !important; /* Ha nem fér el, törje meg a sort */
+        justify-content: center !important;
+        width: 100% !important;
+        gap: 5px !important;
+    }
+
+    /* Minden kép vagy nagy elem maradjon a kereten belül */
+    img, table, div {
+        max-width: 100% !important;
     }
 }
