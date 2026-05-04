@@ -6,11 +6,11 @@
     <title>StakeForge | Karbantartás</title>
     <style>
         body {
-            background-color: #0b0e11; /* Sötét, modern háttér */
+            background-color: #0b1014;
+            background-image: radial-gradient(circle at center, #16202a 0%, #0b1014 100%);
             color: #ffffff;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             margin: 0;
-            padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -20,38 +20,72 @@
 
         .container {
             text-align: center;
-            padding: 20px;
+            padding: 40px;
+            border: 1px solid rgba(0, 229, 255, 0.1);
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Pulzáló státusz fény */
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #00e5ff;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 15px #00e5ff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(0, 229, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
         }
 
         h1 {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 300;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
+            letter-spacing: 2px;
+            margin: 0;
+            text-transform: uppercase;
         }
 
         .highlight {
-            color: #00e5ff; 
-            font-weight: 600;
+            color: #00e5ff;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+        }
+
+        .divider {
+            width: 50px;
+            height: 2px;
+            background: #00e5ff;
+            margin: 20px auto;
+            opacity: 0.5;
         }
 
         p {
-            color: #888;
-            font-size: 1rem;
+            color: #6a7682;
+            font-size: 0.95rem;
+            margin-top: 0;
         }
 
-        /* Mobilos finomhangolás */
         @media (max-width: 600px) {
-            h1 { font-size: 1.4rem; }
-            p { font-size: 0.9rem; }
+            .container { width: 85%; padding: 30px 15px; }
+            h1 { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>A StakeForge jelenleg <span class="highlight">karbantartás</span> alatt áll.</h1>
-        <p>Próbálkozz újra később!</p>
+        <div class="status-dot"></div>
+        <h1>StakeForge <span class="highlight">Update</span></h1>
+        <div class="divider"></div>
+        <p>A weboldal karbantartás alatt áll.<br>Próbálkozz újra később!</p>
     </div>
 
 </body>
