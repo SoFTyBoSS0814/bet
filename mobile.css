@@ -1,54 +1,64 @@
-/* mobile.css - Teljes oldali optimalizálás */
+/* mobile.css - Teljes oldali optimalizálás & Overflow Fix */
 
 @media (max-width: 768px) {
+    /* 0. GLOBÁLIS FIX - Megakadályozza a jobbra csúszást */
+    html, body {
+        width: 100% !important;
+        overflow-x: hidden !important; /* Tiltja a vízszintes görgetést */
+        margin: 0 !important;
+        padding: 0 !important;
+        position: relative !important;
+    }
+
+    * {
+        box-sizing: border-box !important; /* Minden méretbe beleszámítja a paddinget */
+    }
+
     /* 1. NAVIGÁCIÓ (Navbar) javítása */
     nav, .navbar, header {
+        width: 100% !important;
         flex-wrap: wrap !important;
         height: auto !important;
         padding: 10px !important;
         justify-content: center !important;
+        left: 0 !important;
+        right: 0 !important;
     }
 
-    /* A menüpontok ne egymás mellett, hanem egymás alatt/kisebb csoportban legyenek */
     .nav-links, .menu {
         display: flex !important;
-        overflow-x: auto !important; /* Görgethető legyen, ha nem fér el */
+        overflow-x: auto !important; 
         width: 100% !important;
+        max-width: 100vw !important; /* Ne legyen szélesebb a képernyőnél */
         justify-content: flex-start !important;
-        padding: 10px 0 !important;
+        padding: 10px 5px !important;
         gap: 15px !important;
         -webkit-overflow-scrolling: touch;
     }
 
-    .nav-item, .nav-links a {
-        font-size: 0.8rem !important;
-        white-space: nowrap !important; /* Ne törje szét a szavakat */
-    }
-
     /* 2. MODAL / ÚJ PIAC ABLAK javítása */
-    /* Ez az, ami a képeden el van csúszva */
     .modal-content, .modal-body, .create-market-form {
-        width: 95% !important;
-        max-width: none !important;
+        width: 92% !important; /* Kicsit csökkentve, hogy biztosan ne lógjon ki */
+        max-width: 100% !important;
         margin: 10px auto !important;
         padding: 15px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
+        left: 0 !important; /* Reseteltük a 50%-os eltolást */
+        transform: none !important; /* Nem kell a transform, ha margin: auto */
         position: relative !important;
     }
 
-    /* Bemeneti mezők (inputok) mobilon */
     input, select, textarea {
         width: 100% !important;
-        font-size: 16px !important; /* Megakadályozza az iOS automatikus zoomolását */
+        font-size: 16px !important; 
         box-sizing: border-box !important;
     }
 
     /* 3. GRID ÉS KÁRTYÁK */
     .market-grid, .container {
-        display: block !important; /* Egymás alá kerülnek */
+        display: block !important;
         width: 100% !important;
         padding: 10px !important;
+        margin: 0 !important; /* Margó nullázva */
     }
 
     .card, .market-item {
@@ -56,21 +66,24 @@
         margin-bottom: 15px !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
+        box-sizing: border-box !important;
     }
 
     /* 4. GOMBOK */
     .btn, button {
-        width: 100% !important; /* Mobilon kényelmesebb a teljes szélességű gomb */
+        width: 100% !important;
         margin-bottom: 10px !important;
     }
 
-    /* 5. FOGADÓSZELVÉNY (amit az előbb írtunk) */
+    /* 5. FOGADÓSZELVÉNY */
     #bet-slip {
         width: 100% !important;
+        max-width: 100vw !important;
         right: 0 !important;
         bottom: 0 !important;
         left: 0 !important;
         border-radius: 20px 20px 0 0 !important;
         position: fixed !important;
+        margin: 0 !important;
     }
 }
