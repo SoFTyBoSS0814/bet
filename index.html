@@ -294,13 +294,27 @@
 </div>
 
 
-<div id="betModal" class="modal hidden">
-    <div class="modal-box" style="width:320px; text-align:center">
-        <h3 id="bet-on"></h3><h1 id="bet-odds" style="color:var(--primary)"></h1>
-        <input type="number" id="bet-amount" value="10" oninput="calcWin()">
-        <p id="bet-win-text">Payout: 0.00</p>
-        <button class="btn-primary" onclick="placeBet()" data-i18n="btn_place_bet">PLACE BET</button>
-        <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('betModal')" data-i18n="cancel">Cancel</button>
+<!-- Fogadási panel (Betslip) a jobb alsó sarokban -->
+<div id="betModal" class="betslip-panel hidden">
+    <div class="betslip-content">
+        <div class="betslip-header">
+            <span id="bet-on" style="font-weight: bold; font-size: 0.9rem;"></span>
+            <button onclick="closeModal('betModal')" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.2rem;">×</button>
+        </div>
+        
+        <div class="betslip-body">
+            <h1 id="bet-odds" style="color:var(--primary); margin: 10px 0; text-align:center;"></h1>
+            
+            <div class="input-container">
+                <input type="number" id="bet-amount" value="10" oninput="calcWin()">
+                <span class="max-btn">MAX</span>
+            </div>
+
+            <p id="bet-win-text" style="text-align:center; margin: 15px 0; font-size: 0.9rem; opacity: 0.8;">Payout: 0.00</p>
+            
+            <button id="place-bet-btn" class="btn-primary" onclick="placeBet()" data-i18n="btn_place_bet" style="width: 100%; padding: 12px; border-radius: 8px;">PLACE BET</button>
+            <button class="btn-cancel-simple" onclick="closeModal('betModal')" data-i18n="cancel">Cancel</button>
+        </div>
     </div>
 </div>
 
