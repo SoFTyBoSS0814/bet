@@ -395,30 +395,37 @@
 </div>
 
 
-<!-- Fogadási panel (Betslip) a jobb alsó sarokban -->
 <div id="betModal" class="betslip-panel hidden">
-    <div class="betslip-content">
-        <div class="betslip-header">
-            <span id="bet-on" style="font-weight: bold; font-size: 0.9rem;"></span>
-            <button onclick="closeModal('betModal')" style="background:none; border:none; color:#fff; cursor:pointer; font-size:1.2rem;">×</button>
+    <!-- Fejléc: Piac és Bezárás -->
+    <div class="betslip-header">
+        <div class="header-info">
+            <span id="market-name-display" class="market-label">MATCH WINNER</span>
+            <span id="bet-on" class="outcome-label">Outcome Name</span>
+        </div>
+        <span onclick="closeModal('betModal')" class="close-x">✕</span>
+    </div>
+    
+    <div class="betslip-body">
+        <!-- Odds szekció - balra igazítva, hangsúlyosan -->
+        <div class="odds-section">
+            <span class="odds-title">Odds</span>
+            <span id="bet-odds">x2.00</span>
         </div>
         
-        <div class="betslip-body">
-            <h1 id="bet-odds" style="color:var(--primary); margin: 10px 0; text-align:center;"></h1>
-            
-            <div class="input-container">
-                <input type="number" id="bet-amount" value="10" oninput="calcWin()">
-                <span class="max-btn">MAX</span>
+        <!-- Input szekció -->
+        <div class="input-wrapper">
+            <input type="number" id="bet-amount" value="10" oninput="calcWin()">
+            <div class="input-footer">
+                <span class="max-label" onclick="setMaxBet()">MAX</span>
+                <span id="bet-win-text">Payout: 20.00 €</span>
             </div>
-
-            <p id="bet-win-text" style="text-align:center; margin: 15px 0; font-size: 0.9rem; opacity: 0.8;">Payout: 0.00</p>
-            
-            <button id="place-bet-btn" class="btn-primary" onclick="placeBet()" data-i18n="btn_place_bet" style="width: 100%; padding: 12px; border-radius: 8px;">PLACE BET</button>
-            <button class="btn-cancel-simple" onclick="closeModal('betModal')" data-i18n="cancel">Cancel</button>
         </div>
+        
+        <!-- Gombok -->
+        <button id="place-bet-btn" class="btn-primary" onclick="placeBet()" data-i18n="btn_place_bet">PLACE BET</button>
+        <button class="btn-cancel-new" onclick="closeModal('betModal')" data-i18n="cancel">Cancel</button>
     </div>
 </div>
-
 <div id="createModal" class="modal hidden">
     <div class="modal-box">
         <div style="display:flex; justify-content:space-between; align-items:center">
