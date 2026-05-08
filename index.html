@@ -1828,7 +1828,7 @@ async function loadMyBetsData() {
                     </div>`;
                 settledList.appendChild(card);
             } else {
-               card.innerHTML = 
+        card.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
         <div style="flex:1;">
             <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
@@ -1840,8 +1840,8 @@ async function loadMyBetsData() {
         </div>
         <div style="color:${typeColor}; font-weight:900; font-size: 18px;">${bet.type}</div>
     </div>
-    
-    ${buttonsHTML}
+    <div class="button-container">
+        ${buttonsHTML}
                     <div style="margin-top:15px; background:#0d141b; padding:20px; border-radius:8px; border: 1px solid #1c2630;">
                         <small style="color:#4fd1c5; text-transform:uppercase; font-size:10px; font-weight:bold; letter-spacing: 1px;">TIÉD</small>
                         <div style="margin-top:10px; background:rgba(0,209,255,0.05); padding:15px; border-radius:6px; border-left:4px solid #00d1ff; display:flex; justify-content:space-between; align-items: center;">
