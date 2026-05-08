@@ -1795,7 +1795,7 @@ async function loadMyBetsData() {
                                 <span style="color:#4a90e2; font-size: 14px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span>
                             </div>
                             <div style="line-height:1.6;">
-                                <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">SoFTy</span></small>
+                                <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">${bet.creator_name}</span></small>
                                 <small style="color:#e94b4b; display:block; font-weight:bold; font-size: 14px;">DEADLINE: ${dlDate.toLocaleString()}</small>
                                 <small style="color:#00d4ff; display:block; font-weight:bold; font-size:16px; margin-top:4px;">Final Pool: ${(bet.amount * 19.9).toFixed(2)} ${symbol}</small>
                             </div>
@@ -1827,7 +1827,7 @@ async function loadMyBetsData() {
                         <div style="flex:1;">
                             <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
                             <div style="font-size:14px; color:#8a96a3; margin-top:6px;">⏳ Deadline: ${dlDate.toLocaleString()}</div>
-                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">SoFTy</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
+                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">${bet.creator_name}</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
                         </div>
                         <div style="color:${typeColor}; font-weight:900; font-size: 18px;">${bet.type}</div>
                     </div>
