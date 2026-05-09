@@ -1784,9 +1784,9 @@ async function loadMyBetsData() {
             card.className = "market-card";
             card.style.cssText = "margin-bottom: 25px; background-color: #16212b; border: 1px solid #232d36; border-radius: 12px; padding: 25px; font-family: sans-serif;";
 
-        if (isSettled) {
+if (isSettled) {
     const sDate = new Date(bet.created_at);
-    card.innerHTML = 
+    card.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:flex-start;">
             <div style="flex:1;">
                 <div style="margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -1805,48 +1805,43 @@ async function loadMyBetsData() {
         
         ${buttonsHTML}
 
-                    <div style="margin-top:15px; background:#0d141b; padding:15px; border-radius:8px; border: 1px solid #1c2630;">
-                        <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">GYŐZTES</small>
-                        
-                        <div class="history-item ${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
-                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
-                            <span style="color:white; font-weight:bold; font-size: 16px;">A</span>
-                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'A' ? bet.status : ''}</b>
-                        </div>
+        <div style="margin-top:15px; background:#0d141b; padding:15px; border-radius:8px; border: 1px solid #1c2630;">
+            <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">GYŐZTES</small>
+            
+            <div class="history-item ${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
+                 style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
+                <span style="color:white; font-weight:bold; font-size: 16px;">A</span>
+                <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'A' ? bet.status : ''}</b>
+            </div>
 
-                        <div class="history-item ${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
-                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'B' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
-                            <span style="color:white; font-weight:bold; font-size: 16px;">B</span>
-                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${bet.outcome_name === 'B' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'B' ? bet.status : ''}</b>
-                        </div>
-                    </div>`;
-                settledList.appendChild(card);
-            } else {
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                        <div style="flex:1;">
-                            <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
-                            <div style="font-size:14px; color:#8a96a3; margin-top:6px;">⏳ Deadline: ${dlDate.toLocaleString()}</div>
-                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">SoFTy</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
-                        </div>
-                        <div style="color:${typeColor}; font-weight:900; font-size: 18px;">${bet.type}</div>
-                    </div>
-                    
-                    ${buttonsHTML}
+            <div class="history-item ${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
+                 style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'B' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
+                <span style="color:white; font-weight:bold; font-size: 16px;">B</span>
+                <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${bet.outcome_name === 'B' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'B' ? bet.status : ''}</b>
+            </div>
+        </div>`;
+    settledList.appendChild(card);
+} else {
+    card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div style="flex:1;">
+                <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
+                <div style="font-size:14px; color:#8a96a3; margin-top:6px;">⏳ Deadline: ${dlDate.toLocaleString()}</div>
+                <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Market Creator: <span style="color:white;">${bet.market_creator || 'StakeForge'}</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
+            </div>
+            <div style="color:${typeColor}; font-weight:900; font-size: 18px;">${bet.type}</div>
+        </div>
+        
+        ${buttonsHTML}
 
-                    <div style="margin-top:15px; background:#0d141b; padding:20px; border-radius:8px; border: 1px solid #1c2630;">
-                        <small style="color:#4fd1c5; text-transform:uppercase; font-size:10px; font-weight:bold; letter-spacing: 1px;">TIÉD</small>
-                        <div style="margin-top:10px; background:rgba(0,209,255,0.05); padding:15px; border-radius:6px; border-left:4px solid #00d1ff; display:flex; justify-content:space-between; align-items: center;">
-                            <span style="color:white; font-weight:bold; font-size: 16px;">${bet.outcome_name}</span>
-                            <b style="color:#00d1ff; font-size: 16px;">@${bet.odds}</b>
-                        </div>
-                    </div>`;
-                activeList.appendChild(card);
-            }
-        });
-    } catch (e) {
-        console.error("Hiba:", e);
-    }
+        <div style="margin-top:15px; background:#0d141b; padding:20px; border-radius:8px; border: 1px solid #1c2630;">
+            <small style="color:#4fd1c5; text-transform:uppercase; font-size:10px; font-weight:bold; letter-spacing: 1px;">TIÉD</small>
+            <div style="margin-top:10px; background:rgba(0,209,255,0.05); padding:15px; border-radius:6px; border-left:4px solid #00d1ff; display:flex; justify-content:space-between; align-items: center;">
+                <span style="color:white; font-weight:bold; font-size: 16px;">${bet.outcome_name}</span>
+                <b style="color:#00d1ff; font-size: 16px;">@${bet.odds}</b>
+            </div>
+        </div>`;
+    activeList.appendChild(card);
 }
 </script>
 </body>
