@@ -256,8 +256,36 @@
             <h2 data-i18n="live_markets">Live Markets</h2>
             <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
         </div>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="marketSearch" oninput="filterMarkets()" 
+                   placeholder="Keresés piacokra..." 
+                   style="flex: 1; min-width: 250px; background: #16212b; border: 1px solid #232d36; padding: 10px 15px; border-radius: 8px; color: white; outline: none; font-size: 14px;">
+
+            <div id="filterContainer" style="display: flex; background: #16212b; border-radius: 8px; padding: 4px; border: 1px solid #232d36;">
+                <button onclick="setTypeFilter('ALL', this)" class="filter-btn active">Összes</button>
+                <button onclick="setTypeFilter('REAL', this)" class="filter-btn">Real</button>
+                <button onclick="setTypeFilter('DEMO', this)" class="filter-btn">Demo</button>
+            </div>
+        </div>
+
         <div id="market-list" data-i18n="loading">Loading...</div>
     </div>
+</div>
+
+<style>
+    .filter-btn {
+        background: transparent; border: none; color: #8a96a3; padding: 6px 15px; 
+        cursor: pointer; border-radius: 6px; font-size: 13px; font-weight: bold; transition: 0.3s;
+    }
+    .filter-btn.active {
+        background: #00d1ff; color: #0d141b;
+    }
+    #marketSearch:focus {
+        border-color: #00d1ff !important;
+        box-shadow: 0 0 5px rgba(0, 209, 255, 0.2);
+    }
+</style>
 
     <div id="section-history" class="section">
         <h2 data-i18n="settled_markets_title">Settled Markets</h2>
