@@ -819,13 +819,24 @@ async function requestWithdrawal() {
 
 async function loadMarkets() {
     try {
-        // Lekérjük a piacokat és a készítőket (creator_name)
-        const { data: markets, error } = await _supabase
-            .from('markets')
-            .select('*') // Itt a markets táblában eleve ott van a creator_name
-            .order('created_at', { ascending: false });
+        if (!document.getElementById('infoModal')) {
+            const modalDiv = document.createElement('div');
+            modalDiv.id = 'infoModal';
+            modalDiv.style.cssText = "display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px);";
+            modalDiv.innerHTML = `
+                <div style="background:#0b1218; border:1px solid #334756; margin:8% auto; padding:20px; width:90%; max-width:500px; border-radius:12px; position:relative; color:white; box-shadow: 0 0 20px rgba(0,209,255,0.2);">
+                    <span onclick="closeSFModal()" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:24px; color:#00d1ff;">&times;</span>
+                    <h2 id="modalTitle" style="margin-top:0; color:#00d1ff; font-size:1.2em; text-transform:uppercase; letter-spacing:1px;">Betöltés...</h2>
+                    <div id="modalBody" style="max-height:60vh; overflow-y:auto; margin-top:15px;"></div>
+                    <div id="modalFooter" style="margin-top:15px; border-top:1px solid #334756; padding-top:15px;"></div>
+                </div>
+            `;
+            document.body.appendChild(modalDiv);
+        }
 
+        const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const { data: allComments } = await _supabase.from('comments').select('market_id');
+        
         if (error) throw error;
 
         const commentCounts = {};
@@ -840,6 +851,26 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
+        // --- ÚJ RÉSZ: Aktív piacok ellenőrzése ---
+        const activeMarkets = markets.filter(m => m.status === 'active');
+
+        if (activeMarkets.length === 0) {
+            mList.innerHTML = `
+                <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
+                    <div style="font-size:40px; margin-bottom:15px; opacity:0.6;">🏟️</div>
+                    <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">Jelenleg nincs aktív piac</h3>
+                    <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">Legyél te az első, aki indít egyet!</p>
+                    <button onclick="document.querySelector('.btn-create')?.click()" 
+                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;"
+                        onmouseover="this.style.background='#00b3e6'; this.style.transform='translateY(-1px)'" 
+                        onmouseout="this.style.background='#00ccff'; this.style.transform='translateY(0)'">
+                        Készíts egyet!
+                    </button>
+                </div>
+            `;
+        }
+
+        // Az eredeti loop mehet tovább a rendereléshez
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
@@ -848,9 +879,6 @@ async function loadMarkets() {
             const isExpired = dlDate < new Date();
             const cCount = commentCounts[m.id] || 0;
             
-            // EZ A LÉNYEG: A táblából jövő nevet használjuk
-            const displayHost = m.creator_name || "admin"; 
-
             const card = document.createElement('div');
             card.className = 'market-card';
 
@@ -867,7 +895,7 @@ async function loadMarkets() {
                         <div>
                             <h2 style="margin:0; color:white;">${m.title}</h2>
                             <div style="font-size:12px; color:#aaa; margin-top:4px;">⏳ ${dict.deadline}: ${dlDate.toLocaleString()}</div>
-                            <small style="color:#888; display:block; margin-top:4px;">${dict.host}: <span style="color:white;">${displayHost}</span> | <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
+                            <small style="color:#888; display:block; margin-top:4px;">${dict.host}: ${m.creator_name} | <b style="color:${typeColor}">${dict.pool}: ${parseFloat(m.take).toFixed(2)} ${symbol}</b></small>
                         </div>
                         <div style="text-align:right;">
                             <div style="color:${typeColor}; font-weight:bold;">${m.type}</div>
@@ -875,46 +903,46 @@ async function loadMarkets() {
                         </div>
                     </div>
                     ${buttonsHTML}
-                    ${groups.map(g => `
-                        <div style="margin-top:12px;">
-                            <small style="color:var(--primary); text-transform:uppercase; font-size:10px;">${g.title}</small>
-                            <div class="outcomes-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-top:5px;">
-                                ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
-                            </div>
-                        </div>`).join('')}`;
+                    ${groups.map(g => `<div style="margin-top:12px;">
+                        <small style="color:var(--primary); text-transform:uppercase; font-size:10px;">${g.title}</small>
+                        <div class="outcomes-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-top:5px;">
+                            ${g.outcomes.map(o => `<button class="btn-bet" onclick="openBet('${m.id}','${o.n}',${o.o},'${m.type}','${m.deadline}')" ${isExpired ? 'disabled' : ''}>${o.n}<br><b>${o.o}</b></button>`).join('')}
+                        </div>
+                    </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
-                // SETTLED ág (History) - itt is a displayHost-ot használjuk
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1;">
                             <div style="margin-bottom: 5px;">
                                 <span style="font-size:9px; padding: 1px 5px; background: #ff4444; border-radius: 3px; color: white; text-transform: uppercase; font-weight: bold; margin-right: 8px;">SETTLED</span>
-                                <h2 style="margin:0; color:white; display: inline;">${m.title}</h2>
-                                <span style="color:#00d1ff; font-size: 0.65em; margin-left:5px;">• Settled at ${sDate.toLocaleString()}</span>
+                                <h2 style="margin:0; color:white; display: inline; vertical-align: middle;">${m.title} <span style="color:#00d1ff; font-size: 0.65em; font-weight: normal; margin-left:5px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span></h2>
                             </div>
-                            <small style="color:#aaa; display:block;">Host: <span style="color:white;">${displayHost}</span></small>
-                            <small style="color:var(--danger); display:block; font-weight:bold;">DEADLINE: ${dlDate.toLocaleString()}</small>
-                            <small style="color:#00d1ff; display:block; font-weight:bold; margin-top:2px;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            <div style="line-height:1.4;">
+                                <small style="color:#aaa; display:block;">Host: ${m.creator_name}</small>
+                                <small style="color:var(--danger); display:block; font-weight:bold;">DEADLINE: ${dlDate.toLocaleString()}</small>
+                                <small style="color:#00d1ff; display:block; font-weight:bold; font-size:1em; margin-top:2px;">Final Pool: ${parseFloat(m.take).toFixed(2)} ${symbol}</small>
+                            </div>
                         </div>
-                        <div style="color:${typeColor}; font-weight:bold;">${m.type}</div>
+                        <div style="color:${typeColor}; font-weight:bold; margin-left: 10px;">${m.type}</div>
                     </div>
                     ${buttonsHTML}
                     <div style="margin-top:10px; background:rgba(0,0,0,0.15); padding:10px; border-radius:8px;">
-                        ${groups.map(g => `
-                            <div style="margin-bottom:10px;">
-                                <small style="color:var(--primary); font-size:10px;">${g.title}</small>
-                                ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}">
-                                    <span>${o.n}</span>
-                                    <b>${o.status}</b>
-                                </div>`).join('')}
-                            </div>`).join('')}
+                    ${groups.map(g => `<div style="margin-bottom:10px;">
+                        <small style="color:var(--primary); font-size:10px; text-transform:uppercase;">${g.title}</small>
+                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}">
+                            <span>${o.n}</span>
+                            <b style="text-transform:uppercase;">${o.status}</b>
+                        </div>`).join('')}
+                    </div>`).join('')}
                     </div>`;
                 hList.appendChild(card);
             }
         });
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 function closeSFModal() { 
