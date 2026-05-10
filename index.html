@@ -1752,10 +1752,15 @@ async function loadMyBetsData() {
     const userId = user.id || user;
 
     try {
-        // MÓDOSÍTOTT LEKÉRDEZÉS: Behúzzuk a piac címét a markets táblából
         const { data: bets, error } = await _supabase
             .from('bets')
-            .select('*, markets(title)') 
+            .select(`
+                *,
+                markets (
+                    title,
+                    creator_name
+                )
+            `) 
             .eq('user_id', userId)
             .order('id', { ascending: false });
 
@@ -1770,8 +1775,9 @@ async function loadMyBetsData() {
             const typeColor = bet.type === 'REAL' ? '#00d1ff' : '#f5a623';
             const dlDate = new Date(bet.created_at);
             
-            // A piac neve a beágyazott markets objektumból jön
             const displayTitle = bet.markets?.title || bet.market_title || "Ismeretlen piac";
+            // DINAMIKUS HOST: Ha van adat, azt írja, ha nincs, marad admin vagy SoFTy (választható)
+            const displayHost = bet.markets?.creator_name || "admin"; 
 
             const buttonsHTML = `
                 <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
@@ -1795,7 +1801,7 @@ async function loadMyBetsData() {
                                 <span style="color:#4a90e2; font-size: 14px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span>
                             </div>
                             <div style="line-height:1.6;">
-                                <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">SoFTy</span></small>
+                                <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span></small>
                                 <small style="color:#e94b4b; display:block; font-weight:bold; font-size: 14px;">DEADLINE: ${dlDate.toLocaleString()}</small>
                                 <small style="color:#00d4ff; display:block; font-weight:bold; font-size:16px; margin-top:4px;">Final Pool: ${(bet.amount * 19.9).toFixed(2)} ${symbol}</small>
                             </div>
@@ -1827,25 +1833,17 @@ async function loadMyBetsData() {
                         <div style="flex:1;">
                             <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
                             <div style="font-size:14px; color:#8a96a3; margin-top:6px;">⏳ Deadline: ${dlDate.toLocaleString()}</div>
-                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">SoFTy</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
+                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
                         </div>
                         <div style="color:${typeColor}; font-weight:900; font-size: 18px;">${bet.type}</div>
                     </div>
-                    
                     ${buttonsHTML}
-
-                    <div style="margin-top:15px; background:#0d141b; padding:20px; border-radius:8px; border: 1px solid #1c2630;">
-                        <small style="color:#4fd1c5; text-transform:uppercase; font-size:10px; font-weight:bold; letter-spacing: 1px;">TIÉD</small>
-                        <div style="margin-top:10px; background:rgba(0,209,255,0.05); padding:15px; border-radius:6px; border-left:4px solid #00d1ff; display:flex; justify-content:space-between; align-items: center;">
-                            <span style="color:white; font-weight:bold; font-size: 16px;">${bet.outcome_name}</span>
-                            <b style="color:#00d1ff; font-size: 16px;">@${bet.odds}</b>
-                        </div>
-                    </div>`;
+                `;
                 activeList.appendChild(card);
             }
         });
-    } catch (e) {
-        console.error("Hiba:", e);
+    } catch (err) {
+        console.error("Hiba:", err);
     }
 }
 </script>
