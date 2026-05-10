@@ -817,6 +817,29 @@ async function requestWithdrawal() {
         document.getElementById('create-balance-display').innerText = "Balance: " + val + " " + unit;
     }
 
+// Tároljuk el globálisan a lekért piacokat a szűréshez
+let allMarkets = [];
+
+async function fetchMarkets() {
+    const { data, error } = await _supabase.from('markets').select('*');
+    if (error) return;
+    allMarkets = data;
+    renderMarkets(allMarkets); // Kezdeti render
+}
+
+function filterMarkets() {
+    const searchTerm = document.getElementById('marketSearch').value.toLowerCase();
+    const filterType = document.querySelector('input[name="marketType"]:checked').value; // 'ALL', 'REAL', 'DEMO'
+
+    const filtered = allMarkets.filter(m => {
+        const matchesSearch = m.title.toLowerCase().includes(searchTerm);
+        const matchesType = filterType === 'ALL' || m.type === filterType;
+        return matchesSearch && matchesType;
+    });
+
+    renderMarkets(filtered);
+}
+    
 async function loadMarkets() {
     try {
         if (!document.getElementById('infoModal')) {
