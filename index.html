@@ -1846,6 +1846,35 @@ async function loadMyBetsData() {
         console.error("Hiba:", err);
     }
 }
+
+    <div id="search-container" style="margin: 20px 0;">
+    <input type="text" id="marketSearch" placeholder="Keress piacot (pl. Demo, Real, BTC...)" 
+           style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: white;">
+</div>
+
+<script>
+document.getElementById('marketSearch').addEventListener('keyup', function() {
+    // 1. Érték beolvasása és kisbetűssé alakítása a kereséshez
+    let filter = this.value.toLowerCase();
+    
+    // 2. Kijelöljük az összes piac elemet (ezt az osztálynevet igazítsd a sajátodhoz!)
+    let markets = document.querySelectorAll('.market-item');
+
+    markets.forEach(market => {
+        // A piac teljes szövegtartalmát nézzük (név + típus)
+        let text = market.innerText.toLowerCase();
+        
+        // 3. Logikai szűrés: ha benne van a keresett szó, marad, ha nincs, elrejtjük
+        if (text.includes(filter)) {
+            market.style.display = "";
+            market.style.opacity = "1";
+        } else {
+            market.style.display = "none";
+            market.style.opacity = "0";
+        }
+    });
+});
+</script>
 </script>
 </body>
 </html>
