@@ -1846,34 +1846,35 @@ async function loadMyBetsData() {
         console.error("Hiba:", err);
     }
 }
-
-    <div id="search-container" style="margin: 20px 0;">
-    <input type="text" id="marketSearch" placeholder="Keress piacot (pl. Demo, Real, BTC...)" 
-           style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: white;">
+<div id="search-wrapper" style="margin: 20px 0; padding: 0 15px;">
+    <input type="text" id="marketSearch" placeholder="Keress piacot (Demo, Real, Név...)" 
+           style="width: 100%; max-width: 400px; padding: 10px; border-radius: 5px; border: 1px solid #00d2ff; background: #0b0e11; color: white; outline: none;">
 </div>
 
 <script>
-document.getElementById('marketSearch').addEventListener('keyup', function() {
-    // 1. Érték beolvasása és kisbetűssé alakítása a kereséshez
-    let filter = this.value.toLowerCase();
+(function() {
+    const searchInput = document.getElementById('marketSearch');
     
-    // 2. Kijelöljük az összes piac elemet (ezt az osztálynevet igazítsd a sajátodhoz!)
-    let markets = document.querySelectorAll('.market-item');
+    searchInput.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        // Itt a piacokat tároló konténert és az elemeket kell megtalálnunk
+        // A kép alapján valószínűleg egy 'market-card' vagy hasonló elemben vannak
+        const items = document.querySelectorAll('.market-card, .market-item, tr'); 
 
-    markets.forEach(market => {
-        // A piac teljes szövegtartalmát nézzük (név + típus)
-        let text = market.innerText.toLowerCase();
-        
-        // 3. Logikai szűrés: ha benne van a keresett szó, marad, ha nincs, elrejtjük
-        if (text.includes(filter)) {
-            market.style.display = "";
-            market.style.opacity = "1";
-        } else {
-            market.style.display = "none";
-            market.style.opacity = "0";
-        }
+        items.forEach(item => {
+            // Kihagyjuk a fejlécet vagy a keresőt magát
+            if (item.id === 'search-wrapper') return;
+
+            const text = item.innerText.toLowerCase();
+            if (text.includes(filter)) {
+                item.style.display = "";
+            } else {
+                item.style.display = "none";
+            }
+        });
     });
-});
+})();
+</script>
 </script>
 </script>
 </body>
