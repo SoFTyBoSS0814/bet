@@ -1847,34 +1847,29 @@ async function loadMyBetsData() {
     }
 }
     
-<div id="search-wrapper" style="margin: 20px 0; padding: 0 15px;">
-    <input type="text" id="marketSearch" placeholder="Keress piacot (Demo, Real, Név...)" 
-           style="width: 100%; max-width: 400px; padding: 10px; border-radius: 5px; border: 1px solid #00d2ff; background: #0b0e11; color: white; outline: none;">
+<div style="padding: 15px;">
+    <input type="text" id="marketSearch" placeholder="Keresés (Demo/Real/Piac)..." 
+           style="width: 100%; padding: 10px; background: #1a1a1a; color: white; border: 1px solid #00d2ff;">
 </div>
 
 <script>
-(function() {
+    // Biztosítjuk, hogy az input létezik, mielőtt rátesszük az eseményt
     const searchInput = document.getElementById('marketSearch');
-    
-    searchInput.addEventListener('input', function() {
-        const filter = this.value.toLowerCase();
-        // Itt a piacokat tároló konténert és az elemeket kell megtalálnunk
-        // A kép alapján valószínűleg egy 'market-card' vagy hasonló elemben vannak
-        const items = document.querySelectorAll('.market-card, .market-item, tr'); 
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            // Itt a táblázatod soraira (tr) szűrünk rá
+            const rows = document.querySelectorAll('tr'); 
 
-        items.forEach(item => {
-            // Kihagyjuk a fejlécet vagy a keresőt magát
-            if (item.id === 'search-wrapper') return;
-
-            const text = item.innerText.toLowerCase();
-            if (text.includes(filter)) {
-                item.style.display = "";
-            } else {
-                item.style.display = "none";
-            }
+            rows.forEach(row => {
+                // Csak akkor szűrünk, ha nem a fejléc (th) van a sorban
+                if (!row.querySelector('th')) {
+                    const text = row.innerText.toLowerCase();
+                    row.style.display = text.includes(filter) ? "" : "none";
+                }
+            });
         });
-    });
-})();
+    }
 </script>
 </body>
 </html>
