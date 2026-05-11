@@ -1845,31 +1845,9 @@ async function loadMyBetsData() {
     } catch (err) {
         console.error("Hiba:", err);
     }
-};
+}
     
-<div style="padding: 15px;">
-    <input type="text" id="marketSearch" placeholder="Keresés (Demo/Real/Piac)..." 
-           style="width: 100%; padding: 10px; background: #1a1a1a; color: white; border: 1px solid #00d2ff;">
-</div>
-
-<script>
-    // Biztosítjuk, hogy az input létezik, mielőtt rátesszük az eseményt
-    const searchInput = document.getElementById('marketSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            const filter = this.value.toLowerCase();
-            // Itt a táblázatod soraira (tr) szűrünk rá
-            const rows = document.querySelectorAll('tr'); 
-
-            rows.forEach(row => {
-                // Csak akkor szűrünk, ha nem a fejléc (th) van a sorban
-                if (!row.querySelector('th')) {
-                    const text = row.innerText.toLowerCase();
-                    row.style.display = text.includes(filter) ? "" : "none";
-                }
-            });
-        });
-    }
+<input type="text" oninput="let f=this.value.toLowerCase(); document.querySelectorAll('tr').forEach(r=>{ if(!r.querySelector('th')) r.style.display=r.innerText.toLowerCase().includes(f)?'':'none' })" placeholder="Gyorskereső (Demo/Real)..." style="width:100%; padding:10px; margin:10px 0; background:#1a1a1a; color:#00d2ff; border:1px solid #333; border-radius:5px;">
 </script>
 </body>
 </html>
