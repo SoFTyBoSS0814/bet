@@ -1741,6 +1741,25 @@ window.addEventListener('load', () => {
 });
 globalRefresh();
 
+    <div style="padding: 15px;">
+    <input type="text" id="marketSearch" placeholder="Keresés (Demo/Real/Piac)..." 
+           style="width: 100%; padding: 10px; background: #1a1a1a; color: white; border: 1px solid #00d2ff; border-radius: 8px;">
+</div>
+
+<script>
+    // Ez a kis script pedig mehet a </body> elé
+    document.getElementById('marketSearch').addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        // Itt azokat a kártyákat keressük, amiket a JS generált (card osztály)
+        const cards = document.querySelectorAll('#activeMarketsList .card, .market-card'); 
+
+        cards.forEach(card => {
+            const text = card.innerText.toLowerCase();
+            card.style.display = text.includes(filter) ? "" : "none";
+        });
+    });
+</script>
+
 async function loadMyBetsData() {
     const activeList = document.getElementById('active-bets-list');
     const settledList = document.getElementById('settled-bets-list');
