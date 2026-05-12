@@ -288,7 +288,7 @@ async function handleLogin() {
         } else {
             const { data: prof } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
             
-            // Sikeres bejelentkezés üzenet megjelenítése (Zölden)
+            // Sikeres LOGIN
             const successMsg = currentLang === 'hu' ? "Sikeres bejelentkezés!" : "Login successful!";
             showMsg(successMsg, false);
 
