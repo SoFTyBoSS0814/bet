@@ -264,6 +264,18 @@
         <div id="history-list"></div>
     </div>
 
+    <div class="sf-market-controls">
+    <div class="search-box">
+        <input type="text" id="marketSearch" placeholder="Keress piacot..." onkeyup="filterMarkets()">
+        <i class="search-icon">🔍</i>
+    </div>
+    
+    <div class="filter-toggle">
+        <button class="toggle-btn active" onclick="setMode('REAL')">REAL</button>
+        <button class="toggle-btn" onclick="setMode('DEMO')">DEMO</button>
+    </div>
+</div>
+
    <!-- MY BETS SZEKCIÓ -->
 <div id="section-mybets" class="section">
     <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
