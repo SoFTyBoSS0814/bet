@@ -852,11 +852,7 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
-        // --- ÚJ RÉSZ: Aktív piacok ellenőrzése ---
-        const activeMarkets = markets.filter(m => m.status === 'active');
-
-       if (activeMarkets.length === 0) {
-    // Nyelvi adatbázis (ezt később beteheted egy külön i18n fájlba is)
+if (activeMarkets.length === 0) {
     const translations = {
         "HU": {
             title: "Jelenleg nincs aktív piac",
@@ -875,10 +871,17 @@ async function loadMarkets() {
         }
     };
 
-    // Megkeressük az aktuális nyelvet (feltételezve, hogy a 'currentLang' változóban tárolod, pl: "HU")
-    // Ha nem létezik a nyelv, alapértelmezettként az angolt használjuk.
-    const lang = (typeof currentLang !== 'undefined' && translations[currentLang]) ? currentLang : "EN";
-    const t = translations[lang];
+    // 1. Megpróbáljuk megszerezni a nyelvet több forrásból:
+    // Először megnézzük a window.currentLang-ot, 
+    // aztán a HTML <html lang="hu"> részét, 
+    // ha egyik sincs, jön az angol.
+    let detectedLang = (window.currentLang || document.documentElement.lang || "EN").toUpperCase();
+    
+    // Ha a formátum pl. "HU-HU", akkor csak az első két betű kell
+    if (detectedLang.includes("-")) detectedLang = detectedLang.split("-")[0];
+
+    // Kiválasztjuk a fordítást, ha nincs benne a listában a nyelv, alapértelmezett az EN
+    const t = translations[detectedLang] || translations["EN"];
 
     mList.innerHTML = `
         <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
