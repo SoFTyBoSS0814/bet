@@ -264,7 +264,6 @@
         <div id="history-list"></div>
     </div>
 
-
    <!-- MY BETS SZEKCIÓ -->
 <div id="section-mybets" class="section">
     <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
@@ -852,35 +851,24 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
- if (activeMarkets.length === 0) {
+        // --- ÚJ RÉSZ: Aktív piacok ellenőrzése ---
+        const activeMarkets = markets.filter(m => m.status === 'active');
 
+        if (activeMarkets.length === 0) {
             mList.innerHTML = `
-
                 <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
-
                     <div style="font-size:40px; margin-bottom:15px; opacity:0.6;">🏟️</div>
-
                     <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">Jelenleg nincs aktív piac</h3>
-
                     <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">Legyél te az első, aki indít egyet!</p>
-
                     <button onclick="document.querySelector('.btn-create')?.click()" 
-
                         style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;"
-
                         onmouseover="this.style.background='#00b3e6'; this.style.transform='translateY(-1px)'" 
-
                         onmouseout="this.style.background='#00ccff'; this.style.transform='translateY(0)'">
-
                         Készíts egyet!
-
                     </button>
-
                 </div>
-
             `;
-
-        } 
+        }
 
         // Az eredeti loop mehet tovább a rendereléshez
         markets.forEach(m => {
@@ -1858,18 +1846,6 @@ async function loadMyBetsData() {
         console.error("Hiba:", err);
     }
 }
-
-    // Jobb klikk tiltása
-    document.addEventListener('contextmenu', event => event.preventDefault());
-
-    // Billentyűkombinációk tiltása (F12, Ctrl+Shift+I, Ctrl+U)
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123 || 
-            (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) || 
-            (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
-            return false;
-        }
-    };
 </script>
 </body>
 </html>
