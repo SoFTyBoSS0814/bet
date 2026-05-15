@@ -852,51 +852,35 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
-if (activeMarkets.length === 0) {
-    const translations = {
-        "HU": {
-            title: "Jelenleg nincs aktív piac",
-            subtitle: "Legyél te az első, aki indít egyet!",
-            btn: "Készíts egyet!"
-        },
-        "EN": {
-            title: "No active markets currently",
-            subtitle: "Be the first to start one!",
-            btn: "Create one!"
-        },
-        "RU": {
-            title: "Нет активных рынков",
-            subtitle: "Будьте первым, кто создаст его!",
-            btn: "Создать!"
-        }
-    };
+ if (activeMarkets.length === 0) {
 
-    // 1. Megpróbáljuk megszerezni a nyelvet több forrásból:
-    // Először megnézzük a window.currentLang-ot, 
-    // aztán a HTML <html lang="hu"> részét, 
-    // ha egyik sincs, jön az angol.
-    let detectedLang = (window.currentLang || document.documentElement.lang || "EN").toUpperCase();
-    
-    // Ha a formátum pl. "HU-HU", akkor csak az első két betű kell
-    if (detectedLang.includes("-")) detectedLang = detectedLang.split("-")[0];
+            mList.innerHTML = `
 
-    // Kiválasztjuk a fordítást, ha nincs benne a listában a nyelv, alapértelmezett az EN
-    const t = translations[detectedLang] || translations["EN"];
+                <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
 
-    mList.innerHTML = `
-        <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
-            <div style="font-size:40px; margin-bottom:15px; opacity:0.6;">🏟️</div>
-            <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">${t.title}</h3>
-            <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">${t.subtitle}</p>
-            <button onclick="document.querySelector('.btn-create')?.click()" 
-                style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;"
-                onmouseover="this.style.background='#00b3e6'; this.style.transform='translateY(-1px)'" 
-                onmouseout="this.style.background='#00ccff'; this.style.transform='translateY(0)'">
-                ${t.btn}
-            </button>
-        </div>
-    `;
-}
+                    <div style="font-size:40px; margin-bottom:15px; opacity:0.6;">🏟️</div>
+
+                    <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">Jelenleg nincs aktív piac</h3>
+
+                    <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">Legyél te az első, aki indít egyet!</p>
+
+                    <button onclick="document.querySelector('.btn-create')?.click()" 
+
+                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;"
+
+                        onmouseover="this.style.background='#00b3e6'; this.style.transform='translateY(-1px)'" 
+
+                        onmouseout="this.style.background='#00ccff'; this.style.transform='translateY(0)'">
+
+                        Készíts egyet!
+
+                    </button>
+
+                </div>
+
+            `;
+
+        } 
 
         // Az eredeti loop mehet tovább a rendereléshez
         markets.forEach(m => {
