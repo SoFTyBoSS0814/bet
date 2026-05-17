@@ -643,7 +643,7 @@ async function fetchProfile() {
         document.getElementById("acc-email").innerText = currentUser.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
 
-        // --- ADMINPANEL ---
+        // --- ÚJ: Admin Panel gomb megjelenítése ---
         const adminBtn = document.getElementById('admin-nav-button');
         if (adminBtn) {
             // Csak ha is_admin értéke pontosan true
@@ -654,7 +654,8 @@ async function fetchProfile() {
             }
         }
 
-        // --- Korlatozas ---
+        // --- ÚJ: Korlátozás állapotának elmentése ---
+        // Ezt a változót fogjuk használni a placeBet-nél és a market creation-nél
         window.userIsRestricted = data.is_restricted || false;
 
         updateGeoUI();
@@ -834,11 +835,13 @@ async function loadMarkets() {
             document.body.appendChild(modalDiv);
         }
 
+        // Adatok lekérése: piacok + komment számláláshoz az összes komment
         const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         const { data: allComments } = await _supabase.from('comments').select('market_id');
         
         if (error) throw error;
 
+        // Kommentek összesítése market_id szerint
         const commentCounts = {};
         (allComments || []).forEach(c => {
             commentCounts[c.market_id] = (commentCounts[c.market_id] || 0) + 1;
@@ -850,42 +853,7 @@ async function loadMarkets() {
         
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
-
-        // --- ÚJ RÉSZ: Aktív piacok ellenőrzése ---
-        const activeMarkets = markets.filter(m => m.status === 'active');
-
-if (activeMarkets.length === 0) {
-            // Lekérjük az aktuális nyelvet (ha nincs, fallback a magyarra)
-            const currentLang = window.currentLang || localStorage.getItem('lang') || 'hu';
-            
-            // Nyelvi szótár a hiányzó állapothoz
-            const localDict = {
-                hu: { title: "Jelenleg nincs aktív piac", desc: "Legyél te az első, aki indít egyet!", btn: "Készíts egyet!" },
-                en: { title: "No active markets at the moment", desc: "Be the first to start one!", btn: "Create one!" },
-                ru: { title: "На данный момент нет активных рынков", desc: "Будьте первым, кто создаст его!", btn: "Создать!" },
-                de: { title: "Derzeit keine aktiven Märkte", desc: "Sei der Erste, der einen startet!", btn: "Erstellen!" },
-                zh: { title: "目前没有活跃的市场", desc: "成为第一个启动它的人！", btn: "创建一个！" }
-            };
-
-            // Kiválasztjuk a megfelelő fordítást, vagy ha nincs, a magyart
-            const text = localDict[currentLang] || localDict.hu;
-
-            mList.innerHTML = `
-                <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
-                    <div style="font-size:40px; margin-bottom:15px; opacity:0.6;">🏟️</div>
-                    <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">${text.title}</h3>
-                    <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">${text.desc}</p>
-                    <button onclick="document.querySelector('.btn-create')?.click()" 
-                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;"
-                        onmouseover="this.style.background='#00b3e6'; this.style.transform='translateY(-1px)'" 
-                        onmouseout="this.style.background='#00ccff'; this.style.transform='translateY(0)'">
-                        ${text.btn}
-                    </button>
-                </div>
-            `;
-        }
-
-        // Az eredeti loop mehet tovább a rendereléshez
+        
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
@@ -1011,22 +979,6 @@ async function openBets(mid) {
     body.innerHTML = "<div style='padding:20px; text-align:center;'>Betöltés...</div>";
     modal.style.display = "block";
 
-    // 1. Ellenőrizzük a piac státuszát a Supabase-ben
-    const { data: market } = await _supabase.from('markets').select('status').eq('id', mid).single();
-    
-    // Ha a piac még élő (nem settled), blokkoljuk a megtekintést
-    if (!market || market.status !== 'settled') {
-        body.innerHTML = `
-            <div style="text-align:center; padding:30px 20px; color:#6e7681;">
-                <div style="font-size:40px; margin-bottom:15px; opacity:0.5;">🔒</div>
-                <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">A fogadások zárolva vannak</h3>
-                <p style="font-size:13px; line-height:1.5;">A résztvevők listája és a pontos tétek csak a piac lezárása (SETTLE) után válnak nyilvánossá a visszaélések elkerülése érdekében.</p>
-            </div>
-        `;
-        return;
-    }
-
-    // 2. Az eredeti logikád fut tovább, ha a piac már settled
     const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
     if (!bets || bets.length === 0) {
         body.innerHTML = "<div style='text-align:center; padding:20px; color:#556b7d;'>Még nincsenek fogadások.</div>";
@@ -1783,15 +1735,10 @@ async function loadMyBetsData() {
     const userId = user.id || user;
 
     try {
+        // MÓDOSÍTOTT LEKÉRDEZÉS: Behúzzuk a piac címét a markets táblából
         const { data: bets, error } = await _supabase
             .from('bets')
-            .select(`
-                *,
-                markets (
-                    title,
-                    creator_name
-                )
-            `) 
+            .select('*, markets(title)') 
             .eq('user_id', userId)
             .order('id', { ascending: false });
 
@@ -1806,9 +1753,8 @@ async function loadMyBetsData() {
             const typeColor = bet.type === 'REAL' ? '#00d1ff' : '#f5a623';
             const dlDate = new Date(bet.created_at);
             
+            // A piac neve a beágyazott markets objektumból jön
             const displayTitle = bet.markets?.title || bet.market_title || "Ismeretlen piac";
-            // DINAMIKUS HOST: Ha van adat, azt írja, ha nincs, marad admin vagy SoFTy (választható)
-            const displayHost = bet.markets?.creator_name || "admin"; 
 
             const buttonsHTML = `
                 <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
@@ -1832,7 +1778,7 @@ async function loadMyBetsData() {
                                 <span style="color:#4a90e2; font-size: 14px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span>
                             </div>
                             <div style="line-height:1.6;">
-                                <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span></small>
+                                <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">SoFTy</span></small>
                                 <small style="color:#e94b4b; display:block; font-weight:bold; font-size: 14px;">DEADLINE: ${dlDate.toLocaleString()}</small>
                                 <small style="color:#00d4ff; display:block; font-weight:bold; font-size:16px; margin-top:4px;">Final Pool: ${(bet.amount * 19.9).toFixed(2)} ${symbol}</small>
                             </div>
@@ -1864,31 +1810,27 @@ async function loadMyBetsData() {
                         <div style="flex:1;">
                             <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
                             <div style="font-size:14px; color:#8a96a3; margin-top:6px;">⏳ Deadline: ${dlDate.toLocaleString()}</div>
-                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
+                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">SoFTy</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
                         </div>
                         <div style="color:${typeColor}; font-weight:900; font-size: 18px;">${bet.type}</div>
                     </div>
+                    
                     ${buttonsHTML}
-                `;
+
+                    <div style="margin-top:15px; background:#0d141b; padding:20px; border-radius:8px; border: 1px solid #1c2630;">
+                        <small style="color:#4fd1c5; text-transform:uppercase; font-size:10px; font-weight:bold; letter-spacing: 1px;">TIÉD</small>
+                        <div style="margin-top:10px; background:rgba(0,209,255,0.05); padding:15px; border-radius:6px; border-left:4px solid #00d1ff; display:flex; justify-content:space-between; align-items: center;">
+                            <span style="color:white; font-weight:bold; font-size: 16px;">${bet.outcome_name}</span>
+                            <b style="color:#00d1ff; font-size: 16px;">@${bet.odds}</b>
+                        </div>
+                    </div>`;
                 activeList.appendChild(card);
             }
         });
-    } catch (err) {
-        console.error("Hiba:", err);
+    } catch (e) {
+        console.error("Hiba:", e);
     }
 }
-
-           // Jobb klikk tiltása
-    document.addEventListener('contextmenu', event => event.preventDefault());
-
-    // Billentyűkombinációk tiltása (F12, Ctrl+Shift+I, Ctrl+U)
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123 || 
-            (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) || 
-            (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
-            return false;
-        }
-    };
 </script>
 </body>
 </html>
