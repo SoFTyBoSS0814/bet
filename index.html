@@ -1789,7 +1789,9 @@ async function loadMyBetsData() {
                 *,
                 markets (
                     title,
-                    creator_name
+                    creator_name,
+                    take,
+                    winner
                 )
             `) 
             .eq('user_id', userId)
@@ -1807,8 +1809,10 @@ async function loadMyBetsData() {
             const dlDate = new Date(bet.created_at);
             
             const displayTitle = bet.markets?.title || bet.market_title || "Ismeretlen piac";
-            // DINAMIKUS HOST: Ha van adat, azt írja, ha nincs, marad admin vagy SoFTy (választható)
             const displayHost = bet.markets?.creator_name || "admin"; 
+            
+            // JAVÍTÁS: A piac valós pool-ja a 'take' mezőből jön!
+            const realPool = bet.markets?.take ? parseFloat(bet.markets.take).toFixed(2) : parseFloat(bet.amount).toFixed(2);
 
             const buttonsHTML = `
                 <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
@@ -1823,18 +1827,24 @@ async function loadMyBetsData() {
 
             if (isSettled) {
                 const sDate = new Date(bet.created_at);
+                const isWin = bet.status === 'win';
+                const statusLabelColor = isWin ? '#28a745' : '#e94b4b';
+
+                // Megnézzük, hogy melyik opció a nyertes a piac szerint
+                const marketWinner = bet.markets?.winner || '';
+
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div style="flex:1;">
                             <div style="margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                                <span style="font-size:10px; padding: 2px 6px; background: #e94b4b; border-radius: 4px; color: white; text-transform: uppercase; font-weight: bold;">SETTLED</span>
+                                <span style="font-size:10px; padding: 2px 6px; background: ${statusLabelColor}; border-radius: 4px; color: white; text-transform: uppercase; font-weight: bold;">${bet.status.toUpperCase()}</span>
                                 <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
                                 <span style="color:#4a90e2; font-size: 14px; opacity:0.8;">• Settled at ${sDate.toLocaleString()}</span>
                             </div>
                             <div style="line-height:1.6;">
                                 <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span></small>
                                 <small style="color:#e94b4b; display:block; font-weight:bold; font-size: 14px;">DEADLINE: ${dlDate.toLocaleString()}</small>
-                                <small style="color:#00d4ff; display:block; font-weight:bold; font-size:16px; margin-top:4px;">Final Pool: ${(bet.amount * 19.9).toFixed(2)} ${symbol}</small>
+                                <small style="color:#00d4ff; display:block; font-weight:bold; font-size:16px; margin-top:4px;">Final Pool: ${realPool} ${symbol}</small>
                             </div>
                         </div>
                         <div style="color:${typeColor}; font-weight:900; font-size: 18px; margin-top: 5px;">${bet.type}</div>
@@ -1843,18 +1853,18 @@ async function loadMyBetsData() {
                     ${buttonsHTML}
 
                     <div style="margin-top:15px; background:#0d141b; padding:15px; border-radius:8px; border: 1px solid #1c2630;">
-                        <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">GYŐZTES</small>
+                        <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">GYŐZTES (Te téted: ${parseFloat(bet.amount).toFixed(2)} ${symbol} az '${bet.outcome_name}' opcióra)</small>
                         
-                        <div class="history-item ${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
-                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'A' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
+                        <div class="history-item ${marketWinner === 'A' ? (isWin ? 'winner-row' : 'loss-row') : ''}" 
+                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${marketWinner === 'A' ? (isWin ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${marketWinner === 'A' ? (isWin ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
                             <span style="color:white; font-weight:bold; font-size: 16px;">A</span>
-                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${bet.outcome_name === 'A' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'A' ? bet.status : ''}</b>
+                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${marketWinner === 'A' ? (isWin ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'A' ? bet.status.toUpperCase() : (marketWinner === 'A' ? 'WINNER' : '')}</b>
                         </div>
 
-                        <div class="history-item ${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'winner-row' : 'loss-row') : ''}" 
-                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; border-radius:4px; border-left: 4px solid ${bet.outcome_name === 'B' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${bet.outcome_name === 'B' ? (bet.status === 'win' ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
+                        <div class="history-item ${marketWinner === 'B' ? (isWin ? 'winner-row' : 'loss-row') : ''}" 
+                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; border-radius:4px; border-left: 4px solid ${marketWinner === 'B' ? (isWin ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${marketWinner === 'B' ? (isWin ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
                             <span style="color:white; font-weight:bold; font-size: 16px;">B</span>
-                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${bet.outcome_name === 'B' ? (bet.status === 'win' ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'B' ? bet.status : ''}</b>
+                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${marketWinner === 'B' ? (isWin ? '#00ff88' : '#e94b4b') : 'transparent'}">${bet.outcome_name === 'B' ? bet.status.toUpperCase() : (marketWinner === 'B' ? 'WINNER' : '')}</b>
                         </div>
                     </div>`;
                 settledList.appendChild(card);
@@ -1864,7 +1874,7 @@ async function loadMyBetsData() {
                         <div style="flex:1;">
                             <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
                             <div style="font-size:14px; color:#8a96a3; margin-top:6px;">⏳ Deadline: ${dlDate.toLocaleString()}</div>
-                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span> | <b style="color:${typeColor}">Tét: ${parseFloat(bet.amount).toFixed(2)} ${symbol}</b></small>
+                            <small style="color:#8a96a3; display:block; margin-top:6px; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span> | <b style="color:${typeColor}">Te választásod: ${bet.outcome_name} (${parseFloat(bet.amount).toFixed(2)} ${symbol})</b></small>
                         </div>
                         <div style="color:${typeColor}; font-weight:900; font-size: 18px;">${bet.type}</div>
                     </div>
@@ -1877,7 +1887,6 @@ async function loadMyBetsData() {
         console.error("Hiba:", err);
     }
 }
-
 
 
 </script>
