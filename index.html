@@ -1011,6 +1011,22 @@ async function openBets(mid) {
     body.innerHTML = "<div style='padding:20px; text-align:center;'>Betöltés...</div>";
     modal.style.display = "block";
 
+    // 1. Ellenőrizzük a piac státuszát a Supabase-ben
+    const { data: market } = await _supabase.from('markets').select('status').eq('id', mid).single();
+    
+    // Ha a piac még élő (nem settled), blokkoljuk a megtekintést
+    if (!market || market.status !== 'settled') {
+        body.innerHTML = `
+            <div style="text-align:center; padding:30px 20px; color:#6e7681;">
+                <div style="font-size:40px; margin-bottom:15px; opacity:0.5;">🔒</div>
+                <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">A fogadások zárolva vannak</h3>
+                <p style="font-size:13px; line-height:1.5;">A résztvevők listája és a pontos tétek csak a piac lezárása (SETTLE) után válnak nyilvánossá a visszaélések elkerülése érdekében.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // 2. Az eredeti logikád fut tovább, ha a piac már settled
     const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
     if (!bets || bets.length === 0) {
         body.innerHTML = "<div style='text-align:center; padding:20px; color:#556b7d;'>Még nincsenek fogadások.</div>";
