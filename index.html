@@ -1811,7 +1811,7 @@ async function loadMyBetsData() {
             const displayTitle = bet.markets?.title || bet.market_title || "Ismeretlen piac";
             const displayHost = bet.markets?.creator_name || "admin"; 
             
-            // JAVÍTÁS: A piac valós pool-ja a 'take' mezőből jön!
+            // Valós piacösszeg a 'take' mezőből számolva
             const realPool = bet.markets?.take ? parseFloat(bet.markets.take).toFixed(2) : parseFloat(bet.amount).toFixed(2);
 
             const buttonsHTML = `
@@ -1829,8 +1829,6 @@ async function loadMyBetsData() {
                 const sDate = new Date(bet.created_at);
                 const isWin = bet.status === 'win';
                 const statusLabelColor = isWin ? '#28a745' : '#e94b4b';
-
-                // Megnézzük, hogy melyik opció a nyertes a piac szerint
                 const marketWinner = bet.markets?.winner || '';
 
                 card.innerHTML = `
@@ -1853,7 +1851,16 @@ async function loadMyBetsData() {
                     ${buttonsHTML}
 
                     <div style="margin-top:15px; background:#0d141b; padding:15px; border-radius:8px; border: 1px solid #1c2630;">
-                        <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">GYŐZTES (Te téted: ${parseFloat(bet.amount).toFixed(2)} ${symbol} az '${bet.outcome_name}' opcióra)</small>
+                        
+                        <div style="background: rgba(0, 209, 255, 0.04); border: 1px dashed rgba(0, 209, 255, 0.3); border-radius: 6px; padding: 10px 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: #8a96a3; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Te leadott fogadásod:</span>
+                            <span style="color: #fff; font-size: 13px; font-weight: bold;">
+                                <span style="color: #00d1ff; background: rgba(0, 209, 255, 0.1); padding: 2px 8px; border-radius: 4px; margin-right: 5px;">'${bet.outcome_name}' Opció</span> 
+                                ➞ <span style="color: #bff4ff;">${parseFloat(bet.amount).toFixed(2)} ${symbol}</span>
+                            </span>
+                        </div>
+
+                        <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">Eredmények</small>
                         
                         <div class="history-item ${marketWinner === 'A' ? (isWin ? 'winner-row' : 'loss-row') : ''}" 
                              style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${marketWinner === 'A' ? (isWin ? '#00ff88' : '#e94b4b') : '#1c2630'}; background:${marketWinner === 'A' ? (isWin ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)') : '#16212b'}">
