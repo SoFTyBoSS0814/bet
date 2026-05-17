@@ -1836,27 +1836,52 @@ async function loadMyBetsData() {
                 const isWin = bet.status === 'win';
                 const statusLabelColor = isWin ? '#28a745' : '#e94b4b';
                 
-                // Határozzuk meg a Te opciód és a Másik opció pontos nevét
                 const myOutcomeName = bet.outcome_name || "Saját opció";
-                let otherOutcomeName = "Másik opció";
-
-                // Megpróbáljuk kinyerni a piacból a másik kimenetel valódi nevét
+                
+                // Összegyűjtjük az összes érvényes opciónevet a piacról (odd_1, odd_x, odd_2)
+                let availableOptions = [];
                 if (bet.markets) {
-                    if (bet.markets.odd_1 && bet.markets.odd_1 !== myOutcomeName) {
-                        otherOutcomeName = bet.markets.odd_1;
-                    } else if (bet.markets.odd_2 && bet.markets.odd_2 !== myOutcomeName) {
-                        otherOutcomeName = bet.markets.odd_2;
-                    }
+                    if (bet.markets.odd_1) availableOptions.push(bet.markets.odd_1);
+                    if (bet.markets.odd_x) availableOptions.push(bet.markets.odd_x);
+                    if (bet.markets.odd_2) availableOptions.push(bet.markets.odd_2);
                 }
 
-                // Sorok dinamikus beállítása: ki nyert, ki veszített
-                const row1Name = myOutcomeName;
-                const row1StatusText = isWin ? "WIN" : "LOSS";
-                const row1IsWinner = isWin;
+                // Ha a piac adatai valamiért hiányoznának, biztosítunk alapértelmezett értékeket
+                if (availableOptions.length === 0) {
+                    availableOptions = [myOutcomeName, "Másik opció"];
+                }
 
-                const row2Name = otherOutcomeName;
-                const row2StatusText = isWin ? "LOSS" : "WINNER";
-                const row2IsWinner = !isWin;
+                // Kiszűrjük az ismétlődéseket, és biztosítjuk, hogy a saját opciód legyen az első elem
+                availableOptions = [...new Set(availableOptions)];
+                availableOptions = availableOptions.filter(opt => opt !== myOutcomeName);
+                availableOptions.unshift(myOutcomeName);
+
+                // Legeneráljuk a HTML sorokat az összes opcióhoz dinamikusan
+                let optionsRowsHTML = '';
+                availableOptions.forEach(optName => {
+                    let isCurrentOptionWinner = false;
+                    let rowStatusText = '';
+
+                    if (optName === myOutcomeName) {
+                        // Ez a saját fogadásod sora
+                        isCurrentOptionWinner = isWin;
+                        rowStatusText = isWin ? "WIN" : "LOSS";
+                    } else {
+                        // Ez egy másik opció sora (az ellenfélé)
+                        isCurrentOptionWinner = !isWin;
+                        rowStatusText = !isWin ? "WINNER" : "LOSS";
+                    }
+
+                    optionsRowsHTML += `
+                        <div class="history-item ${isCurrentOptionWinner ? 'winner-row' : 'loss-row'}" 
+                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${isCurrentOptionWinner ? '#00ff88' : '#e94b4b'}; background:${isCurrentOptionWinner ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)'}">
+                            <span style="color:white; font-weight:bold; font-size: 16px;">${optName}</span>
+                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${isCurrentOptionWinner ? '#00ff88' : '#e94b4b'}">
+                                ${rowStatusText}
+                            </b>
+                        </div>
+                    `;
+                });
 
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -1889,21 +1914,7 @@ async function loadMyBetsData() {
 
                         <small style="color:#4fd1c5; font-size:10px; text-transform:uppercase; font-weight:bold; display:block; margin-bottom:12px; letter-spacing: 1px;">Eredmények</small>
                         
-                        <div class="history-item ${row1IsWinner ? 'winner-row' : 'loss-row'}" 
-                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; margin-bottom:8px; border-radius:4px; border-left: 4px solid ${row1IsWinner ? '#00ff88' : '#e94b4b'}; background:${row1IsWinner ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)'}">
-                            <span style="color:white; font-weight:bold; font-size: 16px;">${row1Name}</span>
-                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${row1IsWinner ? '#00ff88' : '#e94b4b'}">
-                                ${row1StatusText}
-                            </b>
-                        </div>
-
-                        <div class="history-item ${row2IsWinner ? 'winner-row' : 'loss-row'}" 
-                             style="display:flex; justify-content:space-between; align-items: center; padding:14px 20px; border-radius:4px; border-left: 4px solid ${row2IsWinner ? '#00ff88' : '#e94b4b'}; background:${row2IsWinner ? 'rgba(0,255,136,0.05)' : 'rgba(233,75,75,0.05)'}">
-                            <span style="color:white; font-weight:bold; font-size: 16px;">${row2Name}</span>
-                            <b style="text-transform:uppercase; font-weight: 900; letter-spacing: 1px; color: ${row2IsWinner ? '#00ff88' : '#e94b4b'}">
-                                ${row2StatusText}
-                            </b>
-                        </div>
+                        ${optionsRowsHTML}
                     </div>`;
                 settledList.appendChild(card);
             } else {
