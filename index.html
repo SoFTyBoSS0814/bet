@@ -1815,6 +1815,9 @@ async function loadMyBetsData() {
             const betDate = new Date(bet.created_at);
             const marketDeadlineStr = bet.markets?.deadline ? new Date(bet.markets.deadline).toLocaleString() : "Nincs megadva";
             
+            // Piac vagy fogadás lezárásának pontos ideje (updated_at)
+            const settledDateStr = bet.updated_at ? new Date(bet.updated_at).toLocaleString() : marketDeadlineStr;
+            
             const displayTitle = bet.markets?.title || bet.market_title || "Ismeretlen piac";
             const displayHost = bet.markets?.creator_name || "admin"; 
             
@@ -1897,7 +1900,7 @@ async function loadMyBetsData() {
                             <div style="margin-bottom: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                                 <span style="font-size:10px; padding: 2px 6px; background: ${statusLabelColor}; border-radius: 4px; color: white; text-transform: uppercase; font-weight: bold;">${bet.status.toUpperCase()}</span>
                                 <h2 style="margin:0; color:white; font-size: 24px; font-weight: bold;">${displayTitle}</h2>
-                                <span style="color:#4a90e2; font-size: 14px; opacity:0.8;">• Settled at ${marketDeadlineStr}</span>
+                                <span style="color:#4a90e2; font-size: 14px; opacity:0.8;">• Settled at ${settledDateStr}</span>
                             </div>
                             <div style="line-height:1.6;">
                                 <small style="color:#8a96a3; display:block; font-size: 14px;">Host: <span style="color:white;">${displayHost}</span></small>
