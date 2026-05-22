@@ -1408,17 +1408,42 @@ function markOutcomeAsDeleted(buttonElement) {
     }
 }
 
-/**
- * A FINALIZE gomb megnyomásakor lefutó aszinkron Supabase mentés,
- * ami beolvassa az új oddsokat, kiveszi a törölteket és lezárja a fogadásokat.
- */
+function markOutcomeAsDeleted(buttonElement) {
+    const row = buttonElement.closest('.settle-row');
+    if (!row) return;
+
+    const isAlreadyDeleted = row.getAttribute('data-deleted') === 'true';
+
+    if (!isAlreadyDeleted) {
+        if (confirm("Biztosan törölni akarod ezt a kimenetelt?")) {
+            row.setAttribute('data-deleted', 'true');
+            row.style.opacity = '0.25'; 
+            row.style.background = 'rgba(255, 77, 77, 0.08)'; 
+            row.style.borderColor = 'rgba(255, 77, 77, 0.2)';
+            buttonElement.innerHTML = '🔄'; 
+            buttonElement.style.color = "#00ff88";
+            
+            row.querySelector('.outcome-odds-input').disabled = true;
+            row.querySelector('.settle-select').disabled = true;
+        }
+    } else {
+        row.removeAttribute('data-deleted');
+        row.style.opacity = '1';
+        row.style.background = 'rgba(255,255,255,0.03)';
+        row.style.borderColor = 'rgba(255,255,255,0.05)';
+        buttonElement.innerHTML = '🗑️';
+        buttonElement.style.color = "#ff4d4d";
+        
+        row.querySelector('.outcome-odds-input').disabled = false;
+        row.querySelector('.settle-select').disabled = false;
+    }
+}
 async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
     if (errDiv) errDiv.style.display = 'none';
 
     const selects = document.querySelectorAll('.settle-select');
     
-    // 1. Az input mezők aktuális állásának feldolgozása
     selects.forEach(s => {
         const gi = s.dataset.gi, oi = s.dataset.oi;
         const group = currentSettleGroups[gi];
@@ -1428,7 +1453,7 @@ async function finalSubmitSettle() {
         const isDeleted = row && row.getAttribute('data-deleted') === 'true';
 
         if (isDeleted) {
-            outcome._deleted = true; // Belső jelölés törlésre
+            outcome._deleted = true; 
         } else {
             outcome.status = s.value;
             const oddsInput = row ? row.querySelector('.outcome-odds-input') : null;
@@ -1438,16 +1463,14 @@ async function finalSubmitSettle() {
         }
     });
 
-    // Kiszelektáljuk a törölt kimeneteleket a mentendő tömbből
     currentSettleGroups.forEach(group => {
         group.outcomes = group.outcomes.filter(o => !o._deleted);
     });
 
-    // 2. Validáció a megmaradt kimenetelekre
     for (let group of currentSettleGroups) {
         if (group.outcomes.length === 0 || !group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
             if (errDiv) {
-                errDiv.innerText = i18n[currentLang].win_loss_err;
+                errDiv.innerText = "Hiba: Kell egy nyertes és egy vesztes kimenetel!";
                 errDiv.style.display = 'block';
             }
             return;
@@ -1468,20 +1491,11 @@ async function finalSubmitSettle() {
     );
 
     try {
-        const { data: mData } = await _supabase
-            .from('markets')
-            .select('*')
-            .eq('id', currentSettleId)
-            .single();
-
+        const { data: mData } = await _supabase.from('markets').select('*').eq('id', currentSettleId).single();
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
         let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
 
-        const { data: bets } = await _supabase
-            .from('bets')
-            .select('*')
-            .eq('market_id', currentSettleId)
-            .eq('status', 'pending');
+        const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', currentSettleId).eq('status', 'pending');
 
         if (bets) {
             for (let bet of bets) {
@@ -1493,47 +1507,26 @@ async function finalSubmitSettle() {
                     const netLoss = payout - betAmt; 
                     settlementAmount -= netLoss;
 
-                    await _supabase.rpc('settle_bet_payout', {
-                        p_user_id: bet.user_id,
-                        p_amount: payout,
-                        p_field: field
-                    });
+                    await _supabase.rpc('settle_bet_payout', { p_user_id: bet.user_id, p_amount: payout, p_field: field });
                 } else {
                     settlementAmount += betAmt;
                 }
 
-                await _supabase
-                    .from('bets')
-                    .update({ status: isWin ? 'win' : 'loss' })
-                    .eq('id', bet.id);
+                await _supabase.from('bets').update({ status: isWin ? 'win' : 'loss' }).eq('id', bet.id);
             }
         }
 
-        const { data: host } = await _supabase
-            .from('profiles')
-            .select('*')
-            .eq('username', mData.creator_name)
-            .single();
-
+        const { data: host } = await _supabase.from('profiles').select('*').eq('username', mData.creator_name).single();
         if (host) {
             const currentBalance = parseFloat(host[field]) || 0;
-            await _supabase
-                .from('profiles')
-                .update({
-                    [field]: currentBalance + settlementAmount
-                })
-                .eq('id', host.id);
+            await _supabase.from('profiles').update({ [field]: currentBalance + settlementAmount }).eq('id', host.id);
         }
 
-        // Mentés a módosított JSON-nel (új oddsok + töröltek nélkül)
-        await _supabase
-            .from('markets')
-            .update({
-                note: JSON.stringify(currentSettleGroups),
-                status: 'settled',
-                start_time: new Date().toISOString()
-            })
-            .eq('id', currentSettleId);
+        await _supabase.from('markets').update({
+            note: JSON.stringify(currentSettleGroups),
+            status: 'settled',
+            start_time: new Date().toISOString()
+        }).eq('id', currentSettleId);
 
         location.reload();
 
