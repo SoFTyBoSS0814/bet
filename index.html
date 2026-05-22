@@ -1793,6 +1793,7 @@ async function loadMyBetsData() {
                     take,
                     winner,
                     deadline,
+                    note,
                     odd_1,
                     odd_x,
                     odd_2
@@ -1838,24 +1839,38 @@ async function loadMyBetsData() {
                 
                 const myOutcomeName = bet.outcome_name || "Saját opció";
                 
-                // Szuperbiztos oszlop-alapú behelyettesítés a piacból
-                const o1 = bet.markets?.odd_1 || "";
-                const ox = bet.markets?.odd_x || "";
-                const o2 = bet.markets?.odd_2 || "";
-                const marketWinnerLetter = bet.markets?.winner || ""; // Pl: 'A', 'X', 'B'
-
-                // Alapértelmezetten kigyűjtjük az összes valós, nem üres nevet ebből a piacból
+                // Dinamikus kimenetelek kinyerése a mentett market.note JSON-ből
                 let allMarketOptions = [];
-                if (o1) allMarketOptions.push({ name: o1, key: 'A' });
-                if (ox) allMarketOptions.push({ name: ox, key: 'X' });
-                if (o2) allMarketOptions.push({ name: o2, key: 'B' });
-
-                // Ha teljesen üres a piac, akkor mentőövnek berakjuk a sajátodat
-                if (allMarketOptions.length === 0) {
-                    allMarketOptions.push({ name: myOutcomeName, key: 'A' });
+                if (bet.markets?.note) {
+                    try {
+                        const parsedNote = typeof bet.markets.note === 'string' ? JSON.parse(bet.markets.note) : bet.markets.note;
+                        if (Array.isArray(parsedNote)) {
+                            parsedNote.forEach(group => {
+                                if (group.outcomes && Array.isArray(group.outcomes)) {
+                                    group.outcomes.forEach(out => {
+                                        allMarketOptions.push({ name: out.n || out.name, status: out.status });
+                                    });
+                                }
+                            });
+                        }
+                    } catch(e) {
+                        console.error("Nem sikerült a note JSON parszolása", e);
+                    }
                 }
 
-                // Rendezés: Mindig a Te fogadásod legyen a legfelső sor az Eredményeknél
+                // Mentőöv: ha a note üres, megpróbáljuk a régi oszlopokból összerakni
+                if (allMarketOptions.length === 0) {
+                    if (bet.markets?.odd_1) allMarketOptions.push({ name: bet.markets.odd_1, status: bet.markets.winner === 'A' ? 'win' : 'loss' });
+                    if (bet.markets?.odd_x) allMarketOptions.push({ name: bet.markets.odd_x, status: bet.markets.winner === 'X' ? 'win' : 'loss' });
+                    if (bet.markets?.odd_2) allMarketOptions.push({ name: bet.markets.odd_2, status: bet.markets.winner === 'B' ? 'win' : 'loss' });
+                }
+
+                // Végső mentőöv: ha még mindig üres, berakjuk a sajátodat
+                if (allMarketOptions.length === 0) {
+                    allMarketOptions.push({ name: myOutcomeName, status: isWin ? 'win' : 'loss' });
+                }
+
+                // Rendezés: Mindig a te fogadásod legyen legfelül
                 allMarketOptions.sort((a, b) => {
                     if (a.name === myOutcomeName) return -1;
                     if (b.name === myOutcomeName) return 1;
@@ -1865,19 +1880,11 @@ async function loadMyBetsData() {
                 // HTML sorok legenerálása
                 let optionsRowsHTML = '';
                 allMarketOptions.forEach(opt => {
-                    let isCurrentOptionWinner = false;
-                    let rowStatusText = '';
+                    const isCurrentOptionWinner = opt.status === 'win';
+                    let rowStatusText = isCurrentOptionWinner ? "WINNER" : "LOSS";
 
-                    // Megnézzük, hogy ez a sor-e a piac tényleges nyertese
-                    if (marketWinnerLetter === opt.key || (isWin && opt.name === myOutcomeName)) {
-                        isCurrentOptionWinner = true;
-                    }
-
-                    // Feliratok finomhangolása
                     if (opt.name === myOutcomeName) {
                         rowStatusText = isWin ? "WIN" : "LOSS";
-                    } else {
-                        rowStatusText = isCurrentOptionWinner ? "WINNER" : "LOSS";
                     }
 
                     optionsRowsHTML += `
@@ -1911,7 +1918,6 @@ async function loadMyBetsData() {
                     ${buttonsHTML}
 
                     <div style="margin-top:15px; background:#0d141b; padding:15px; border-radius:8px; border: 1px solid #1c2630;">
-                        
                         <div style="background: rgba(0, 209, 255, 0.04); border: 1px dashed rgba(0, 209, 255, 0.3); border-radius: 6px; padding: 10px 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                             <span style="color: #8a96a3; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Te leadott fogadásod:</span>
                             <span style="color: #fff; font-size: 13px; font-weight: bold;">
