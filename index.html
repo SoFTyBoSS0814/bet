@@ -456,19 +456,10 @@
 </div>
 
 <div id="settleModal" class="modal hidden">
-    <div class="modal-box" style="max-width: 500px; width: 100%;">
-        <h3 id="settle-title" style="margin-bottom: 20px; text-align: center;"></h3>
-        
-        <div class="settle-headers" style="display: flex; font-weight: bold; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; padding: 0 5px;">
-            <div style="flex: 2;">Kimenetel</div>
-            <div style="flex: 1; text-align: center;">Odds</div>
-            <div style="flex: 1.5; text-align: center;">Státusz</div>
-            <div style="width: 40px; text-align: center;"></div> </div>
-
-        <div id="settle-area" style="max-height: 300px; overflow-y: auto;"></div>
-        
+    <div class="modal-box">
+        <h3 id="settle-title"></h3>
+        <div id="settle-area"></div>
         <div id="settle-error-msg" style="color:var(--danger); text-align:center; font-size:12px; margin-top:10px; display:none; font-weight:bold;"></div>
-        
         <button class="btn-primary" style="margin-top:20px; background:var(--success)" id="finalize-btn" onclick="finalSubmitSettle()" data-i18n="finalize">FINALIZE</button>
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')" data-i18n="cancel">Cancel</button>
     </div>
@@ -1312,49 +1303,21 @@ async function placeBet() {
             h += `</div>`;
         });
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
+        renderSettleModalContents();
     }
 
 async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
     errDiv.style.display = 'none';
 
-    // 1. ADATOK ÖSSZEGYŰJTÉSE ÉS UPDATE (Odds, Státusz és Törlés kezelése)
     const selects = document.querySelectorAll('.settle-select');
-    
-    // Először végigmegyünk a HTML elemeken és frissítjük a lokális adatstruktúrát
     selects.forEach(s => {
         const gi = s.dataset.gi, oi = s.dataset.oi;
-        const group = currentSettleGroups[gi];
-        const outcome = group.outcomes[oi];
-
-        // Megnézzük, hogy ez a sor törlésre lett-e jelölve
-        const row = s.closest('.settle-row'); // feltételezve, hogy a sorosztályod ez
-        const isDeleted = row && row.getAttribute('data-deleted') === 'true';
-
-        if (isDeleted) {
-            // Megjelöljük belsőleg töröltnek
-            outcome._deleted = true;
-        } else {
-            // Ha nincs törölve, frissítjük a státuszt és az oddsot az input mezőből
-            outcome.status = s.value;
-            
-            const oddsInput = row ? row.querySelector('.outcome-odds-input') : null;
-            if (oddsInput) {
-                // Frissítjük a lokális objektumban az oddsot az új értékre
-                outcome.odds = parseFloat(oddsInput.value) || outcome.odds;
-            }
-        }
+        currentSettleGroups[gi].outcomes[oi].status = s.value;
     });
 
-    // Ténylegesen kitöröljük a csoportokból azokat a kimeneteleket, amiket törlésre jelöltek
-    currentSettleGroups.forEach(group => {
-        group.outcomes = group.outcomes.filter(o => !o._deleted);
-    });
-
-    // 2. VALIDÁCIÓ (Csak a megmaradt kimenetelekre fut le!)
     for (let group of currentSettleGroups) {
-        // Ha a törlések után nem maradt kimenetel, vagy validációs hiba van
-        if (group.outcomes.length === 0 || !group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
+        if (!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
             errDiv.innerText = i18n[currentLang].win_loss_err;
             errDiv.style.display = 'block';
             return;
@@ -1366,7 +1329,6 @@ async function finalSubmitSettle() {
     btn.innerText = "Processing...";
     globalRefresh();
 
-    // Összegyűjtjük a nyertes kimenetelek neveit a megmaradtak közül
     let winners = [];
     currentSettleGroups.forEach(g =>
         g.outcomes.forEach(o => { if (o.status === 'win') winners.push(o.n); })
@@ -1381,7 +1343,7 @@ async function finalSubmitSettle() {
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-        // ✅ initial_liquidity oszlopból vesszük az alap letétet
+        // ✅ Most már az initial_liquidity oszlopból vesszük az alap letétet
         let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
 
         const { data: bets } = await _supabase
@@ -1397,7 +1359,6 @@ async function finalSubmitSettle() {
 
                 if (isWin) {
                     // Ha a fogadó nyert: a Host csak a tiszta nyereményt bukja a poolból
-                    // FIGYELEM: Ha a bet.odds még a régi fixált oddsot tartalmazza az adatbázisban, azzal számol!
                     const payout = betAmt * parseFloat(bet.odds);
                     const netLoss = payout - betAmt; 
                     settlementAmount -= netLoss;
@@ -1436,7 +1397,7 @@ async function finalSubmitSettle() {
                 .eq('id', host.id);
         }
 
-        // Piac lezárása és a MÓDOSÍTOTT (új oddsok, törölt kimenetelek nélküli) struktúra mentése
+        // Piac lezárása
         await _supabase
             .from('markets')
             .update({
@@ -1984,6 +1945,249 @@ async function loadMyBetsData() {
         console.error("Hiba:", err);
     }
 }
+
+    <script>
+/**
+ * Ez a függvény felelős azért, hogy a Settle Modal megnyitásakor 
+ * a kimeneteleket pontosan a kért dizájn szerint renderelje le.
+ * Hívd meg ezt a függvényt ott, ahol a Settle gombra kattintva megnyitod a modalt!
+ */
+function renderSettleModalContents() {
+    const container = document.getElementById('settle-area');
+    if (!container) return;
+    
+    container.innerHTML = ''; // Korábbi tartalom ürítése
+
+    // Végigmegyünk a globális csoportokon és a kimeneteleken
+    if (typeof currentSettleGroups !== 'undefined' && Array.isArray(currentSettleGroups)) {
+        currentSettleGroups.forEach((group, gi) => {
+            group.outcomes.forEach((outcome, oi) => {
+                
+                // Létrehozzuk a sort flexbox elrendezéssel a tökéletes igazításhoz
+                const row = document.createElement('div');
+                row.className = 'settle-row';
+                row.style = 'display: flex; align-items: center; margin-bottom: 12px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);';
+
+                row.innerHTML = `
+                    <div style="flex: 2; font-weight: 500; color: #fff; padding-right: 10px; font-size: 14px;">
+                        <small style="display:block; color: #8a99ad; font-size: 10px; margin-bottom: 2px;">${group.name || 'Group'}</small>
+                        ${outcome.n || outcome.name}
+                    </div>
+                    
+                    <div style="flex: 1; display: flex; justify-content: center; padding: 0 5px;">
+                        <input type="number" 
+                               step="0.01" 
+                               min="1.01"
+                               class="outcome-odds-input" 
+                               value="${outcome.odds}" 
+                               style="width: 100%; max-width: 80px; text-align: center; padding: 6px; background: #1a222d; color: #fff; border: 1px solid #3f4f66; border-radius: 4px; font-weight: bold; font-size: 14px;">
+                    </div>
+                    
+                    <div style="flex: 1.5; display: flex; justify-content: center; padding: 0 5px;">
+                        <select class="settle-select" 
+                                data-gi="${gi}" 
+                                data-oi="${oi}" 
+                                style="width: 100%; padding: 6px; background: #1a222d; color: #fff; border: 1px solid #3f4f66; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                            <option value="pending" ${outcome.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="win" ${outcome.status === 'win' ? 'selected' : ''}>Won</option>
+                            <option value="loss" ${outcome.status === 'loss' ? 'selected' : ''}>Lost</option>
+                            <option value="void" ${outcome.status === 'void' ? 'selected' : ''}>Void</option>
+                        </select>
+                    </div>
+                    
+                    <div style="width: 40px; display: flex; justify-content: center;">
+                        <button type="button" 
+                                onclick="markOutcomeAsDeleted(this)" 
+                                style="background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 16px; padding: 5px; transition: transform 0.2s;"
+                                title="Kimenetel törlése"
+                                onmouseover="this.style.transform='scale(1.2)'"
+                                onmouseout="this.style.transform='scale(1)'">
+                            🗑️
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(row);
+            });
+        });
+    }
+}
+
+/**
+ * Kezeli a törlés gombra kattintást: vizuálisan elszürkíti a sort,
+ * lezárja az inputokat, és megjelöli törlésre a mentéshez.
+ */
+function markOutcomeAsDeleted(buttonElement) {
+    const row = buttonElement.closest('.settle-row');
+    if (!row) return;
+
+    const isAlreadyDeleted = row.getAttribute('data-deleted') === 'true';
+
+    if (!isAlreadyDeleted) {
+        if (confirm("Biztosan törölni akarod ezt a kimenetelt?")) {
+            row.setAttribute('data-deleted', 'true');
+            row.style.opacity = '0.25'; 
+            row.style.background = 'rgba(255, 77, 77, 0.08)'; 
+            row.style.borderColor = 'rgba(255, 77, 77, 0.2)';
+            buttonElement.innerHTML = '🔄'; 
+            buttonElement.title = "Törlés visszavonása";
+            buttonElement.style.color = "#00ff88";
+            
+            row.querySelector('.outcome-odds-input').disabled = true;
+            row.querySelector('.settle-select').disabled = true;
+        }
+    } else {
+        row.removeAttribute('data-deleted');
+        row.style.opacity = '1';
+        row.style.background = 'rgba(255,255,255,0.03)';
+        row.style.borderColor = 'rgba(255,255,255,0.05)';
+        buttonElement.innerHTML = '🗑️';
+        buttonElement.title = "Kimenetel törlése";
+        buttonElement.style.color = "#ff4d4d";
+        
+        row.querySelector('.outcome-odds-input').disabled = false;
+        row.querySelector('.settle-select').disabled = false;
+    }
+}
+
+/**
+ * A FINALIZE gomb megnyomásakor lefutó aszinkron Supabase mentés,
+ * ami beolvassa az új oddsokat, kiveszi a törölteket és lezárja a fogadásokat.
+ */
+async function finalSubmitSettle() {
+    const errDiv = document.getElementById('settle-error-msg');
+    if (errDiv) errDiv.style.display = 'none';
+
+    const selects = document.querySelectorAll('.settle-select');
+    
+    // 1. Az input mezők aktuális állásának feldolgozása
+    selects.forEach(s => {
+        const gi = s.dataset.gi, oi = s.dataset.oi;
+        const group = currentSettleGroups[gi];
+        const outcome = group.outcomes[oi];
+
+        const row = s.closest('.settle-row');
+        const isDeleted = row && row.getAttribute('data-deleted') === 'true';
+
+        if (isDeleted) {
+            outcome._deleted = true; // Belső jelölés törlésre
+        } else {
+            outcome.status = s.value;
+            const oddsInput = row ? row.querySelector('.outcome-odds-input') : null;
+            if (oddsInput) {
+                outcome.odds = parseFloat(oddsInput.value) || outcome.odds;
+            }
+        }
+    });
+
+    // Kiszelektáljuk a törölt kimeneteleket a mentendő tömbből
+    currentSettleGroups.forEach(group => {
+        group.outcomes = group.outcomes.filter(o => !o._deleted);
+    });
+
+    // 2. Validáció a megmaradt kimenetelekre
+    for (let group of currentSettleGroups) {
+        if (group.outcomes.length === 0 || !group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
+            if (errDiv) {
+                errDiv.innerText = i18n[currentLang].win_loss_err;
+                errDiv.style.display = 'block';
+            }
+            return;
+        }
+    }
+
+    const btn = document.getElementById('finalize-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+    }
+    
+    if (typeof globalRefresh === 'function') globalRefresh();
+
+    let winners = [];
+    currentSettleGroups.forEach(g =>
+        g.outcomes.forEach(o => { if (o.status === 'win') winners.push(o.n || o.name); })
+    );
+
+    try {
+        const { data: mData } = await _supabase
+            .from('markets')
+            .select('*')
+            .eq('id', currentSettleId)
+            .single();
+
+        const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+        let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
+
+        const { data: bets } = await _supabase
+            .from('bets')
+            .select('*')
+            .eq('market_id', currentSettleId)
+            .eq('status', 'pending');
+
+        if (bets) {
+            for (let bet of bets) {
+                const isWin = winners.includes(bet.outcome_name);
+                const betAmt = parseFloat(bet.amount);
+
+                if (isWin) {
+                    const payout = betAmt * parseFloat(bet.odds);
+                    const netLoss = payout - betAmt; 
+                    settlementAmount -= netLoss;
+
+                    await _supabase.rpc('settle_bet_payout', {
+                        p_user_id: bet.user_id,
+                        p_amount: payout,
+                        p_field: field
+                    });
+                } else {
+                    settlementAmount += betAmt;
+                }
+
+                await _supabase
+                    .from('bets')
+                    .update({ status: isWin ? 'win' : 'loss' })
+                    .eq('id', bet.id);
+            }
+        }
+
+        const { data: host } = await _supabase
+            .from('profiles')
+            .select('*')
+            .eq('username', mData.creator_name)
+            .single();
+
+        if (host) {
+            const currentBalance = parseFloat(host[field]) || 0;
+            await _supabase
+                .from('profiles')
+                .update({
+                    [field]: currentBalance + settlementAmount
+                })
+                .eq('id', host.id);
+        }
+
+        // Mentés a módosított JSON-nel (új oddsok + töröltek nélkül)
+        await _supabase
+            .from('markets')
+            .update({
+                note: JSON.stringify(currentSettleGroups),
+                status: 'settled',
+                start_time: new Date().toISOString()
+            })
+            .eq('id', currentSettleId);
+
+        location.reload();
+
+    } catch (e) {
+        console.error(e);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "FINALIZE";
+        }
+    }
+}
+</script>
 
 </script>
 </body>
