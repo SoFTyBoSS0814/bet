@@ -33,8 +33,11 @@ async function loadWithdrawals() {
         <div class="user-card">
             <div>
                 <strong>${w.username}</strong>: ${w.amount}€ 
-                <br>
-                <span style="color: #ffca28; font-size: 0.9rem; font-family: monospace;">${w.btc_address}</span>
+                <br><br>
+                <div style="background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.05); padding: 6px 12px; border-radius: 6px; display: inline-block;">
+                    <strong style="color: #ffffff; font-size: 0.8rem; margin-right: 5px;">BTC WALLET:</strong>
+                    <span style="color: #ffca28; font-size: 0.9rem; font-family: monospace; letter-spacing: 0.5px;">${w.btc_address}</span>
+                </div>
             </div>
             <div>
                 <button class="btn-approve" onclick="window.updateWithdrawal('${w.id}', 'completed')">Jóváhagyás</button>
