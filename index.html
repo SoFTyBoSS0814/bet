@@ -714,6 +714,14 @@ async function requestWithdrawal() {
         return;
     }
 
+    // --- 10 EURÓS MINIMUM LIMIT ELLENŐRZÉSE ---
+    if (amount < 10) {
+        errorDiv.innerText = "A minimális kifizetési összeg 10 €!";
+        errorDiv.style.display = 'block';
+        errorDiv.style.color = '#ff4646';
+        return;
+    }
+
     // --- VIZUÁLIS VISSZAJELZÉS INDÍTÁSA ---
     if (btn) {
         btn.disabled = true;
