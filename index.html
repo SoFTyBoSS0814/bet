@@ -724,10 +724,10 @@ async function requestWithdrawal() {
     }
 
     try {
-        // --- FRISS PROFIL ADATOK LEKÉRÉSE (Egyenleg és Státusz ellenőrzéshez) ---
+        // --- FRISS PROFIL ADATOK LEKÉRÉSE (Valódi oszlopnevekkel) ---
         const { data: freshProfile, error: profileErr } = await _supabase
             .from('profiles')
-            .select('real_balance, status') // Lekérjük a státuszt is (pl. 'active' vagy 'restricted')
+            .select('real_balance, is_restricted') // A te pontos oszlopneveid a Supabase-ből!
             .eq('id', currentUser.id)
             .single();
 
@@ -735,18 +735,14 @@ async function requestWithdrawal() {
             throw new Error("Hiba történt a profil ellenőrzése közben!");
         }
 
-        // 3. KORLÁTOZÁS ELLENŐRZÉSE (Ha a státusz NEM 'active', vagy 'restricted')
-        // Figyelem: Írd át az 'active' szót arra, amit a Supabase adatbázisodban használsz a jó userekre!
-        if (freshProfile.status !== 'active') { 
-            errorDiv.innerText = "A számlád korlátozás alatt áll. Kifizetés nem lehetséges!";
-            errorDiv.style.display = 'block';
-            errorDiv.style.color = '#ff4646';
-            return; // Megállítjuk a futást, a gombhoz hozzá sem nyúlunk!
+        // 3. KORLÁTOZÁS ELLENŐRZÉSE (Ha a Supabase-ben a bool érték TRUE)
+        if (freshProfile.is_restricted === true) { 
+            throw new Error("A számlád korlátozás alatt áll. Kifizetés nem lehetséges!");
         }
 
         // 4. Fedezet ellenőrzése
         if (amount > freshProfile.real_balance) {
-            throw new Error("Nincs elég egyenleg!");
+            throw new Error("Nincs elég egyenleg a kifizetéshez!");
         }
 
         // --- VIZUÁLIS VISSZAJELZÉS INDÍTÁSA (Csak ha minden ellenőrzés sikeres) ---
@@ -765,16 +761,18 @@ async function requestWithdrawal() {
             .update({ real_balance: freshProfile.real_balance - amount })
             .eq('id', currentUser.id);
 
-        if (updateError) throw updateError;
+        if (updateError) throw new Error("Hiba történt az egyenleg levonása közben!");
 
         // Kérelem rögzítése a withdrawals táblába
-        await _supabase.from('withdrawals').insert([{ 
+        const { error: insertError } = await _supabase.from('withdrawals').insert([{ 
             user_id: currentUser.id, 
             username: userProfile.username, 
             amount: amount, 
             btc_address: address, 
             status: 'pending' 
         }]);
+
+        if (insertError) throw new Error("Hiba történt a kérelem rögzítése közben!");
 
         // --- SIKERES VISSZAJELZÉS ---
         errorDiv.style.color = "#44ff44";
@@ -793,7 +791,8 @@ async function requestWithdrawal() {
 
     } catch (err) {
         console.error("Hiba:", err);
-        errorDiv.innerText = err.message;
+        // Minden esetben a dobott vagy kapott hibaüzenetet jelenítjük meg a felületen
+        errorDiv.innerText = err.message || "Hiba történt a kifizetés közben!";
         errorDiv.style.display = 'block';
         errorDiv.style.color = '#ff4646';
         
