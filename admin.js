@@ -31,7 +31,11 @@ async function loadWithdrawals() {
 
     div.innerHTML = ws.map(w => `
         <div class="user-card">
-            <div><strong>${w.username}</strong>: ${w.amount}€ <code>${w.btc_address}</code></div>
+            <div>
+                <strong>${w.username}</strong>: ${w.amount}€ 
+                <br>
+                <span style="color: #ffca28; font-size: 0.9rem; font-family: monospace;">${w.btc_address}</span>
+            </div>
             <div>
                 <button class="btn-approve" onclick="window.updateWithdrawal('${w.id}', 'completed')">Jóváhagyás</button>
                 <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Elutasítás</button>
