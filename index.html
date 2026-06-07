@@ -707,6 +707,7 @@ async function requestWithdrawal() {
     const amount = parseFloat(amountInput.value);
     const address = addrInput.value.trim();
 
+    // --- ÖSSZESÍTETT INPUT VALIDÁCIÓ ---
     if (isNaN(amount) || amount <= 0 || !address) {
         errorDiv.innerText = "Kérlek tölts ki minden mezőt!";
         errorDiv.style.display = 'block';
@@ -719,15 +720,15 @@ async function requestWithdrawal() {
         errorDiv.innerText = "A minimális kifizetési összeg 10 €!";
         errorDiv.style.display = 'block';
         errorDiv.style.color = '#ff4646';
-        return;
+        return; // Itt megállítjuk a teljes futást, nem nyúl a gombhoz, nem megy a Supabase-re!
     }
 
-    // --- VIZUÁLIS VISSZAJELZÉS INDÍTÁSA ---
+    // --- VIZUÁLIS VISSZAJELZÉS INDÍTÁSA (Csak ha minden validáción átment) ---
     if (btn) {
         btn.disabled = true;
         btn.style.opacity = "0.5";
         btn.style.cursor = "not-allowed";
-        btn.innerText = "Feldolgozás..."; // Átírjuk a gomb feliratát
+        btn.innerText = "Feldolgozás..."; 
     }
     
     errorDiv.style.display = 'none';
@@ -768,7 +769,7 @@ async function requestWithdrawal() {
         
         if (btn) {
             btn.innerText = "Beküldve!";
-            btn.style.background = "#28a745"; // Zöldre vált a gomb is
+            btn.style.background = "#28a745"; 
         }
 
         amountInput.value = "";
