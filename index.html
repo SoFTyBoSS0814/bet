@@ -707,7 +707,7 @@ async function requestWithdrawal() {
     const amount = parseFloat(amountInput.value);
     const address = addrInput.value.trim();
 
-    // --- ÖSSZESÍTETT INPUT VALIDÁCIÓ ---
+    // 1. Alapvető input ellenőrzések
     if (isNaN(amount) || amount <= 0 || !address) {
         errorDiv.innerText = "Kérlek tölts ki minden mezőt!";
         errorDiv.style.display = 'block';
@@ -715,37 +715,51 @@ async function requestWithdrawal() {
         return;
     }
 
-    // --- 10 EURÓS MINIMUM LIMIT ELLENŐRZÉSE ---
+    // 2. Minimum limit ellenőrzése
     if (amount < 10) {
         errorDiv.innerText = "A minimális kifizetési összeg 10 €!";
         errorDiv.style.display = 'block';
         errorDiv.style.color = '#ff4646';
-        return; // Itt megállítjuk a teljes futást, nem nyúl a gombhoz, nem megy a Supabase-re!
+        return;
     }
-
-    // --- VIZUÁLIS VISSZAJELZÉS INDÍTÁSA (Csak ha minden validáción átment) ---
-    if (btn) {
-        btn.disabled = true;
-        btn.style.opacity = "0.5";
-        btn.style.cursor = "not-allowed";
-        btn.innerText = "Feldolgozás..."; 
-    }
-    
-    errorDiv.style.display = 'none';
 
     try {
-        // Friss egyenleg csekkolása a szerverről
+        // --- FRISS PROFIL ADATOK LEKÉRÉSE (Egyenleg és Státusz ellenőrzéshez) ---
         const { data: freshProfile, error: profileErr } = await _supabase
             .from('profiles')
-            .select('real_balance')
+            .select('real_balance, status') // Lekérjük a státuszt is (pl. 'active' vagy 'restricted')
             .eq('id', currentUser.id)
             .single();
 
-        if (profileErr || amount > freshProfile.real_balance) {
-            throw new Error("Nincs elég egyenleg vagy hiba történt!");
+        if (profileErr) {
+            throw new Error("Hiba történt a profil ellenőrzése közben!");
         }
 
-        // Levonás
+        // 3. KORLÁTOZÁS ELLENŐRZÉSE (Ha a státusz NEM 'active', vagy 'restricted')
+        // Figyelem: Írd át az 'active' szót arra, amit a Supabase adatbázisodban használsz a jó userekre!
+        if (freshProfile.status !== 'active') { 
+            errorDiv.innerText = "A számlád korlátozás alatt áll. Kifizetés nem lehetséges!";
+            errorDiv.style.display = 'block';
+            errorDiv.style.color = '#ff4646';
+            return; // Megállítjuk a futást, a gombhoz hozzá sem nyúlunk!
+        }
+
+        // 4. Fedezet ellenőrzése
+        if (amount > freshProfile.real_balance) {
+            throw new Error("Nincs elég egyenleg!");
+        }
+
+        // --- VIZUÁLIS VISSZAJELZÉS INDÍTÁSA (Csak ha minden ellenőrzés sikeres) ---
+        if (btn) {
+            btn.disabled = true;
+            btn.style.opacity = "0.5";
+            btn.style.cursor = "not-allowed";
+            btn.innerText = "Feldolgozás..."; 
+        }
+        
+        errorDiv.style.display = 'none';
+
+        // Levonás az egyenlegből
         const { error: updateError } = await _supabase
             .from('profiles')
             .update({ real_balance: freshProfile.real_balance - amount })
@@ -753,7 +767,7 @@ async function requestWithdrawal() {
 
         if (updateError) throw updateError;
 
-        // Kérelem rögzítése
+        // Kérelem rögzítése a withdrawals táblába
         await _supabase.from('withdrawals').insert([{ 
             user_id: currentUser.id, 
             username: userProfile.username, 
@@ -779,7 +793,7 @@ async function requestWithdrawal() {
 
     } catch (err) {
         console.error("Hiba:", err);
-        errorDiv.innerText = err.message === "Nincs elég egyenleg vagy hiba történt!" ? err.message : "Hiba történt a kifizetés közben!";
+        errorDiv.innerText = err.message;
         errorDiv.style.display = 'block';
         errorDiv.style.color = '#ff4646';
         
