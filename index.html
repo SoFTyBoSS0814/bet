@@ -1311,26 +1311,149 @@ async function placeBet() {
         if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
     }
 }
-    async function openSettle(mId, title) {
-        const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
-        currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
-        document.getElementById('settle-title').innerText = "Settle: " + title;
-        let h = '';
-        currentSettleGroups.forEach((g, gi) => {
-            h += `<div style="margin-top:15px"><small>${g.title}</small>`;
-            g.outcomes.forEach((o, oi) => {
-                h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
-                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0"><option value="pending">Pending</option><option value="win">WINNER</option><option value="loss">LOSS</option></select></div>`;
-            });
-            h += `</div>`;
+ async function openSettle(mId, title) {
+    const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
+    currentSettleId = mId; 
+    currentSettleGroups = JSON.parse(data.note);
+    
+    document.getElementById('settle-title').innerText = "Settle: " + title;
+    
+    // Globális státuszválasztó hozzáadása a fül/modal tetejéhez
+    let h = `
+        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <label style="display:block; font-size:0.85rem; color:#aaa; margin-bottom:5px;">Piac státusza:</label>
+            <select id="global-market-status" style="width:100%; padding:8px; background:#1e1e1e; color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:4px;" onchange="toggleSettleSelects(this.value)">
+                <option value="settled">Aktív (Lezárás eredményekkel)</option>
+                <option value="cancelled">Törölve (Minden tét visszajár)</option>
+            </select>
+        </div>
+        <div id="settle-groups-container">
+    `;
+    
+    currentSettleGroups.forEach((g, gi) => {
+        h += `<div style="margin-top:15px"><small>${g.title}</small>`;
+        g.outcomes.forEach((o, oi) => {
+            h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
+            <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0"><option value="pending">Pending</option><option value="win">WINNER</option><option value="loss">LOSS</option></select></div>`;
         });
-        document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
+        h += `</div>`;
+    });
+    
+    h += `</div>`; // settle-groups-container lezárása
+    
+    document.getElementById('settle-area').innerHTML = h; 
+    document.getElementById('settleModal').classList.remove('hidden');
+}
+
+// Segédfüggvény a selectek elhalványításához törlés esetén
+function toggleSettleSelects(status) {
+    const container = document.getElementById('settle-groups-container');
+    if (container) {
+        if (status === 'cancelled') {
+            container.style.opacity = "0.3";
+            container.style.pointerEvents = "none";
+        } else {
+            container.style.opacity = "1";
+            container.style.pointerEvents = "auto";
+        }
     }
+}
 
 async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
     errDiv.style.display = 'none';
 
+    // Lekérjük a modal tetején lévő státuszt
+    const globalStatus = document.getElementById('global-market-status').value;
+
+    // ==========================================
+    // 1. ÁG: PIAC TÖRLÉSE ÉS JÓVÁÍRÁSOK (CANCELLED)
+    // ==========================================
+    if (globalStatus === 'cancelled') {
+        const confirmCancel = confirm("Biztosan TÖRÖLRE állítod a piacot? Minden fogadó visszakapja a tétjét, a Host pedig a kezdeti likviditást!");
+        if (!confirmCancel) return;
+
+        const btn = document.getElementById('finalize-btn');
+        btn.disabled = true;
+        btn.innerText = "Refund folyamatban...";
+
+        try {
+            const { data: mData } = await _supabase
+                .from('markets')
+                .select('*')
+                .eq('id', currentSettleId)
+                .single();
+
+            const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+            // Lekérjük az összes még függő fogadást ehhez a piachoz
+            const { data: bets } = await _supabase
+                .from('bets')
+                .select('*')
+                .eq('market_id', currentSettleId)
+                .eq('status', 'pending');
+
+            // 1. Játékosok kártalanítása (Mindenki visszakapja a pontos tétjét)
+            if (bets && bets.length > 0) {
+                for (let bet of bets) {
+                    const betAmt = parseFloat(bet.amount);
+                    
+                    // Tét visszajuttatása az egyenlegbe az RPC függvénnyel
+                    await _supabase.rpc('settle_bet_payout', {
+                        p_user_id: bet.user_id,
+                        p_amount: betAmt, 
+                        p_field: field
+                    });
+
+                    // Fogadás státuszának frissítése 'refunded'-re
+                    await _supabase
+                        .from('bets')
+                        .update({ status: 'refunded' })
+                        .eq('id', bet.id);
+                }
+            }
+
+            // 2. Host kártalanítása (Visszakapja az eredeti letétét)
+            const { data: host } = await _supabase
+                .from('profiles')
+                .select('*')
+                .eq('username', mData.creator_name)
+                .single();
+
+            if (host) {
+                const currentBalance = parseFloat(host[field]) || 0;
+                const initialLiquidity = parseFloat(mData.initial_liquidity) || 0;
+                
+                await _supabase
+                    .from('profiles')
+                    .update({ [field]: currentBalance + initialLiquidity })
+                    .eq('id', host.id);
+            }
+
+            // 3. Piac státuszának lezárása 'cancelled'-re
+            await _supabase
+                .from('markets')
+                .update({
+                    status: 'cancelled',
+                    start_time: new Date().toISOString()
+                })
+                .eq('id', currentSettleId);
+
+            location.reload();
+            return; // Kilépünk a függvényből, az alatta lévő normál elszámolás nem fut le!
+
+        } catch (e) {
+            console.error(e);
+            alert("Hiba történt a törlés során!");
+            btn.disabled = false;
+            btn.innerText = "FINALIZE";
+            return;
+        }
+    }
+
+    // ==========================================
+    // 2. ÁG: NORMÁL LEZÁRÁSI LOGIKA (SETTLED)
+    // ==========================================
     const selects = document.querySelectorAll('.settle-select');
     selects.forEach(s => {
         const gi = s.dataset.gi, oi = s.dataset.oi;
