@@ -1318,39 +1318,45 @@ async function placeBet() {
     
     document.getElementById('settle-title').innerText = "Settle: " + title;
     
-    // Globális státuszválasztó hozzáadása a fül/modal tetejéhez
-    let h = `
-        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-            <label style="display:block; font-size:0.85rem; color:#aaa; margin-bottom:5px;">Piac státusza:</label>
-            <select id="global-market-status" style="width:100%; padding:8px; background:#1e1e1e; color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:4px;" onchange="toggleSettleSelects(this.value)">
-                <option value="settled">Aktív (Lezárás eredményekkel)</option>
-                <option value="cancelled">Törölve (Minden tét visszajár)</option>
-            </select>
-        </div>
-        <div id="settle-groups-container">
-    `;
-    
+    let h = '';
     currentSettleGroups.forEach((g, gi) => {
-        h += `<div style="margin-top:15px"><small>${g.title}</small>`;
+        // Minden csoport kap egy saját fejlécet, és mellé teszünk egy egyedi törlő gombot/jelzést
+        h += `
+            <div style="margin-top:20px; padding:10px; border:1px solid rgba(255,255,255,0.05); border-radius:6px; background:rgba(0,0,0,0.1)">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <strong style="color:#00d2ff;">${g.title}</strong>
+                    <label style="font-size:0.75rem; color:#aaa; margin:0;">
+                        <input type="checkbox" class="group-cancel-check" data-gi="${gi}" onchange="toggleGroupCancel(this, ${gi})" style="margin-right:5px;"> 
+                        Ezen csoport törlése (Refund)
+                    </label>
+                </div>
+                <div id="group-outcomes-${gi}">
+        `;
+        
         g.outcomes.forEach((o, oi) => {
-            h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
-            <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0"><option value="pending">Pending</option><option value="win">WINNER</option><option value="loss">LOSS</option></select></div>`;
+            h += `
+                <div style="display:flex; justify-content:space-between; margin-top:5px; align-items:center;">
+                    <span style="font-size:0.9rem;">${o.n}</span>
+                    <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0; background:#1e1e1e; color:#fff; border:1px solid rgba(255,255,255,0.2);">
+                        <option value="pending">Pending</option>
+                        <option value="win">WINNER</option>
+                        <option value="loss">LOSS</option>
+                    </select>
+                </div>`;
         });
-        h += `</div>`;
+        h += `</div></div>`;
     });
-    
-    h += `</div>`; // settle-groups-container lezárása
     
     document.getElementById('settle-area').innerHTML = h; 
     document.getElementById('settleModal').classList.remove('hidden');
 }
 
-// Segédfüggvény a selectek elhalványításához törlés esetén
-function toggleSettleSelects(status) {
-    const container = document.getElementById('settle-groups-container');
+// Segédfüggvény: Ha egy konkrét csoportra rárakod a pipát, elhalványítja és letiltja annak a selectjeit
+function toggleGroupCancel(checkbox, gi) {
+    const container = document.getElementById(`group-outcomes-${gi}`);
     if (container) {
-        if (status === 'cancelled') {
-            container.style.opacity = "0.3";
+        if (checkbox.checked) {
+            container.style.opacity = "0.2";
             container.style.pointerEvents = "none";
         } else {
             container.style.opacity = "1";
@@ -1363,108 +1369,38 @@ async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
     errDiv.style.display = 'none';
 
-    // Lekérjük a modal tetején lévő státuszt
-    const globalStatus = document.getElementById('global-market-status').value;
-
-    // ==========================================
-    // 1. ÁG: PIAC TÖRLÉSE ÉS JÓVÁÍRÁSOK (CANCELLED)
-    // ==========================================
-    if (globalStatus === 'cancelled') {
-        const confirmCancel = confirm("Biztosan TÖRÖLRE állítod a piacot? Minden fogadó visszakapja a tétjét, a Host pedig a kezdeti likviditást!");
-        if (!confirmCancel) return;
-
-        const btn = document.getElementById('finalize-btn');
-        btn.disabled = true;
-        btn.innerText = "Refund folyamatban...";
-
-        try {
-            const { data: mData } = await _supabase
-                .from('markets')
-                .select('*')
-                .eq('id', currentSettleId)
-                .single();
-
-            const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-
-            // Lekérjük az összes még függő fogadást ehhez a piachoz
-            const { data: bets } = await _supabase
-                .from('bets')
-                .select('*')
-                .eq('market_id', currentSettleId)
-                .eq('status', 'pending');
-
-            // 1. Játékosok kártalanítása (Mindenki visszakapja a pontos tétjét)
-            if (bets && bets.length > 0) {
-                for (let bet of bets) {
-                    const betAmt = parseFloat(bet.amount);
-                    
-                    // Tét visszajuttatása az egyenlegbe az RPC függvénnyel
-                    await _supabase.rpc('settle_bet_payout', {
-                        p_user_id: bet.user_id,
-                        p_amount: betAmt, 
-                        p_field: field
-                    });
-
-                    // Fogadás státuszának frissítése 'refunded'-re
-                    await _supabase
-                        .from('bets')
-                        .update({ status: 'refunded' })
-                        .eq('id', bet.id);
-                }
-            }
-
-            // 2. Host kártalanítása (Visszakapja az eredeti letétét)
-            const { data: host } = await _supabase
-                .from('profiles')
-                .select('*')
-                .eq('username', mData.creator_name)
-                .single();
-
-            if (host) {
-                const currentBalance = parseFloat(host[field]) || 0;
-                const initialLiquidity = parseFloat(mData.initial_liquidity) || 0;
-                
-                await _supabase
-                    .from('profiles')
-                    .update({ [field]: currentBalance + initialLiquidity })
-                    .eq('id', host.id);
-            }
-
-            // 3. Piac státuszának lezárása 'cancelled'-re
-            await _supabase
-                .from('markets')
-                .update({
-                    status: 'cancelled',
-                    start_time: new Date().toISOString()
-                })
-                .eq('id', currentSettleId);
-
-            location.reload();
-            return; // Kilépünk a függvényből, az alatta lévő normál elszámolás nem fut le!
-
-        } catch (e) {
-            console.error(e);
-            alert("Hiba történt a törlés során!");
-            btn.disabled = false;
-            btn.innerText = "FINALIZE";
-            return;
-        }
-    }
-
-    // ==========================================
-    // 2. ÁG: NORMÁL LEZÁRÁSI LOGIKA (SETTLED)
-    // ==========================================
+    // 1. Állapotok kimentése a selectekből
     const selects = document.querySelectorAll('.settle-select');
     selects.forEach(s => {
         const gi = s.dataset.gi, oi = s.dataset.oi;
         currentSettleGroups[gi].outcomes[oi].status = s.value;
     });
 
-    for (let group of currentSettleGroups) {
-        if (!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
-            errDiv.innerText = i18n[currentLang].win_loss_err;
-            errDiv.style.display = 'block';
-            return;
+    // 2. Megnézzük, melyik csoportokat pipálták ki törlésre
+    const cancelChecks = document.querySelectorAll('.group-cancel-check');
+    cancelChecks.forEach(c => {
+        const gi = c.dataset.gi;
+        if (c.checked) {
+            // Ha a csoport törölve van, minden kimenetelét 'cancelled'-re állítjuk
+            currentSettleGroups[gi].outcomes.forEach(o => {
+                o.status = 'cancelled';
+            });
+        }
+    });
+
+    // 3. Validáció: Csak azokat a csoportokat ellenőrizzük, amik NINCSENEK törölve!
+    for (let i = 0; i < currentSettleGroups.length; i++) {
+        const isGroupCancelled = currentSettleGroups[i].outcomes.some(o => o.status === 'cancelled');
+        
+        if (!isGroupCancelled) {
+            const hasWin = currentSettleGroups[i].outcomes.some(o => o.status === 'win');
+            const hasLoss = currentSettleGroups[i].outcomes.some(o => o.status === 'loss');
+            
+            if (!hasWin || !hasLoss) {
+                errDiv.innerText = i18n[currentLang].win_loss_err + ` (${currentSettleGroups[i].title})`;
+                errDiv.style.display = 'block';
+                return;
+            }
         }
     }
 
@@ -1473,9 +1409,15 @@ async function finalSubmitSettle() {
     btn.innerText = "Processing...";
     globalRefresh();
 
+    // Összegyűjtjük a nyertes kimenetelek és a törölt kimenetelek neveit
     let winners = [];
+    let cancelledOutcomes = [];
+    
     currentSettleGroups.forEach(g =>
-        g.outcomes.forEach(o => { if (o.status === 'win') winners.push(o.n); })
+        g.outcomes.forEach(o => { 
+            if (o.status === 'win') winners.push(o.n); 
+            if (o.status === 'cancelled') cancelledOutcomes.push(o.n);
+        })
     );
 
     try {
@@ -1486,8 +1428,6 @@ async function finalSubmitSettle() {
             .single();
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-
-        // ✅ Most már az initial_liquidity oszlopból vesszük az alap letétet
         let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
 
         const { data: bets } = await _supabase
@@ -1498,33 +1438,49 @@ async function finalSubmitSettle() {
 
         if (bets) {
             for (let bet of bets) {
-                const isWin = winners.includes(bet.outcome_name);
                 const betAmt = parseFloat(bet.amount);
 
-                if (isWin) {
-                    // Ha a fogadó nyert: a Host csak a tiszta nyereményt bukja a poolból
-                    const payout = betAmt * parseFloat(bet.odds);
-                    const netLoss = payout - betAmt; 
-                    settlementAmount -= netLoss;
-
+                // --- HA EZ A FOGADÁS EGY TÖRÖLT CSOPORTBA TARTOZIK ---
+                if (cancelledOutcomes.includes(bet.outcome_name)) {
+                    // A fogadó visszakapja a pontos tétjét, a poolból/liquidityből nem vonódik le semmi
                     await _supabase.rpc('settle_bet_payout', {
                         p_user_id: bet.user_id,
-                        p_amount: payout,
+                        p_amount: betAmt, 
                         p_field: field
                     });
-                } else {
-                    // Ha a fogadó veszített: a teljes tétje profit a Hostnak
-                    settlementAmount += betAmt;
-                }
 
-                await _supabase
-                    .from('bets')
-                    .update({ status: isWin ? 'win' : 'loss' })
-                    .eq('id', bet.id);
+                    await _supabase
+                        .from('bets')
+                        .update({ status: 'refunded' })
+                        .eq('id', bet.id);
+                } 
+                // --- HA NORMÁLISAN LEZÁRT CSOPORTBA TARTOZIK ---
+                else {
+                    const isWin = winners.includes(bet.outcome_name);
+
+                    if (isWin) {
+                        const payout = betAmt * parseFloat(bet.odds);
+                        const netLoss = payout - betAmt; 
+                        settlementAmount -= netLoss;
+
+                        await _supabase.rpc('settle_bet_payout', {
+                            p_user_id: bet.user_id,
+                            p_amount: payout,
+                            p_field: field
+                        });
+                    } else {
+                        settlementAmount += betAmt;
+                    }
+
+                    await _supabase
+                        .from('bets')
+                        .update({ status: isWin ? 'win' : 'loss' })
+                        .eq('id', bet.id);
+                }
             }
         }
 
-        // Host profil lekérése és egyenleg frissítése
+        // Host profil frissítése (A megmaradt settlementAmount-tal)
         const { data: host } = await _supabase
             .from('profiles')
             .select('*')
@@ -1541,7 +1497,7 @@ async function finalSubmitSettle() {
                 .eq('id', host.id);
         }
 
-        // Piac lezárása
+        // Piac végleges lezárása
         await _supabase
             .from('markets')
             .update({
