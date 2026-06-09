@@ -1425,8 +1425,8 @@ async function finalSubmitSettle() {
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
         
-        // A Host visszakapja a kezdő likviditást alapból
-        let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
+        // JAVÍTÁS: A Host tiszta nyereségét/veszteségét 0-ról indítjuk, nem keverjük bele az initial_liquidity-t az elején!
+        let hostNetProfit = 0; 
 
         const { data: bets } = await _supabase
             .from('bets')
@@ -1440,17 +1440,15 @@ async function finalSubmitSettle() {
 
                 // --- HA TÖRÖLT CSOPORTBA TARTOZIK ---
                 if (cancelledOutcomes.includes(bet.outcome_name)) {
-                    // A fogadó visszakapja a saját tétjét az RPC-n keresztül
+                    // A fogadó visszakapja a pontos tétjét
                     await _supabase.rpc('settle_bet_payout', {
                         p_user_id: bet.user_id,
                         p_amount: betAmt, 
                         p_field: field
                     });
 
-                    // FIX JAVÍTÁS: Mivel a fogadó visszakapta a pénzt a saját egyenlegébe, 
-                    // a Hostnak ebből a törölt fogadásból SEMMI extra profit nem jár! 
-                    // A settlementAmount-hoz NEM adunk hozzá semmit, és nem is vonunk le.
-
+                    // A Host egyenlegéhez NEM nyúlunk (0 változás), mert a fogadás érvénytelenítve lett.
+                    
                     await _supabase
                         .from('bets')
                         .update({ status: 'refunded' })
@@ -1461,10 +1459,10 @@ async function finalSubmitSettle() {
                     const isWin = winners.includes(bet.outcome_name);
 
                     if (isWin) {
-                        // Ha a user nyert: a tiszta nyeremény (payout - betAmt) levonódik a Host pooljából
+                        // Ha a user nyert: a tiszta nyeremény (payout - betAmt) levonódik a Host profitjából
                         const payout = betAmt * parseFloat(bet.odds);
                         const netLoss = payout - betAmt; 
-                        settlementAmount -= netLoss;
+                        hostNetProfit -= netLoss;
 
                         await _supabase.rpc('settle_bet_payout', {
                             p_user_id: bet.user_id,
@@ -1472,8 +1470,8 @@ async function finalSubmitSettle() {
                             p_field: field
                         });
                     } else {
-                        // Ha a user veszített: a teljes tétje plusz profit a Hostnak
-                        settlementAmount += betAmt;
+                        // Ha a user veszített: a teljes tétje tiszta profit a Hostnak
+                        hostNetProfit += betAmt;
                     }
 
                     await _supabase
@@ -1484,7 +1482,7 @@ async function finalSubmitSettle() {
             }
         }
 
-        // Host profil egyenlegének pontos frissítése
+        // Host profil lekérése és egyenleg frissítése
         const { data: host } = await _supabase
             .from('profiles')
             .select('*')
@@ -1493,10 +1491,16 @@ async function finalSubmitSettle() {
 
         if (host) {
             const currentBalance = parseFloat(host[field]) || 0;
+            const initialLiquidity = parseFloat(mData.initial_liquidity) || 0;
+
+            // VÉGLEGES MATEK JAVÍTÁS:
+            // A Host visszakapja a teljes Eredeti Likviditását + hozzáadódik a lejátszott meccsek Tiszta Profitja/Vesztesége
+            const finalHostPayout = initialLiquidity + hostNetProfit;
+
             await _supabase
                 .from('profiles')
                 .update({
-                    [field]: currentBalance + settlementAmount
+                    [field]: currentBalance + finalHostPayout
                 })
                 .eq('id', host.id);
         }
