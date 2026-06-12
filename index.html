@@ -1978,6 +1978,99 @@ async function loadMyBetsData() {
             return false;
         }
     };
+
+    // =========================================================================
+// STAKEFORGE - PIAC TÖRLÉS ÉS AUTOMATIKUS PÉNZVISSZATÉRÍTÉS FÜGGVÉNY
+// =========================================================================
+async function cancelAndRefundMarket(marketId, creatorName, initialLiquidity, marketType) {
+    const megerosites = confirm(
+        currentLang === 'hu' 
+        ? "Biztosan törölni szeretnéd ezt a piacot? Minden fogadó és a host is visszakapja a tétjét!" 
+        : "Are you sure you want to cancel this market? All bettors and the host will be fully refunded!"
+    );
+    if (!megerosites) return;
+
+    try {
+        // 1. Lekérjük az összes fogadást, ami erre a piacra érkezett
+        const { data: bets, error: betsError } = await _supabase
+            .from('bets')
+            .select('*')
+            .eq('market_id', marketId);
+
+        if (betsError) throw betsError;
+
+        // 2. FOGADÓK JELENLEGI EGYENLEGÉNEK FRISSÍTÉSE (VISSZATÉRÍTÉS)
+        if (bets && bets.length > 0) {
+            for (let bet of bets) {
+                const balField = bet.type === 'REAL' ? 'real_balance' : 'demo_balance';
+                
+                // Lekérjük a fogadó aktuális egyenlegét az adatbázisból (id alapján)
+                const { data: userProf, error: userErr } = await _supabase
+                    .from('profiles')
+                    .select(balField)
+                    .eq('id', bet.user_id)
+                    .maybeSingle();
+
+                if (userProf) {
+                    const currentBalance = parseFloat(userProf[balField]) || 0;
+                    const refundAmount = parseFloat(bet.amount) || 0;
+                    const newBalance = currentBalance + refundAmount;
+                    
+                    // Frissítjük a fogadó egyenlegét
+                    await _supabase
+                        .from('profiles')
+                        .update({ [balField]: newBalance })
+                        .eq('id', bet.user_id);
+                }
+            }
+            
+            // Ha a fogadók megkapták a pénzt, kitöröljük a fogadásaikat a táblából
+            await _supabase.from('bets').delete().eq('market_id', marketId);
+        }
+
+        // 3. HOST (CREATOR) JELENLEGI EGYENLEGÉNEK FRISSÍTÉSE
+        const hostBalField = marketType === 'REAL' ? 'real_balance' : 'demo_balance';
+        
+        // Megkeressük a hostot a creator_name (username) alapján
+        const { data: hostProf, error: hostErr } = await _supabase
+            .from('profiles')
+            .select(`id, ${hostBalField}`)
+            .eq('username', creatorName)
+            .maybeSingle();
+
+        if (hostProf) {
+            const currentHostBalance = parseFloat(hostProf[hostBalField]) || 0;
+            const hostRefundAmount = parseFloat(initialLiquidity) || 0;
+            const hostNewBalance = currentHostBalance + hostRefundAmount;
+            
+            // Visszaadjuk a hostnak a lefoglalt likviditást
+            await _supabase
+                .from('profiles')
+                .update({ [hostBalField]: hostNewBalance })
+                .eq('id', hostProf.id);
+        }
+
+        // 4. PIAC VÉGLEGES TÖRLÉSE
+        const { error: deleteError } = await _supabase
+            .from('markets')
+            .delete()
+            .eq('id', marketId);
+
+        if (deleteError) throw deleteError;
+
+        // Értesítés és oldal újratöltése
+        alert(
+            currentLang === 'hu'
+            ? "Piac sikeresen törölve, az egyenlegek jóváírva!"
+            : "Market successfully cancelled, balances refunded!"
+        );
+        location.reload();
+
+    } catch (err) {
+        console.error("Hiba a törlés során:", err);
+        alert("Server error during refund process! Please try again.");
+    }
+}
 </script>
 </body>
 </html>
