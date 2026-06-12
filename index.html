@@ -1450,8 +1450,14 @@ async function finalSubmitSettle() {
 // 2. ÚJ FUNKCIÓ: PIAC TELJES TÖRLÉSE ÉS AZONNALI PÉNZVISSZATÉRÍTÉS
 // =========================================================================
 async function cancelAndRefundCurrentMarket() {
+    const errDiv = document.getElementById('settle-error-msg');
+    if (errDiv) errDiv.style.display = 'none';
+
     if (typeof currentSettleId === 'undefined' || !currentSettleId) {
-        alert("Hiba: Nem található a piac azonosítója! / Market ID not found!");
+        if (errDiv) {
+            errDiv.innerText = "Hiba: Nem található a piac azonosítója! / Market ID not found!";
+            errDiv.style.display = 'block';
+        }
         return;
     }
 
@@ -1532,19 +1538,18 @@ async function cancelAndRefundCurrentMarket() {
         // 5. PIAC VÉGLEGES TÖRLÉSE AZ ADATBÁZISBÓL
         await _supabase.from('markets').delete().eq('id', currentSettleId);
 
-        alert(
-            currentLang === 'hu'
-            ? "Piac sikeresen törölve, az egyenlegek visszatérítve!"
-            : "Market successfully cancelled, balances refunded!"
-        );
+        // Nincs idegesítő alert()! Azonnal és tisztán frissítjük az oldalt, a pénzek már a helyükön vannak.
         location.reload();
 
     } catch (err) {
         console.error("Hiba a törlés során:", err);
-        alert("Server error during refund process! Please try again.");
         if (btn) {
             btn.disabled = false;
             btn.innerText = "FINALIZE";
+        }
+        if (errDiv) {
+            errDiv.innerText = "Server error during refund process! Please try again.";
+            errDiv.style.display = 'block';
         }
     }
 }
