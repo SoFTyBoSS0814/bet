@@ -443,9 +443,9 @@
         <select id="m-type" onchange="updateCreateBalanceDisplay()">
             <option value="DEMO">DEMO</option>
             <option value="REAL">REAL</option>
-</select>
+        </select>
         <input id="m-name" data-i18n-placeholder="event_placeholder" placeholder="Event Name">
-        <input id="m-deadline" type="datetime-local" required>
+        <input id="m-deadline" type="datetime-local" max="2099-12-31T23:59">
         <input id="m-budget" type="number" data-i18n-placeholder="budget_placeholder" placeholder="Initial Liquidity Pool">
         <div id="groups-container"></div>
         <button class="btn-bet" onclick="addGroup()" style="margin-top:10px; border-style:dashed" data-i18n="add_category">+ Add Category</button>
@@ -1112,6 +1112,7 @@ async function saveMarket() {
     };
 
     // --- SPAM VÉDELEM ---
+    // Ha a gomb létezik, azonnal tiltjuk
     if (btn) {
         if (btn.disabled) return; 
         btn.disabled = true;
@@ -1124,31 +1125,8 @@ async function saveMarket() {
     const type = document.getElementById('m-type').value;
 
     if (!dlInput) return unlock(dict.min_deadline_err);
-    
-    // --- GOLYÓÁLLÓ ÉVSZÁM ÉS FORMATUM ELLENŐRZÉS ---
-    // A datetime-local formátuma: YYYY-MM-DDTHH:mm -> az első 4 karakter az év
-    const evResz = dlInput.split('-')[0];
-    if (evResz.length !== 4 || parseInt(evResz) > 2026) {
-        return unlock("Hiba: Érvénytelen évszám formátum!");
-    }
-
-    const deadline = new Date(dlInput);
-    const now = new Date();
-    
-    // Ha a dátum nem értelmezhető objektum
-    if (isNaN(deadline.getTime())) {
-        return unlock("Hiba: Hibás dátum formátum!");
-    }
-    
+    const deadline = new Date(dlInput), now = new Date();
     if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
-    
-    // Maximum 2 napos határidő ellenőrzés
-    const maxTime = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000));
-    if (deadline > maxTime) {
-        return unlock(dict.max_deadline_err || "Hiba: A határidő maximum 2 napra lehet a maitól! (Max 2 days)");
-    }
-    // ---------------------------------------------
-
     if (!t || isNaN(b) || b <= 0) return unlock(dict.fill_all);
 
     const balField = type === 'REAL' ? 'real_balance' : 'demo_balance';
@@ -1187,6 +1165,7 @@ async function saveMarket() {
         unlock("Server error! Please try again.");
     }
 }
+
 async function placeBet() {
     const btn = document.getElementById('place-bet-btn');
     if (window.userIsRestricted) { showRestrictionToast(); return; }
