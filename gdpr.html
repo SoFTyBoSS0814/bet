@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Privacy Policy (GDPR)</title>
+    <title>StakeForge | Adatkezelési Tájékoztató (GDPR)</title>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
-        h1, h2 { color: var(--primary); }
+        h1, h2 { color: var(--primary); margin-top: 30px; }
+        h1 { margin-top: 0; }
         .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
-        .section { margin-bottom: 25px; }
+        .section { margin-bottom: 25px; text-align: justify; }
+        .sub-section { margin-left: 15px; margin-bottom: 15px; }
+        .sub-title { font-weight: bold; color: #e0e0e0; margin-top: 10px; display: block; }
         ul { padding-left: 20px; }
         li { margin-bottom: 10px; }
         .highlight { color: var(--primary); font-weight: bold; }
-        .warning-box { border: 1px dashed var(--primary); padding: 15px; background: rgba(0, 212, 255, 0.05); border-radius: 8px; }
+        .warning-box { border: 1px dashed #ff4a4a; padding: 20px; background: rgba(255, 74, 74, 0.05); border-radius: 8px; margin-top: 25px; margin-bottom: 25px; }
+        .warning-box h2 { color: #ff4a4a; margin-top: 0; }
         .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
         .back-link:hover { background: var(--primary); color: #000; }
     </style>
@@ -22,41 +26,110 @@
 <body>
 
 <div class="container">
-    <h1>Adatkezelési Tájékoztató (GDPR)</h1>
-    <p class="last-updated">Utoljára frissítve: 2026. április (v1.1)</p>
-
-<div class="section">
-    <h2>1. Az adatkezelő adatai és alapelvei</h2>
-    <p>A StakeForge rendszere a minimális adatgyűjtés elvét követi. Csak olyan adatokat gyűjtünk és kezelünk, amelyek elengedhetetlenek a platform működéséhez és a felhasználók azonosításához.</p>
-    <p><strong>Kapcsolattartás és ügyfélszolgálat:</strong> support@stake-forge.com</p>
-    <p><strong>Adatfeldolgozó:</strong> A felhasználói adatok biztonságos tárolásáért és az adatbázis-infrastruktúráért a platform a Supabase Inc. (1355 Market St, Suite 488, San Francisco, CA 94103) titkosított felhőszolgáltatását veszi igénybe mint külső adatfeldolgozót.</p>
-</div>
+    <h1>Adatkezelési Tájékoztató</h1>
+    <p class="last-updated">Utoljára frissítve: 2026. június (v1.2)</p>
 
     <div class="section">
-        <h2>2. A gyűjtött adatok köre</h2>
-        <p>A regisztráció és a használat során az alábbi adatokat rögzítjük:</p>
-        <ul>
-            <li><strong>Azonosítók:</strong> Felhasználónév (Username) és E-mail cím.</li>
-            <li><strong>Biztonság:</strong> Titkosított jelszó (Hash formátumban – a nyers jelszót nem látjuk).</li>
-            <li><strong>Egyenlegek:</strong> Aktuális DEMO és REAL egyenleg mértéke.</li>
-            <li><strong>Pénzügyi adatok:</strong> A fiókhoz rendelt egyedi BTC tárcacím (amennyiben a jogosultság fennáll).</li>
-            <li><strong>Technikai adatok:</strong> földrajzi lokáció (kizárólag a hozzáférési jogosultságok ellenőrzése és a geo-blokkolás alkalmazása céljából; IP-címek nem kerülnek tárolásra).</li>
-        </ul>
+        <p>Jelen dokumentum a StakeForge platform hivatalos Adatkezelési Tájékoztatója. Az Adatkezelő ezúton tájékoztatja a Platform felhasználóit (a továbbiakban: Érintett vagy Felhasználó) a személyes adatok kezelésének rendjéről, feltételeiről és garanciáiról, az Európai Parlament és a Tanács (EU) 2016/679 Rendelete (Általános Adatvédelmi Rendelet, a továbbiakban: GDPR), valamint a vonatkozó nemzeti jogszabályok előírásaival összhangban.</p>
+    </div>
+
+    <div class="section">
+        <h2>I. AZ ADATKEZELŐ SZEMÉLYE ÉS ELÉRHETŐSÉGEI [GDPR 13. cikk (1) bek. a) pont]</h2>
+        <p>A Felhasználók személyes adatai tekintetében az adatkezelői minőséget a Platform nemzetközi üzemeltetője tölti be.</p>
+        <p><strong>Adatkezelő megnevezése:</strong> StakeForge International (Austria)</p>
+        <p><strong>Hivatalos adatvédelmi kapcsolattartó (e-mail):</strong> support@stake-forge.com</p>
+    </div>
+
+    <div class="section">
+        <h2>II. AZ ADATKEZELÉS ALAPELVEI [GDPR 5. cikk]</h2>
+        <p>Az Adatkezelő kijelenti, hogy a személyes adatok kezelését kizárólag a jogszerűség, tisztességes eljárás és átláthatóság, a célhoz kötöttség, az adattakarékosság, a pontosság, a korlátozott tárolhatóság, valamint az integritás és bizalmasság elveinek szigorú tiszteletben tartásával végzi.</p>
+    </div>
+
+    <div class="section">
+        <h2>III. A KEZELT ADATOK KÖRE, AZ ADATKEZELÉS CÉLJA, JOGALAPJA ÉS IDŐTARTAMA [GDPR 13. cikk (1) bek. c) pont]</h2>
+        <p>Az Adatkezelő az adatkezelési folyamatokat a minimalizáció elve alapján az alábbi kategóriákra bontva hajtja végre:</p>
+        
+        <div class="sub-section">
+            <span class="sub-title">1. Regisztrációs és azonosítási adatok</span>
+            <p><strong>Kezelt adatok:</strong> Rendszer által generált egyedi azonosító (UUID), Felhasználónév, E-mail cím.<br>
+            <strong>Adatkezelés célja:</strong> Az Érintett hiteles azonosítása, a felhasználói fiók (regisztráció) létrehozása, a Szerződés tárgyát képező szolgáltatás nyújtása, valamint a hivatalos kapcsolattartás.<br>
+            <strong>Adatkezelés jogalapja:</strong> Szerződés teljesítése [GDPR 6. cikk (1) bek. b) pont].<br>
+            <strong>Adatmegőrzés ideje:</strong> A Felhasználói jogviszony fennállásáig (a regisztráció törléséig).</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">2. Biztonsági és hitelesítési adatok</span>
+            <p><strong>Kezelt adatok:</strong> Egyirányúan titkosított (hash) jelszó. Az Adatkezelő kifejezetten rögzíti, hogy a nyers jelsvót nem ismeri és informatikai rendszereiben nem tárolja.<br>
+            <strong>Adatkezelés célja:</strong> A felhasználói fiók integritásának és az illetéktelen hozzáférés elleni védelmének biztosítása.<br>
+            <strong>Adatkezelés jogalapja:</strong> Az Adatkezelőre vonatkozó jogi kötelezettség teljesítése (az adatbiztonság törvényi garantálása) [GDPR 6. cikk (1) bek. c) pont, figyelemmel a 32. cikkre].<br>
+            <strong>Adatmegőrzés ideje:</strong> A Felhasználói jogviszony fennállásáig.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">3. Pénzügyi és vagyoni jellegű adatok</span>
+            <p><strong>Kezelt adatok:</strong> A Felhasználóhoz rendelt DEMO (virtuális) egyenleg aktuális állapota, REAL (valós) egyenleg állapota, egyedi BTC (Bitcoin) tárcacím.<br>
+            <strong>Adatkezelés célja:</strong> A Platformon belüli gazdasági események (fogadások, nyeremények), valamint a befizetési és kifizetési tranzakciók technikai és számviteli lebonyolítása.<br>
+            <strong>Adatkezelés jogalapja:</strong> Szerződés teljesítése [GDPR 6. cikk (1) bek. b) pont].<br>
+            <strong>Adatmegőrzés ideje:</strong> A Felhasználói fiók törléséig, figyelemmel az irányadó számviteli és adóügyi jogszabályok által előírt kötelező elévülési és megőrzési időkre.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">4. Tranzakciós és fogadási naplóadatok</span>
+            <p><strong>Kezelt adatok:</strong> Tranzakció/fogadás egyedi azonosítója (UUID), Piac azonosítója, a Felhasználó egyedi azonosítója (User UUID), Kimenetel megnevezése, Alkalmazott szorzó (odds), Tét összege, Tranzakció típusa, Tranzakció jogi státusza.<br>
+            <strong>Adatkezelés célja:</strong> A szolgáltatás technikai működésének elszámolása, a rendszer integritásának jogi védelme, valamint a csalárd magatartások megelőzése és felderítése.<br>
+            <strong>Adatkezelés jogalapja:</strong> Szerződés teljesítése [GDPR 6. cikk (1) bek. b) pont], továbbá az Adatkezelő biztonság fenntartásához fűződő jogos érdeke [GDPR 6. cikk (1) bek. f) pont].<br>
+            <strong>Adatmegőrzés ideje:</strong> Fióktörlés esetén a személyes kapcsolat (User UUID) azonnali és visszafordíthatatlan megszakításra kerül. A jogviszony megszűnését követően a rendszer ezen adatokat kizárólag aggregált, anonimizált formában tárolja tovább, amely így a GDPR hatályán kívül eső statisztikai adatnak minősül.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">5. Hálózati és technikai adatok</span>
+            <p><strong>Kezelt adatok:</strong> A Felhasználó végberendezésének hálózati IP-címe.<br>
+            <strong>Adatkezelés célja:</strong> A területi alapú jogosultság-ellenőrzés (Geo-blocking) valós idejű végrehajtása és a vonatkozó jogszabályoknak való megfelelés biztosítása.<br>
+            <strong>Adatkezelés jogalapja:</strong> Jogi kötelezettség teljesítése (a nemzetközi szerencsejáték-szervezési és pénzmosás elleni jogszabályok betartása) [GDPR 6. cikk (1) bek. c) pont].<br>
+            <strong>Adatmegőrzés ideje:</strong> Az adatbázisban történő rögzítésre nem kerül sor. Az IP-cím feldolgozása kizárólag a hálózati forgalom memóriában történő, azonnali elemzésére korlátozódik.</p>
+        </div>
     </div>
 
     <div class="section warning-box">
-        <h2>3. Korlátozások (Geo-blocking)</h2>
-        <p>A Szolgáltató a hatályos jogszabályoknak megfelelően földrajzi alapú korlátozást alkalmaz. <span class="highlight">Magyarországi IP-címről érkező felhasználók számára a REAL (valódi pénzes) egyenleg feltöltése és a BTC tárcacímek generálása nem elérhető.</span> Ezen felhasználók kizárólag a DEMO funkciókat vehetik igénybe.</p>
+        <h2>IV. TERÜLETI ALAPÚ KORLÁTOZÁSOK (GEO-BLOCKING) JOGI NYILATKOZATA</h2>
+        <p>Az Adatkezelő a nemzetközi és nemzeti hatósági előírásoknak való megfelelés okán szigorú hálózati alapú szűrést alkalmaz. <span class="highlight">A magyarországi IP-címről csatlakozó Felhasználók számára a Weboldal kizárólag a DEMO (virtuális, vagyoni értékkel nem bíró) funkciók elérését biztosítja.</span> Ezen felhasználói kör tekintetében a REAL (valós pénzügyi) egyenleg aktiválása, illetve a BTC tárcacímek generálása technikai szinten blokkolt.</p>
+        <p>Az Adatkezelő kifejezetten rögzíti, hogy a fenti technikai korlátozás bárminemű megkerülésére (különösen, de nem kizárólagosan virtuális magánhálózatok – VPN – vagy proxy szerverek alkalmazására) irányuló magatartás az Általános Szerződési Feltételek súlyos, egyoldalú megsértésének minősül, amely jogkövetkezményként a felhasználói fiók azonnali hatályú, kártérítési felelősség nélküli törlését vonja maga után.</p>
     </div>
 
     <div class="section">
-        <h2>4. Adatbiztonság és Harmadik felek</h2>
-        <p>Adatait a Supabase titkosított felhőplatformján tároljuk. Személyes adatait (e-mail cím, felhasználónév) harmadik félnek nem adjuk át, nem értékesítjük. Az adatokat kizárólag a tranzakciók hitelesítésére és a felhasználói fiók kezelésére használjuk.</p>
+        <h2>V. KÜLFÖLDI ADATTOVÁBBÍTÁS ÉS ADATFELDOLGOZÓK [GDPR 28. és 46. cikk]</h2>
+        <p>Az Adatkezelő a Platform informatikai hátterének biztosítása érdekében adatfeldolgozóként a <strong>Supabase Inc.</strong> (székhely: 1355 Market St, Suite 488, San Francisco, CA 94103, USA) felhőalapú adatbázis-szolgáltatását veszi igénybe. Tekintettel adatfeldolgozó székhelyére, az adattovábbítás jogszerűségét az Európai Bizottság által jóváhagyott Általános Szerződési Feltételek (Standard Contractual Clauses - SCC) garantálják, ezáltal teljesítve a GDPR 46. cikkében foglalt magas szintű adatvédelmi követelményeket.</p>
+        <p>Az Adatkezelő kijelenti, hogy személyes adatokat marketing, vagy piackutatási célból harmadik személyek részére sem ingyenesen, sem ellenérték fejében nem továbbít.</p>
     </div>
 
     <div class="section">
-        <h2>5. Az Ön jogai</h2>
-        <p>Bármikor kérheti adatai exportálását, módosítását vagy a fiókja végleges törlését. Törlés esetén minden személyes adatát (e-mail, account, tárcacím) eltávolítjuk a rendszerünkből, kivéve a tranzakciós naplókat, amelyeket névtelenítve, statisztikai célból őrizhetünk meg.</p>
+        <h2>VI. ADATBIZTONSÁG ÉS TECHNIKAI VÉDELEM [GDPR 32. cikk]</h2>
+        <p>Az Adatkezelő kötelezettséget vállal arra, hogy a tudomány és a technológia állásának megfelelő technikai és szervezési intézkedésekkel gondoskodik az adatok biztonságáról. A hálózati kommunikáció kivétel nélkül titkosított (TLS/SSL) csatornán zajlik. Az adatbázis hozzáférések ellenőrzése Sorszintű Biztonsági (<strong>Row Level Security - RLS</strong>) házirendekkel biztosított, amely architektúra technikai gátat szab az adatokhoz való jogosulatlan hozzáférésnek.</p>
+    </div>
+
+    <div class="section">
+        <h2>VII. AZ ÉRINTETTEKET MEGILLETŐ JOGOK ÉS AZOK GYAKORLÁSA [GDPR 15-22. cikk]</h2>
+        <p>Az Érintett a GDPR rendelkezései alapján a support@stake-forge.com e-mail címre megküldött nyilatkozatával az alábbi jogait gyakorolhatja:</p>
+        <ul>
+            <li><strong>Tájékoztatáshoz és hozzáféréshez való jog (15. cikk):</strong> Az Érintett jogosult visszajelzést kapni az adatkezelés folyamatáról, továbbá jogosult a rá vonatkozó kezelt adatok másolatát kikérni.</li>
+            <li><strong>Helyesbítéshez való jog (16. cikk):</strong> Az Érintett jogosult a pontatlan adatok javítását, a hiányosak kiegészítését indítványozni.</li>
+            <li><strong>Törléshez ("elfeledtetéshez") való jog (17. cikk):</strong> Az Érintett jogosult fiókjának és valamennyi személyes adatának végleges törlését kezdeményezni.</li>
+            <li><strong>Adatkezelés korlátozásához való jog (18. cikk):</strong> Jogvita, vagy jogellenes adatkezelés gyanúja esetén az Érintett kérheti az adatkezelési műveletek felfüggesztését.</li>
+            <li><strong>Adathordozhatósághoz való jog (20. cikk):</strong> Az Érintett jogosult az általa rendelkezésre bocsátott adatokat tagolt, géppel olvasható formátumban (pl. JSON formátumban) megkapni, vagy azokat más adatkezelőnek továbbítani.</li>
+            <li><strong>Tiltakozáshoz való jog (21. cikk):</strong> Az Érintett jogosult tiltakozni személyes adatainak jogos érdeken [6. cikk (1) f) pont] alapuló kezelése ellen.</li>
+        </ul>
+        <p><strong>Kifejezett figyelmeztetés a tiltakozási jog kapcsán:</strong> A Platform technikai, pénzügyi és elszámolási rendszere elválaszthatatlan egységet képez. Amennyiben az Érintett a tiltakozási jogával élve megtiltja a tranzakciós és biztonsági naplóadatok kezelését, az a Szolgáltatás nyújtásának technikai és jogi ellehetetlenülését eredményezi. Erre tekintettel az Adatkezelő tájékoztatja az Érintettet, hogy a tiltakozási jog gyakorlása joghatását tekintve <strong>a Felhasználói regisztráció (fiók) azonnali hatályú, végleges törlését vonja maga után.</strong></p>
+        <p>Az Adatkezelő a beérkezett kérelmeket indokolatlan késedelem nélkül, legkésőbb a beérkezéstől számított egy hónapon (30 napon) belül, díjmentesen bírálja el és teljesíti.</p>
+    </div>
+
+    <div class="section">
+        <h2>VIII. JOGORVOSLATI RENDELKEZÉSEK [GDPR 77. és 79. cikk]</h2>
+        <p>Amennyiben az Érintett megítélése szerint az Adatkezelő tevékenysége sérti a személyes adatok védelmére vonatkozó jogszabályokat, az alábbi jogérvényesítési lehetőségekkel élhet:</p>
+        <ul>
+            <li><strong>Egyeztetés az Adatkezelővel:</strong> Javasolt a jogsérelem gyanúját elsődlegesen az Adatkezelő felé jelezni a support@stake-forge.com címen a békés és gyors rendezés céljából.</li>
+            <li><strong>Hatósági eljárás kezdeményezése (77. cikk):</strong> Az Érintett jogosult panaszt tenni az illetékes felügyeleti hatósánál.</li>
+            <li><strong>Bírósági jogérvényesítés (79. cikk):</strong> Az Érintett – a hatósági eljárástól függetlenül – jogosult bírósághoz fordulni az Adatkezelő székhelye, vagy az Érintett saját belföldi lakóhelye (tartózkodási helye) szerint illetékes törvényszék előtt.</li>
+        </ul>
     </div>
 
     <a href="login.html" class="back-link">← Vissza a belépéshez</a>
