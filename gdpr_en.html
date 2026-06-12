@@ -8,13 +8,17 @@
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
-        h1, h2 { color: var(--primary); }
+        h1, h2 { color: var(--primary); margin-top: 30px; }
+        h1 { margin-top: 0; }
         .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
-        .section { margin-bottom: 25px; }
+        .section { margin-bottom: 25px; text-align: justify; }
+        .sub-section { margin-left: 15px; margin-bottom: 15px; }
+        .sub-title { font-weight: bold; color: #e0e0e0; margin-top: 10px; display: block; }
         ul { padding-left: 20px; }
         li { margin-bottom: 10px; }
         .highlight { color: var(--primary); font-weight: bold; }
-        .warning-box { border: 1px dashed var(--primary); padding: 15px; background: rgba(0, 212, 255, 0.05); border-radius: 8px; }
+        .warning-box { border: 1px dashed #ff4a4a; padding: 20px; background: rgba(255, 74, 74, 0.05); border-radius: 8px; margin-top: 25px; margin-bottom: 25px; }
+        .warning-box h2 { color: #ff4a4a; margin-top: 0; }
         .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
         .back-link:hover { background: var(--primary); color: #000; }
     </style>
@@ -22,57 +26,110 @@
 <body>
 
 <div class="container">
-    <h1>Privacy Policy (GDPR)</h1>
-    <p class="last-updated">Last updated: April 2026 (v1.1)</p>
+    <h1>Privacy Policy</h1>
+    <p class="last-updated">Last updated: June 2026 (v1.2)</p>
 
     <div class="section">
-        <h2>1. Principles of Data Processing</h2>
-        <p>
-            The StakeForge system follows the principle of minimal data collection.
-            We only store data that is strictly necessary for the operation of the platform and user identification.
-        </p>
+        <p>This document constitutes the official Privacy Policy of the StakeForge platform. The Data Controller hereby informs the users of the Platform (hereinafter: Data Subject or User) about the procedures, conditions, and safeguards of personal data processing, in strict compliance with Regulation (EU) 2016/679 of the European Parliament and of the Council (General Data Protection Regulation, hereinafter: GDPR) and applicable national legislation.</p>
     </div>
 
-<div class="section">
-    <h2>1. Data Controller Information and Principles</h2>
-    <p>The StakeForge system follows the principle of data minimization. We only collect and process data that is strictly essential for the operation of the platform and the identification of users.</p>
-    <p><strong>Contact and Support:</strong> support@stake-forge.com</p>
-    <p><strong>Data Processor:</strong> For the secure storage of user data and database infrastructure, the platform utilizes the encrypted cloud services of Supabase Inc. (1355 Market St, Suite 488, San Francisco, CA 94103) as a third-party data processor.</p>
-</div>
-    
-            <li><strong>Identifiers:</strong> Username and email address.</li>
-            <li><strong>Security:</strong> Encrypted password (stored as a hash – raw passwords are never accessible).</li>
-            <li><strong>Balances:</strong> Current DEMO and REAL account balances.</li>
-            <li><strong>Financial data:</strong> A unique BTC wallet address assigned to the account (if eligibility applies).</li>
-            <li><strong>Technical data:</strong> geographic location (used exclusively for access control verification and geo-blocking purposes; IP addresses are not stored).</li>
-        </ul>
+    <div class="section">
+        <h2>I. IDENTITY AND CONTACT DETAILS OF THE DATA CONTROLLER [GDPR Article 13(1)(a)]</h2>
+        <p>With respect to the personal data of Users, the capacity of Data Controller is fulfilled by the international operator of the Platform.</p>
+        <p><strong>Name of the Data Controller:</strong> StakeForge International (Austria)</p>
+        <p><strong>Official Data Protection Contact (e-mail):</strong> support@stake-forge.com</p>
+    </div>
+
+    <div class="section">
+        <h2>II. PRINCIPLES OF DATA PROCESSING [GDPR Article 5]</h2>
+        <p>The Data Controller declares that the processing of personal data is carried out exclusively in strict compliance with the principles of legality, fairness and transparency, purpose limitation, data minimization, accuracy, storage limitation, integrity, and confidentiality.</p>
+    </div>
+
+    <div class="section">
+        <h2>III. CATEGORIES OF PROCESSED DATA, PURPOSE, LEGAL BASIS, AND DURATION OF PROCESSING [GDPR Article 13(1)(c)]</h2>
+        <p>Based on the principle of data minimization, the Data Controller executes data processing operations categorized as follows:</p>
+        
+        <div class="sub-section">
+            <span class="sub-title">1. Registration and Identification Data</span>
+            <p><strong>Processed data:</strong> System-generated universally unique identifier (UUID), Username, E-mail address.<br>
+            <strong>Purpose of processing:</strong> Authenticated identification of the Data Subject, creation of the user account (registration), provision of the service constituting the subject matter of the Agreement, and official communication.<br>
+            <strong>Legal basis for processing:</strong> Performance of a contract [GDPR Article 6(1)(b)].<br>
+            <strong>Data retention period:</strong> For the duration of the user relationship (until the deletion of the registration).</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">2. Security and Authentication Data</span>
+            <p><strong>Processed data:</strong> One-way encrypted (hashed) password. The Data Controller explicitly states that it does not know and does not store the plaintext password in its IT systems.<br>
+            <strong>Purpose of processing:</strong> Ensuring the integrity of the user account and protection against unauthorized access.<br>
+            <strong>Legal basis for processing:</strong> Compliance with a legal obligation to which the Data Controller is subject (ensuring statutory data security) [GDPR Article 6(1)(c), with reference to Article 32].<br>
+            <strong>Data retention period:</strong> For the duration of the user relationship.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">3. Financial and Asset-Related Data</span>
+            <p><strong>Processed data:</strong> The current status of the DEMO (virtual) balance assigned to the User, the status of the REAL balance, and a unique BTC (Bitcoin) wallet address.<br>
+            <strong>Purpose of processing:</strong> Technical and accounting execution of economic events within the Platform (bets, winnings), as well as deposit and withdrawal transactions.<br>
+            <strong>Legal basis for processing:</strong> Performance of a contract [GDPR Article 6(1)(b)].<br>
+            <strong>Data retention period:</strong> Until the deletion of the user account, subject to the mandatory statutory limitation and retention periods prescribed by applicable accounting and tax legislation.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">4. Transaction and Betting Log Data</span>
+            <p><strong>Processed data:</strong> Unique identifier of the transaction/bet (UUID), Market identifier, the unique identifier of the User (User UUID), Outcome description, Applied multiplier (odds), Stake amount, Transaction type, Legal status of the transaction.<br>
+            <strong>Purpose of processing:</strong> Settlement of the technical operation of the service, legal protection of system integrity, and prevention and detection of fraudulent behavior.<br>
+            <strong>Legal basis for processing:</strong> Performance of a contract [GDPR Article 6(1)(b)], furthermore, the legitimate interest of the Data Controller in maintaining security [GDPR Article 6(1)(f)].<br>
+            <strong>Data retention period:</strong> In the event of account deletion, the personal link (User UUID) is immediately and irreversibly severed. Following the termination of the relationship, the system stores this data exclusively in an aggregated, anonymized form, which thus constitutes statistical data falling outside the scope of the GDPR.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">5. Network and Technical Data</span>
+            <p><strong>Processed data:</strong> The network IP address of the User's terminal equipment.<br>
+            <strong>Purpose of processing:</strong> Real-time execution of territory-based access control (Geo-blocking) and ensuring compliance with applicable regulatory requirements.<br>
+            <strong>Legal basis for processing:</strong> Compliance with a legal obligation (adherence to international gaming regulations and anti-money laundering laws) [GDPR Article 6(1)(c)].<br>
+            <strong>Data retention period:</strong> No recording takes place in the database. The processing of the IP address is strictly limited to instantaneous memory analysis of network traffic.</p>
+        </div>
     </div>
 
     <div class="section warning-box">
-        <h2>3. Restrictions (Geo-blocking)</h2>
-        <p>
-            The service provider applies geographical restrictions in accordance with applicable laws.
-            <span class="highlight">Users connecting from Hungarian IP addresses are not allowed to make deposits for REAL balances or generate BTC wallet addresses.</span>
-            These users may only use DEMO functionality.
-        </p>
+        <h2>IV. LEGAL DISCLAIMER ON TERRITORY-BASED RESTRICTIONS (GEO-BLOCKING)</h2>
+        <p>In order to comply with international and national regulatory requirements, the Data Controller implements strict network-based filtering. <span class="highlight">For Users connecting from a Hungarian IP address, the Website exclusively provides access to DEMO (virtual, bearing no monetary value) functions.</span> For this category of users, the activation of a REAL financial balance and the generation of BTC wallet addresses are technically blocked.</p>
+        <p>The Data Controller explicitly states that any conduct aimed at bypassing the aforementioned technical restrictions (including, but not limited to, the use of Virtual Private Networks – VPN – or proxy servers) constitutes a material, unilateral breach of the Terms of Service, which shall result in the immediate termination of the user account without any liability for damages.</p>
     </div>
 
     <div class="section">
-        <h2>4. Data Security and Third Parties</h2>
-        <p>
-            Your data is stored on the encrypted Supabase cloud platform.
-            Personal data (email address, username) is not shared with or sold to third parties.
-            Data is used exclusively for authentication, account management, and platform operation.
-        </p>
+        <h2>V. INTERNATIONAL DATA TRANSFERS AND DATA PROCESSORS [GDPR Articles 28 and 46]</h2>
+        <p>In order to provide the IT infrastructure for the Platform, the Data Controller utilizes the cloud-based database services of <strong>Supabase Inc.</strong> (headquartered at 1355 Market St, Suite 488, San Francisco, CA 94103, USA) as a data processor. Given that the data processor is established outside the European Economic Area (EEA), the legality of the data transfer is guaranteed by the Standard Contractual Clauses (SCC) approved by the European Commission, thereby fulfilling the high-level data protection requirements set forth in Article 46 of the GDPR.</p>
+        <p>The Data Controller declares that it does not transfer personal data to third parties for marketing or market research purposes, whether free of charge or for consideration.</p>
     </div>
 
     <div class="section">
-        <h2>5. Your Rights</h2>
-        <p>
-            You may request export, modification, or permanent deletion of your data at any time.
-            In case of deletion, all personal data (email, wallet address) will be removed from our system.
-            Transaction logs may still be retained in anonymized form for statistical purposes.
-        </p>
+        <h2>VI. DATA SECURITY AND TECHNICAL PROTECTION [GDPR Article 32]</h2>
+        <p>The Data Controller undertakes to ensure data security through technical and organizational measures appropriate to the state of the art in science and technology. Network communication takes place exclusively over encrypted (TLS/SSL) channels. Database access control is enforced via Row Level Security (<strong>RLS</strong>) policies, an architecture that establishes a technical barrier against unauthorized access to data.</p>
+    </div>
+
+    <div class="section">
+        <h2>VII. RIGHTS OF THE DATA SUBJECTS AND THEIR EXERCISE [GDPR Articles 15-22]</h2>
+        <p>Pursuant to the provisions of the GDPR, the Data Subject may exercise the following rights by submitting a declaration to the support@stake-forge.com e-mail address:</p>
+        <ul>
+            <li><strong>Right of access by the data subject (Article 15):</strong> The Data Subject has the right to obtain confirmation as to whether or not personal data concerning them are being processed, and to request a copy of the processed data.</li>
+            <li><strong>Right to rectification (Article 16):</strong> The Data Subject has the right to obtain the rectification of inaccurate data or the completion of incomplete data.</li>
+            <li><strong>Right to erasure ("right to be forgotten") (Article 17):</strong> The Data Subject has the right to initiate the permanent deletion of their account and all personal data.</li>
+            <li><strong>Right to restriction of processing (Article 18):</strong> In the event of a legal dispute or suspicion of unlawful processing, the Data Subject may request the suspension of data processing operations.</li>
+            <li><strong>Right to data portability (Article 20):</strong> The Data Subject has the right to receive the data provided by them in a structured, machine-readable format (e.g., JSON format) or to transmit those data to another controller.</li>
+            <li><strong>Right to object (Article 21):</strong> The Data Subject has the right to object to the processing of personal data based on legitimate interests [Article 6(1)(f)].</li>
+        </ul>
+        <p><strong>Explicit Warning Regarding the Right to Object:</strong> The technical, financial, and accounting systems of the Platform constitute an inseparable unity. Should the Data Subject exercise their right to object and prohibit the processing of transactional and security log data, it will render the provision of the Service technically and legally impossible. Consequently, the Data Controller informs the Data Subject that the exercise of the right to object <strong>shall result in the immediate and permanent deletion of the User registration (account).</strong></p>
+        <p>The Data Controller shall evaluate and fulfill received requests without undue delay and at the latest within one month (30 days) of receipt, free of charge.</p>
+    </div>
+
+    <div class="section">
+        <h2>VIII. RIGHT TO LODGE A COMPLAINT AND JUDICIAL REMEDY [GDPR Articles 77 and 79]</h2>
+        <p>If the Data Subject considers that the activity of the Data Controller infringes the legislation on the protection of personal data, they may utilize the following legal remedies:</p>
+        <ul>
+            <li><strong>Consultation with the Data Controller:</strong> It is recommended to primarily report the suspected infringement to the Data Controller at support@stake-forge.com for a peaceful and swift resolution.</li>
+            <li><strong>Right to lodge a complaint with a supervisory authority (Article 77):</strong> The Data Subject has the right to lodge a complaint with the competent supervisory authority. In the territory of Hungary, the competent body is the National Authority for Data Protection and Freedom of Information (NAIH; seat: 1055 Budapest, Falk Miksa utca 9-11., web: www.naih.hu).</li>
+            <li><strong>Right to an effective judicial remedy (Article 79):</strong> The Data Subject – independently of the administrative remedy – has the right to bring an action before the courts competent according to the place of establishment of the Data Controller or the Data Subject's own domestic residence (place of stay).</li>
+        </ul>
     </div>
 
     <a href="login.html" class="back-link">← Back to Login</a>
