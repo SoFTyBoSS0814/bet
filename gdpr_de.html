@@ -3,18 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StakeForge | Datenschutzrichtlinie (DSGVO)</title>
+    <title>StakeForge | Datenschutzerklärung</title>
     <style>
         :root { --primary: #00d4ff; --bg: #0f171e; --text: #fff; --card: #1d2d3a; --border: #2c4f60; }
         body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; line-height: 1.6; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: auto; background: var(--card); padding: 40px; border-radius: 16px; border: 1px solid var(--border); }
-        h1, h2 { color: var(--primary); }
+        h1, h2 { color: var(--primary); margin-top: 30px; }
+        h1 { margin-top: 0; }
         .last-updated { font-size: 12px; color: #888; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; }
-        .section { margin-bottom: 25px; }
+        .section { margin-bottom: 25px; text-align: justify; }
+        .sub-section { margin-left: 15px; margin-bottom: 15px; }
+        .sub-title { font-weight: bold; color: #e0e0e0; margin-top: 10px; display: block; }
         ul { padding-left: 20px; }
         li { margin-bottom: 10px; }
         .highlight { color: var(--primary); font-weight: bold; }
-        .warning-box { border: 1px dashed var(--primary); padding: 15px; background: rgba(0, 212, 255, 0.05); border-radius: 8px; }
+        .warning-box { border: 1px dashed #ff4a4a; padding: 20px; background: rgba(255, 74, 74, 0.05); border-radius: 8px; margin-top: 25px; margin-bottom: 25px; }
+        .warning-box h2 { color: #ff4a4a; margin-top: 0; }
         .back-link { display: inline-block; margin-top: 30px; color: var(--primary); text-decoration: none; font-weight: bold; border: 1px solid var(--primary); padding: 10px 20px; border-radius: 8px; transition: 0.3s; }
         .back-link:hover { background: var(--primary); color: #000; }
     </style>
@@ -22,51 +26,110 @@
 <body>
 
 <div class="container">
-    <h1>Datenschutzrichtlinie (DSGVO)</h1>
-    <p class="last-updated">Zuletzt aktualisiert: April 2026 (v1.1)</p>
+    <h1>Datenschutzerklärung</h1>
+    <p class="last-updated">Zuletzt aktualisiert: Juni 2026 (v1.2)</p>
 
     <div class="section">
-        <h2>1. Grundsätze der Datenverarbeitung</h2>
-        <p>Das StakeForge-System folgt dem Prinzip der minimalen Datenerhebung. Es werden nur Daten gespeichert, die für den Betrieb der Plattform und die Identifikation der Nutzer zwingend erforderlich sind.</p>
+        <p>Dieses Dokument stellt die offizielle Datenschutzerklärung der StakeForge-Plattform dar. Der Verantwortliche informiert die Nutzer der Plattform (nachfolgend: betroffene Person oder Nutzer) hiermit über die Modalitäten, Bedingungen und Garantien der Verarbeitung personenbezogener Daten in Übereinstimmung mit den geltenden gesetzlichen Vorschriften.</p>
     </div>
 
     <div class="section">
-        <h2>2. Umfang der erhobenen Daten</h2>
-        <p>Während der Registrierung und Nutzung werden folgende Daten erfasst:</p>
-        <ul>
-            <li><strong>Identifikatoren:</strong> Benutzername und E-Mail-Adresse.</li>
-            <li><strong>Sicherheit:</strong> Verschlüsseltes Passwort (als Hash gespeichert – das Klartext-Passwort ist nicht einsehbar).</li>
-            <li><strong>Kontostände:</strong> Aktuelle DEMO- und REAL-Guthabenstände.</li>
-            <li><strong>Finanzdaten:</strong> Eindeutige BTC-Wallet-Adresse, die dem Konto zugeordnet ist (falls berechtigt).</li>
-            <li><strong>Technische Daten:</strong> geografischer Standort (wird ausschließlich zur Prüfung der Zugriffsrechte und zur Anwendung der Geo-Blockierung verwendet; IP-Adressen werden nicht gespeichert).</li>
-        </ul>
+        <h2>I. IDENTITÄT UND KONTAKTDATEN DES VERANTWORTLICHEN</h2>
+        <p>Hinsichtlich der personenbezogenen Daten der Nutzer wird die Eigenschaft des Verantwortlichen durch den internationalen Betreiber der Plattform erfüllt.</p>
+        <p><strong>Name des Verantwortlichen:</strong> StakeForge International (Austria)</p>
+        <p><strong>Offizieller Kontakt für Datenschutz (E-Mail):</strong> support@stake-forge.com</p>
+    </div>
+
+    <div class="section">
+        <h2>II. GRUNDSÄTZE DER DATENVERARBEITUNG</h2>
+        <p>Der Verantwortliche erklärt, dass die Verarbeitung personenbezogener Daten ausschließlich unter strenger Beachtung der Grundsätze von Rechtmäßigkeit, ordnungsgemäßer Verarbeitung und Transparenz, Zweckbindung, Datenminimierung, Richtigkeit, Speicherbegrenzung sowie Integrität und Vertraulichkeit erfolgt.</p>
+    </div>
+
+    <div class="section">
+        <h2>III. UMFANG, ZWECK, RECHTSGRUNDLAGE UND DAUER DER DATENVERARBEITUNG</h2>
+        <p>Basierend auf dem Grundsatz der Datenminimierung führt der Verantwortliche die Datenverarbeitungsprozesse aufgeteilt in die folgenden Kategorien durch:</p>
+        
+        <div class="sub-section">
+            <span class="sub-title">1. Registrierungs- und Identifikationsdaten</span>
+            <p><strong>Verarbeitete Daten:</strong> Vom System generierte eindeutige Kennung (UUID), Benutzername, E-Mail-Adresse.<br>
+            <strong>Zweck der Verarbeitung:</strong> Authentifizierte Identifizierung der betroffenen Person, Erstellung des Benutzerkontos (Registrierung), Erbringung der den Gegenstand des Vertrages bildenden Dienstleistung sowie offizielle Kontaktaufnahme.<br>
+            <strong>Rechtsgrundlage:</strong> Erfüllung eines Vertrags.<br>
+            <strong>Dauer der Datenspeicherung:</strong> Für die Dauer des Nutzerverhältnisses (bis zur Löschung der Registrierung).</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">2. Sicherheits- und Authentifizierungsdaten</span>
+            <p><strong>Verarbeitete Daten:</strong> Einweg-verschlüsseltes (gehashtes) Passwort. Der Verantwortliche hält ausdrücklich fest, dass er das Klartext-Passwort nicht kennt und in seinen IT-Systemen nicht speichert.<br>
+            <strong>Zweck der Verarbeitung:</strong> Gewährleistung der Integrität des Benutzerkontos und Schutz vor unbefugtem Zugriff.<br>
+            <strong>Rechtsgrundlage:</strong> Erfüllung einer rechtlichen Verpflichtung, der der Verantwortliche unterliegt (gesetzliche Gewährleistung der Datensicherheit).<br>
+            <strong>Dauer der Datenspeicherung:</strong> Für die Dauer des Nutzerverhältnisses.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">3. Finanz- und vermögensbezogene Daten</span>
+            <p><strong>Verarbeitete Daten:</strong> Der aktuelle Stand des dem Nutzer zugewiesenen DEMO- (virtuellen) Guthabens, der Stand des REAL-Guthabens, eine eindeutige BTC (Bitcoin) Wallet-Adresse.<br>
+            <strong>Zweck der Verarbeitung:</strong> Technische und buchhalterische Abwicklung von wirtschaftlichen Ereignissen innerhalb der Plattform (Wetten, Gewinne) sowie von Ein- und Auszahlungstransaktionen.<br>
+            <strong>Rechtsgrundlage:</strong> Erfüllung eines Vertrags.<br>
+            <strong>Dauer der Datenspeicherung:</strong> Bis zur Löschung des Benutzerkontos, vorbehaltlich der durch die geltenden Rechnungslegungs- und Steuergesetze vorgeschriebenen zwingenden Verjährungs- und Aufbewahrungsfristen.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">4. Transaktions- und Wettprotokolldaten</span>
+            <p><strong>Verarbeitete Daten:</strong> Eindeutige Kennung der Transaktion/Wette (UUID), Markt-Kennung, die eindeutige Kennung des Nutzers (User UUID), Bezeichnung des Ergebnisses, angewandter Multiplikator (Odds), Einsatzbetrag, Transaktionstyp, rechtlicher Status der Transaktion.<br>
+            <strong>Zweck der Verarbeitung:</strong> Abrechnung des technischen Betriebs der Dienstleistung, rechtlicher Schutz der Systemintegrität sowie Prävention und Aufdeckung von betrügerischem Verhalten.<br>
+            <strong>Rechtsgrundlage:</strong> Erfüllung eines Vertrags sowie das berechtigte Interesse des Verantwortlichen an der Aufrechterhaltung der Sicherheit.<br>
+            <strong>Dauer der Datenspeicherung:</strong> Im Falle einer Kontolöschung wird die persönliche Verknüpfung (User UUID) sofort und unwiderruflich getrennt. Nach Beendigung des Verhältnisses speichert das System diese Daten ausschließlich in aggregierter, anonymisierter Form, welche somit als statistische Daten gelten und nicht den Datenschutzgesetzen unterliegen.</p>
+        </div>
+
+        <div class="sub-section">
+            <span class="sub-title">5. Netzwerk- und technische Daten</span>
+            <p><strong>Verarbeitete Daten:</strong> Die Netzwerk-IP-Adresse des Endgeräts des Nutzers.<br>
+            <strong>Zweck der Verarbeitung:</strong> Echtzeit-Durchführung der territorialen Zugriffskontrolle (Geo-Blocking) und Gewährleistung der Einhaltung der geltenden regulatorischen Vorschriften.<br>
+            <strong>Rechtsgrundlage:</strong> Erfüllung einer rechtlichen Verpflichtung (Einhaltung internationaler Glücksspielvorschriften und Gesetze zur Geldwäscheprävention).<br>
+            <strong>Dauer der Datenspeicherung:</strong> Eine Aufzeichnung in der Datenbank findet nicht statt. Die Verarbeitung der IP-Adresse beschränkt sich ausschließlich auf die sofortige Analyse des Netzwerkverkehrs im Arbeitsspeicher.</p>
+        </div>
     </div>
 
     <div class="section warning-box">
-        <h2>3. Einschränkungen (Geo-Blocking)</h2>
-        <p>
-            Der Dienstanbieter wendet geografische Einschränkungen gemäß den geltenden Gesetzen an.
-            <span class="highlight">Nutzer mit ungarischer IP-Adresse können keine Einzahlungen für REAL-Guthaben vornehmen und keine BTC-Wallets generieren.</span>
-            Diese Nutzer können ausschließlich die DEMO-Funktionen verwenden.
-        </p>
+        <h2>IV. RECHTLICHER HINWEIS ZU TERRITORIALEN BESCHRÄNKUNGEN (GEO-BLOCKING)</h2>
+        <p>Um internationale und nationale behördliche Vorschriften einzuhalten, implementiert der Verantwortliche eine strenge netzwerkbasierte Filterung. <span class="highlight">Für Nutzer, die sich von einer ungarischen IP-Adresse aus verbinden, bietet die Website ausschließlich Zugriff auf DEMO-Funktionen (virtuell, ohne Geldwert).</span> Für diese Kategorie von Nutzern sind die Aktivierung eines REAL-Finanzguthabens und die Generierung von BTC-Wallet-Adressen technisch gesperrt.</p>
+        <p>Der Verantwortliche stellt ausdrücklich klar, dass jedes Verhalten, das darauf abzielt, die genannten technischen Beschränkungen zu umgehen (insbesondere, aber nicht ausschließlich, die Verwendung von Virtual Private Networks – VPN – oder Proxy-Servern), einen schwerwiegenden, einseitigen Verstoß gegen die Allgemeinen Geschäftsbedingungen darstellt, der die sofortige Sperrung des Benutzerkontos ohne jegliche Schadensersatzpflicht zur Folge hat.</p>
     </div>
 
     <div class="section">
-        <h2>4. Datensicherheit und Drittanbieter</h2>
-        <p>
-            Ihre Daten werden auf der verschlüsselten Cloud-Plattform Supabase gespeichert.
-            Persönliche Daten (E-Mail-Adresse, Benutzername) werden nicht an Dritte weitergegeben oder verkauft.
-            Die Daten werden ausschließlich zur Authentifizierung, Kontoverwaltung und für den Betrieb der Plattform verwendet.
-        </p>
+        <h2>V. INTERNATIONALE DATENÜBERMITTLUNG UND AUFTRAGSVERARBEITER</h2>
+        <p>Um die IT-Infrastruktur für die Plattform bereitzustellen, nutzt der Verantwortliche die cloudbasierten Datenbankdienste von <strong>Supabase Inc.</strong> (mit Sitz in 1355 Market St, Suite 488, San Francisco, CA 94103, USA) als Auftragsverarbeiter. Da der Auftragsverarbeiter außerhalb des Europäischen Wirtschaftsraums (EWR) ansässig ist, wird die Rechtmäßigkeit der Datenübermittlung durch die von der Europäischen Kommission genehmigten Standardvertragsklauseln (Standard Contractual Clauses - SCC) garantiert, wodurch die hohen Datenschutzanforderungen erfüllt werden.</p>
+        <p>Der Verantwortliche erklärt, dass er personenbezogene Daten nicht für Marketing- oder Marktforschungszwecke an Dritte weitergibt, weder unentgeltlich noch gegen Entgelt.</p>
     </div>
 
     <div class="section">
-        <h2>5. Ihre Rechte</h2>
-        <p>
-            Sie können jederzeit die Exportierung, Änderung oder endgültige Löschung Ihrer Daten verlangen.
-            Im Falle einer Löschung werden alle personenbezogenen Daten (E-Mail, Wallet-Adresse) aus unserem System entfernt.
-            Transaktionsprotokolle können jedoch anonymisiert zu statistischen Zwecken gespeichert bleiben.
-        </p>
+        <h2>VI. DATENSICHERHEIT UND TECHNISCHER SCHUTZ</h2>
+        <p>Der Verantwortliche verpflichtet sich, die Datensicherheit durch technische und organisatorische Maßnahmen zu gewährleisten, die dem Stand der Wissenschaft und Technik entsprechen. Die Netzwerkkommunikation erfolgt ausnahmslos über verschlüsselte (TLS/SSL) Kanäle. Die Kontrolle der Datenbankzugriffe wird durch Row Level Security (<strong>RLS</strong>) Richtlinien erzwungen, eine Architektur, die eine technische Barriere gegen unbefugten Zugriff auf Daten bildet.</p>
+    </div>
+
+    <div class="section">
+        <h2>VII. RECHTE DER BETROFFENEN PERSONEN UND DEREN AUSÜBUNG</h2>
+        <p>Die betroffene Person kann ihre Rechte durch eine Erklärung an die E-Mail-Adresse support@stake-forge.com ausüben:</p>
+        <ul>
+            <li><strong>Recht auf Auskunft:</strong> Die betroffene Person hat das Recht, eine Bestätigung darüber zu verlangen, ob sie betreffende personenbezogene Daten verarbeitet werden, und eine Kopie dieser Daten anzufordern.</li>
+            <li><strong>Recht auf Berichtigung:</strong> Die betroffene Person hat das Recht, die Berichtigung unrichtiger Daten oder die Vervollständigung unvollständiger Daten zu verlangen.</li>
+            <li><strong>Recht auf Löschung („Recht auf Vergessenwerden“):</strong> Die betroffene Person hat das Recht, die dauerhafte Löschung ihres Kontos und aller personenbezogenen Daten zu veranlassen.</li>
+            <li><strong>Recht auf Einschränkung der Verarbeitung:</strong> Im Falle eines Rechtsstreits oder des Verdachts einer unrechtmäßigen Verarbeitung kann die betroffene Person die Aussetzung von Datenverarbeitungsvorgängen verlangen.</li>
+            <li><strong>Recht auf Datenübertragbarkeit:</strong> Die betroffene Person hat das Recht, die von ihr bereitgestellten Daten in einem strukturierten, maschinenlesbaren Format (z. B. im JSON-Format) zu erhalten oder diese Daten an einen anderen Verantwortlichen zu übermitteln.</li>
+            <li><strong>Widerspruchsrecht:</strong> Die betroffene Person hat das Recht, aus Gründen, die sich aus ihrer besonderen Situation ergeben, gegen die Verarbeitung sie betreffender personenbezogener Daten, die aufgrund berechtigter Interessen erfolgt, Widerspruch einzulegen.</li>
+        </ul>
+        <p><strong>Ausdrücklicher Warnhinweis zum Widerspruchsrecht:</strong> Die technischen, finanziellen und buchhalterischen Systeme der Plattform bilden eine untrennbare Einheit. Sollte die betroffene Person von ihrem Widerspruchsrecht Gebrauch machen und die Verarbeitung von Transaktions- und Sicherheitsprotokolldaten untersagen, macht dies die Bereitstellung des Dienstes technisch und rechtlich unmöglich. Daher informiert der Verantwortliche die betroffene Person darüber, dass die Ausübung des Widerspruchsrechts in ihrer Rechtswirkung <strong>die sofortige und endgültige Löschung der Nutzerregistrierung (des Kontos) zur Folge hat.</strong></p>
+        <p>Der Verantwortliche prüft und erfüllt eingehende Anträge ohne ungebührliche Verzögerung, spätestens jedoch innerhalb eines Monats (30 Tage) nach Erhalt, unentgeltlich.</p>
+    </div>
+
+    <div class="section">
+        <h2>VIII. RECHTSBEHELFSBESTIMMUNGEN</h2>
+        <p>Wenn die betroffene Person der Ansicht ist, dass die Aktivität des Verantwortlichen gegen die Rechtsvorschriften zum Schutz personenbezogener Daten verstößt, kann sie die folgenden Rechtsbehelfe in Anspruch nehmen:</p>
+        <ul>
+            <li><strong>Konsultation des Verantwortlichen:</strong> Es wird empfohlen, die mutmaßliche Verletzung primär dem Verantwortlichen unter support@stake-forge.com zu melden, um eine gütliche und schnelle Einigung zu erzielen.</li>
+            <li><strong>Recht auf Beschwerde bei einer Aufsichtsbehörde:</strong> Die betroffene Person hat das Recht, Beschwerde bei der zuständigen Aufsichtsbehörde einzulegen. Im Hoheitsgebiet von Ungarn ist die zuständige Stelle die Nationale Behörde für Datenschutz und Informationsfreiheit (NAIH; Sitz: 1055 Budapest, Falk Miksa utca 9-11., Web: www.naih.hu).</li>
+            <li><strong>Recht auf wirksamen gerichtlichen Rechtsbehelf:</strong> Die betroffene Person hat – unabhängig von einem administrativen Rechtsbehelf – das Recht, ein gerichtliches Verfahren vor den Gerichten einzuleiten, die für den Sitz des Verantwortlichen oder den eigenen inländischen Wohnsitz (Aufenthaltsort) der betroffenen Person zuständig sind.</li>
+        </ul>
     </div>
 
     <a href="login.html" class="back-link">← Zurück zum Login</a>
