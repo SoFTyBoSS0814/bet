@@ -1333,13 +1333,19 @@ async function placeBet() {
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
+// Segédváltozók a megerősítések nyomon követésére (Globális szinten)
+let finalizeConfirmed = false;
+let refundConfirmed = false;
+
 // =========================================================================
-// 1. MECCS LEZÁRÁSA ÉS EREDMÉNY hirdetése (EREDETI FÜGGVÉNYED)
+// 1. MECCS LEZÁRÁSA ÉS EREDMÉNY HIRDETÉSE (PROFI MEGERŐSÍTÉSSEL)
 // =========================================================================
 async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
-    errDiv.style.display = 'none';
+    const btn = document.getElementById('finalize-btn');
+    if (errDiv) errDiv.style.display = 'none';
 
+    // Első körös ellenőrzések (választások megléte)
     const selects = document.querySelectorAll('.settle-select');
     selects.forEach(s => {
         const gi = s.dataset.gi, oi = s.dataset.oi;
@@ -1348,15 +1354,34 @@ async function finalSubmitSettle() {
 
     for (let group of currentSettleGroups) {
         if (!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
-            errDiv.innerText = i18n[currentLang].win_loss_err;
-            errDiv.style.display = 'block';
+            if (errDiv) {
+                errDiv.innerText = i18n[currentLang].win_loss_err;
+                errDiv.style.display = 'block';
+            }
             return;
         }
     }
 
-    const btn = document.getElementById('finalize-btn');
-    btn.disabled = true;
-    btn.innerText = "Processing...";
+    // --- EGYEDI FINALIZE MEGERŐSÍTÉS ---
+    if (!finalizeConfirmed) {
+        finalizeConfirmed = true;
+        refundConfirmed = false; // Reseteljük a másik gombot biztonságból
+        
+        if (errDiv) {
+            errDiv.innerText = currentLang === 'hu' 
+                ? "⚠️ Biztos lezárod a piacot? Az általad kijelölt események lesznek kifizetve!" 
+                : "⚠️ Are you sure you want to settle? The selected outcomes will be paid out!";
+            errDiv.style.display = 'block';
+        }
+        if (btn) btn.innerText = currentLang === 'hu' ? "BIZTOS? KATTINTS ÚJRA!" : "SURE? CLICK AGAIN!";
+        return; // Megállítjuk a futást az első kattintásnál
+    }
+    // ------------------------------------
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+    }
     globalRefresh();
 
     let winners = [];
@@ -1372,8 +1397,6 @@ async function finalSubmitSettle() {
             .single();
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
-
-        // ✅ Most már az initial_liquidity oszlopból vesszük az alap letétet
         let settlementAmount = parseFloat(mData.initial_liquidity) || 0;
 
         const { data: bets } = await _supabase
@@ -1388,7 +1411,6 @@ async function finalSubmitSettle() {
                 const betAmt = parseFloat(bet.amount);
 
                 if (isWin) {
-                    // Ha a fogadó nyert: a Host csak a tiszta nyereményt bukja a poolból
                     const payout = betAmt * parseFloat(bet.odds);
                     const netLoss = payout - betAmt; 
                     settlementAmount -= netLoss;
@@ -1399,7 +1421,6 @@ async function finalSubmitSettle() {
                         p_field: field
                     });
                 } else {
-                    // Ha a fogadó veszített: a teljes tétje profit a Hostnak
                     settlementAmount += betAmt;
                 }
 
@@ -1410,7 +1431,6 @@ async function finalSubmitSettle() {
             }
         }
 
-        // Host profil lekérése és egyenleg frissítése
         const { data: host } = await _supabase
             .from('profiles')
             .select('*')
@@ -1421,13 +1441,10 @@ async function finalSubmitSettle() {
             const currentBalance = parseFloat(host[field]) || 0;
             await _supabase
                 .from('profiles')
-                .update({
-                    [field]: currentBalance + settlementAmount
-                })
+                .update({ [field]: currentBalance + settlementAmount })
                 .eq('id', host.id);
         }
 
-        // Piac lezárása
         await _supabase
             .from('markets')
             .update({
@@ -1437,20 +1454,25 @@ async function finalSubmitSettle() {
             })
             .eq('id', currentSettleId);
 
+        finalizeConfirmed = false; // Reset az újratöltés előtt
         location.reload();
 
     } catch (e) {
         console.error(e);
-        btn.disabled = false;
-        btn.innerText = "FINALIZE";
+        finalizeConfirmed = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "FINALIZE";
+        }
     }
 }
 
 // =========================================================================
-// 2. ÚJ FUNKCIÓ: PIAC TELJES TÖRLÉSE ÉS AZONNALI PÉNZVISSZATÉRÍTÉS
+// 2. PIAC TELJES TÖRLÉSE ÉS VISSZATÉRÍTÉS (PROFI MEGERŐSÍTÉSSEL)
 // =========================================================================
 async function cancelAndRefundCurrentMarket() {
     const errDiv = document.getElementById('settle-error-msg');
+    const finalizeBtn = document.getElementById('finalize-btn');
     if (errDiv) errDiv.style.display = 'none';
 
     if (typeof currentSettleId === 'undefined' || !currentSettleId) {
@@ -1461,16 +1483,40 @@ async function cancelAndRefundCurrentMarket() {
         return;
     }
 
-    // --- A RONDA BÖNGÉSZŐS CONFIRM() ABLAKOT KIMÁSOLTAM INNEN ---
+    // --- EGYEDI CANCEL & REFUND MEGERŐSÍTÉS ---
+    // Mivel ennek nincs saját külön ID-jú gombja a HTML-ben, az eseményt kiváltó gomb szövegét módosítjuk dinamikusan
+    const refundBtn = event ? event.currentTarget : null;
 
-    const btn = document.getElementById('finalize-btn');
-    if (btn) {
-        btn.disabled = true;
-        btn.innerText = "Processing...";
+    if (!refundConfirmed) {
+        refundConfirmed = true;
+        finalizeConfirmed = false; // Reseteljük a finalize gombot
+        
+        // Visszaállítjuk a finalize gomb eredeti feliratát, ha az lett volna korábban megnyomva
+        if (finalizeBtn) finalizeBtn.innerText = "FINALIZE";
+
+        if (errDiv) {
+            errDiv.innerText = currentLang === 'hu' 
+                ? "⚠️ Biztos törlöd az egész piacot? A fogadók visszakapják a tétet, te pedig a likviditást!" 
+                : "⚠️ Are you sure you want to cancel the whole market? Bettors get their stakes back, you get liquidity back!";
+            errDiv.style.display = 'block';
+        }
+        if (refundBtn && refundBtn.tagName === 'BUTTON') {
+            refundBtn.innerText = currentLang === 'hu' ? "BIZTOS? KATTINTS ÚJRA!" : "SURE? CLICK AGAIN!";
+        }
+        return; // Megállítjuk a futást az első kattintásnál
+    }
+    // -------------------------------------------
+
+    if (finalizeBtn) {
+        finalizeBtn.disabled = true;
+        finalizeBtn.innerText = "Processing...";
+    }
+    if (refundBtn && refundBtn.tagName === 'BUTTON') {
+        refundBtn.disabled = true;
+        refundBtn.innerText = "Processing...";
     }
 
     try {
-        // 1. Lekérjük a piac adatait a currentSettleId alapján
         const { data: mData, error: mError } = await _supabase
             .from('markets')
             .select('*')
@@ -1481,7 +1527,6 @@ async function cancelAndRefundCurrentMarket() {
 
         const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
 
-        // 2. Lekérjük az összes fogadást, ami erre a piacra érkezett
         const { data: bets, error: betsError } = await _supabase
             .from('bets')
             .select('*')
@@ -1489,7 +1534,6 @@ async function cancelAndRefundCurrentMarket() {
 
         if (betsError) throw betsError;
 
-        // 3. FOGADÓK VISSZATÉRÍTÉSE
         if (bets && bets.length > 0) {
             for (let bet of bets) {
                 const { data: userProf } = await _supabase
@@ -1501,19 +1545,15 @@ async function cancelAndRefundCurrentMarket() {
                 if (userProf) {
                     const currentBalance = parseFloat(userProf[field]) || 0;
                     const refundAmount = parseFloat(bet.amount) || 0;
-                    
                     await _supabase
                         .from('profiles')
                         .update({ [field]: currentBalance + refundAmount })
                         .eq('id', bet.user_id);
                 }
             }
-            
-            // Töröljük a visszafizetett fogadásokat
             await _supabase.from('bets').delete().eq('market_id', currentSettleId);
         }
 
-        // 4. HOST (CREATOR) VISSZATÉRÍTÉSE
         const { data: host } = await _supabase
             .from('profiles')
             .select('*')
@@ -1523,24 +1563,27 @@ async function cancelAndRefundCurrentMarket() {
         if (host) {
             const currentHostBalance = parseFloat(host[field]) || 0;
             const hostRefundAmount = parseFloat(mData.initial_liquidity) || 0;
-            
             await _supabase
                 .from('profiles')
                 .update({ [field]: currentHostBalance + hostRefundAmount })
                 .eq('id', host.id);
         }
 
-        // 5. PIAC VÉGLEGES TÖRLÉSE AZ ADATBÁZISBÓL
         await _supabase.from('markets').delete().eq('id', currentSettleId);
 
-        // Nincs semmilyen ablak: azonnal frissül az oldal és kész!
+        refundConfirmed = false;
         location.reload();
 
     } catch (err) {
         console.error("Hiba a törlés során:", err);
-        if (btn) {
-            btn.disabled = false;
-            btn.innerText = "FINALIZE";
+        refundConfirmed = false;
+        if (finalizeBtn) {
+            finalizeBtn.disabled = false;
+            finalizeBtn.innerText = "FINALIZE";
+        }
+        if (refundBtn && refundBtn.tagName === 'BUTTON') {
+            refundBtn.disabled = false;
+            refundBtn.innerText = "CANCEL & REFUND";
         }
         if (errDiv) {
             errDiv.innerText = "Server error during refund process! Please try again.";
@@ -1548,6 +1591,19 @@ async function cancelAndRefundCurrentMarket() {
         }
     }
 }
+
+// Bónusz: Ha bezárják a Modal-t, alaphelyzetbe állítjuk a gombokat, hogy legközelebb megint első kattintásnak minősüljön
+const eredetiCloseModal = closeModal;
+closeModal = function(modalId) {
+    if (modalId === 'settleModal') {
+        finalizeConfirmed = false;
+        refundConfirmed = false;
+        const btn = document.getElementById('finalize-btn');
+        if (btn) btn.innerText = "FINALIZE";
+        // Mivel a törlés gombnak nincs fix ID-ja, az oldal újratöltés nélkül is alaphelyzetbe áll a modal bezárásakor, ha legközelebb megnyitják
+    }
+    if (typeof eredetiCloseModal === 'function') eredetiCloseModal(modalId);
+};
     async function claimDailyDemo() {
         const dict = i18n[currentLang];
         if (userProfile.last_claim && (new Date().getTime() - new Date(userProfile.last_claim).getTime() < 86400000)) return alert(dict.wait_24);
