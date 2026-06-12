@@ -1461,12 +1461,7 @@ async function cancelAndRefundCurrentMarket() {
         return;
     }
 
-    const megerosites = confirm(
-        currentLang === 'hu' 
-        ? "Biztosan törölni szeretnéd ezt a piacot? Minden fogadó és a host is visszakapja a teljes tétjét!" 
-        : "Are you sure you want to cancel this market? All bettors and the host will be fully refunded!"
-    );
-    if (!megerosites) return;
+    // --- A RONDA BÖNGÉSZŐS CONFIRM() ABLAKOT KIMÁSOLTAM INNEN ---
 
     const btn = document.getElementById('finalize-btn');
     if (btn) {
@@ -1538,7 +1533,7 @@ async function cancelAndRefundCurrentMarket() {
         // 5. PIAC VÉGLEGES TÖRLÉSE AZ ADATBÁZISBÓL
         await _supabase.from('markets').delete().eq('id', currentSettleId);
 
-        // Nincs idegesítő alert()! Azonnal és tisztán frissítjük az oldalt, a pénzek már a helyükön vannak.
+        // Nincs semmilyen ablak: azonnal frissül az oldal és kész!
         location.reload();
 
     } catch (err) {
