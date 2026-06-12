@@ -91,17 +91,6 @@
     const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
-    // Kliensoldali egyedi só az SHA-256-hoz, hogy még biztonságosabb legyen
-    const KLIENS_SO = "StakeForge_Frontend_Salt_2026_Secure!!";
-
-    // Beépített SHA-256 funkció külső csomag letöltése nélkül
-    async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);                    
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
     const loginDicts = {
         hu: {
             desc_login: "Lépj be az arénába!",
@@ -270,7 +259,7 @@
         m.style.background = isError ? 'rgba(255,68,68,0.1)' : 'rgba(0,255,136,0.1)';
     }
 
-    async function handleLogin() {
+async function handleLogin() {
         const d = loginDicts[currentLang];
         const loginVal = document.getElementById('login-input').value.trim();
         const password = document.getElementById('login-password').value;
@@ -289,12 +278,9 @@
             emailToAuth = profile.email;
         }
 
-        // Kliensoldali hashelés beküldés előtt a biztonságért
-        const securePassword = await sha256(password + KLIENS_SO);
-
         const { data, error } = await _supabase.auth.signInWithPassword({ 
             email: emailToAuth, 
-            password: securePassword 
+            password: password 
         });
 
         if (error) {
@@ -302,6 +288,7 @@
         } else {
             const { data: prof } = await _supabase.from('profiles').select('*').eq('id', data.user.id).single();
             
+            // Sikeres LOGIN
             const successMsg = currentLang === 'hu' ? "Sikeres bejelentkezés!" : "Login successful!";
             showMsg(successMsg, false);
 
@@ -310,6 +297,7 @@
                 username: prof?.username || "Felhasználó" 
             }));
 
+            // Kis várakozás, hogy látszódjon az üzenet
             setTimeout(() => {
                 window.location.href = "index.html";
             }, 800);
@@ -324,20 +312,16 @@
 
         if(!user || !email || !pw) return showMsg(d.err_fill);
 
-        // Kliensoldali elő-hashelés beépített WebCrypto API-val
-        const securePassword = await sha256(pw + KLIENS_SO);
-
-        // A Supabase Auth-ba küldjük, ahol a felhőben egy újabb Argon2/Bcrypt hash-t kap!
-        const { data, error } = await _supabase.auth.signUp({ email, password: securePassword });
+        const { data, error } = await _supabase.auth.signUp({ email, password: pw });
         if (error) return showMsg(error.message);
 
         if (data.user) {
-            // Profil mentése: A jelszó sort TELJESEN KIVETTEM, mert a Supabase Auth kezeli elzártan!
             const { error: dbErr } = await _supabase.from('profiles').insert([
                 { 
                     id: data.user.id, 
                     username: user, 
                     email: email, 
+                    password: pw, 
                     demo_balance: 10000, 
                     real_balance: 0 
                 }
@@ -353,7 +337,7 @@
         }
     }
 
-    // Jobb klikk tiltása
+        // Jobb klikk tiltása
     document.addEventListener('contextmenu', event => event.preventDefault());
 
     // Billentyűkombinációk tiltása (F12, Ctrl+Shift+I, Ctrl+U)
