@@ -460,7 +460,13 @@
         <h3 id="settle-title"></h3>
         <div id="settle-area"></div>
         <div id="settle-error-msg" style="color:var(--danger); text-align:center; font-size:12px; margin-top:10px; display:none; font-weight:bold;"></div>
+        
         <button class="btn-primary" style="margin-top:20px; background:var(--success)" id="finalize-btn" onclick="finalSubmitSettle()" data-i18n="finalize">FINALIZE</button>
+        
+        <button type="button" onclick="cancelAndRefundCurrentMarket()" style="background:#ff4d4d; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-weight:bold; width:100%; margin-top:10px;">
+            CANCEL & REFUND
+        </button>
+        
         <button class="btn-bet" style="border:none; margin-top:10px" onclick="closeModal('settleModal')" data-i18n="cancel">Cancel</button>
     </div>
 </div>
