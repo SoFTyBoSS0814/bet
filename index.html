@@ -1327,6 +1327,9 @@ async function placeBet() {
         document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
     }
 
+// =========================================================================
+// 1. MECCS LEZÁRÁSA ÉS EREDMÉNY hirdetése (EREDETI FÜGGVÉNYED)
+// =========================================================================
 async function finalSubmitSettle() {
     const errDiv = document.getElementById('settle-error-msg');
     errDiv.style.display = 'none';
@@ -1434,6 +1437,109 @@ async function finalSubmitSettle() {
         console.error(e);
         btn.disabled = false;
         btn.innerText = "FINALIZE";
+    }
+}
+
+// =========================================================================
+// 2. ÚJ FUNKCIÓ: PIAC TELJES TÖRLÉSE ÉS AZONNALI PÉNZVISSZATÉRÍTÉS
+// =========================================================================
+async function cancelAndRefundCurrentMarket() {
+    if (typeof currentSettleId === 'undefined' || !currentSettleId) {
+        alert("Hiba: Nem található a piac azonosítója! / Market ID not found!");
+        return;
+    }
+
+    const megerosites = confirm(
+        currentLang === 'hu' 
+        ? "Biztosan törölni szeretnéd ezt a piacot? Minden fogadó és a host is visszakapja a teljes tétjét!" 
+        : "Are you sure you want to cancel this market? All bettors and the host will be fully refunded!"
+    );
+    if (!megerosites) return;
+
+    const btn = document.getElementById('finalize-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = "Processing...";
+    }
+
+    try {
+        // 1. Lekérjük a piac adatait a currentSettleId alapján
+        const { data: mData, error: mError } = await _supabase
+            .from('markets')
+            .select('*')
+            .eq('id', currentSettleId)
+            .single();
+
+        if (mError || !mData) throw new Error("Market not found");
+
+        const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+        // 2. Lekérjük az összes fogadást, ami erre a piacra érkezett
+        const { data: bets, error: betsError } = await _supabase
+            .from('bets')
+            .select('*')
+            .eq('market_id', currentSettleId);
+
+        if (betsError) throw betsError;
+
+        // 3. FOGADÓK VISSZATÉRÍTÉSE
+        if (bets && bets.length > 0) {
+            for (let bet of bets) {
+                const { data: userProf } = await _supabase
+                    .from('profiles')
+                    .select(field)
+                    .eq('id', bet.user_id)
+                    .maybeSingle();
+
+                if (userProf) {
+                    const currentBalance = parseFloat(userProf[field]) || 0;
+                    const refundAmount = parseFloat(bet.amount) || 0;
+                    
+                    await _supabase
+                        .from('profiles')
+                        .update({ [field]: currentBalance + refundAmount })
+                        .eq('id', bet.user_id);
+                }
+            }
+            
+            // Töröljük a visszafizetett fogadásokat
+            await _supabase.from('bets').delete().eq('market_id', currentSettleId);
+        }
+
+        // 4. HOST (CREATOR) VISSZATÉRÍTÉSE
+        const { data: host } = await _supabase
+            .from('profiles')
+            .select('*')
+            .eq('username', mData.creator_name)
+            .single();
+
+        if (host) {
+            const currentHostBalance = parseFloat(host[field]) || 0;
+            const hostRefundAmount = parseFloat(mData.initial_liquidity) || 0;
+            
+            await _supabase
+                .from('profiles')
+                .update({ [field]: currentHostBalance + hostRefundAmount })
+                .eq('id', host.id);
+        }
+
+        // 5. PIAC VÉGLEGES TÖRLÉSE AZ ADATBÁZISBÓL
+        await _supabase.from('markets').delete().eq('id', currentSettleId);
+
+        alert(
+            currentLang === 'hu'
+            ? "Piac sikeresen törölve, az egyenlegek visszatérítve!"
+            : "Market successfully cancelled, balances refunded!"
+        );
+        location.reload();
+
+    } catch (err) {
+        console.error("Hiba a törlés során:", err);
+        alert("Server error during refund process! Please try again.");
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = "FINALIZE";
+        }
     }
 }
     async function claimDailyDemo() {
