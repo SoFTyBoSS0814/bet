@@ -1112,7 +1112,6 @@ async function saveMarket() {
     };
 
     // --- SPAM VÉDELEM ---
-    // Ha a gomb létezik, azonnal tiltjuk
     if (btn) {
         if (btn.disabled) return; 
         btn.disabled = true;
@@ -1126,14 +1125,25 @@ async function saveMarket() {
 
     if (!dlInput) return unlock(dict.min_deadline_err);
     
-    // Biztonságos dátumkezelés
+    // --- GOLYÓÁLLÓ ÉVSZÁM ÉS FORMATUM ELLENŐRZÉS ---
+    // A datetime-local formátuma: YYYY-MM-DDTHH:mm -> az első 4 karakter az év
+    const evResz = dlInput.split('-')[0];
+    if (evResz.length !== 4 || parseInt(evResz) > 2026) {
+        return unlock("Hiba: Érvénytelen évszám formátum!");
+    }
+
     const deadline = new Date(dlInput);
     const now = new Date();
     
+    // Ha a dátum nem értelmezhető objektum
+    if (isNaN(deadline.getTime())) {
+        return unlock("Hiba: Hibás dátum formátum!");
+    }
+    
     if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
     
-    // --- JAVÍTOTT 2 NAPOS HATÁRIDŐ ELLENŐRZÉS ---
-    const maxTime = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000)); // Most + 48 óra
+    // Maximum 2 napos határidő ellenőrzés
+    const maxTime = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000));
     if (deadline > maxTime) {
         return unlock(dict.max_deadline_err || "Hiba: A határidő maximum 2 napra lehet a maitól! (Max 2 days)");
     }
