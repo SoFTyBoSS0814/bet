@@ -1051,7 +1051,7 @@ async function openBets(mid) {
     // 2. Az eredeti logikád fut tovább, ha a piac már settled
     const { data: bets } = await _supabase.from('bets').select('*').eq('market_id', mid).order('created_at', {descending: true});
     if (!bets || bets.length === 0) {
-        body.innerHTML = "<div style='text-align:center; padding:20px; color:#556b7d;'>Még nincsenek fogadások.</div>";
+        body.innerHTML = "<div style='text-align:center; padding:20px; color:#556b7d;'>Erre a piacra nem érkeztek fogadások.</div>";
         return;
     }
     const uids = [...new Set(bets.map(b => b.user_id))];
