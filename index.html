@@ -1125,13 +1125,16 @@ async function saveMarket() {
     const type = document.getElementById('m-type').value;
 
     if (!dlInput) return unlock(dict.min_deadline_err);
-    const deadline = new Date(dlInput), now = new Date();
+    
+    // Biztonságos dátumkezelés
+    const deadline = new Date(dlInput);
+    const now = new Date();
+    
     if (deadline < new Date(now.getTime() + 60000)) return unlock(dict.min_deadline_err);
     
-    // --- ÚJ SZABÁLY: MAXIMUM 2 NAPOS HATÁRIDŐ ---
+    // --- JAVÍTOTT 2 NAPOS HATÁRIDŐ ELLENŐRZÉS ---
     const maxTime = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000)); // Most + 48 óra
     if (deadline > maxTime) {
-        // Ha van saját fordításod, akkor dict.max_deadline_err, különben a kiírt szöveg
         return unlock(dict.max_deadline_err || "Hiba: A határidő maximum 2 napra lehet a maitól! (Max 2 days)");
     }
     // ---------------------------------------------
