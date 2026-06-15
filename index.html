@@ -2011,12 +2011,29 @@ async function loadMyBetsData() {
             // Valós piacösszeg a 'take' mezőből számolva
             const realPool = bet.markets?.take ? parseFloat(bet.markets.take).toFixed(2) : parseFloat(bet.amount).toFixed(2);
 
-            const buttonsHTML = `
-                <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
-                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${bet.market_id}')">💬 KOMMENTEK (0)</button>
-                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${bet.market_id}')">📊 FOGADÁSOK</button>
-                </div>
-            `;
+// 1. Nyelvi szótár (ha még nincs a kódod elején, ezt másold be oda)
+const i18n = {
+    hu: { comments: "💬 KOMMENTEK", bets: "📊 FOGADÁSOK" },
+    en: { comments: "💬 COMMENTS", bets: "📊 BETS" },
+    de: { comments: "💬 KOMMENTARE", bets: "📊 WETTEN" },
+    ru: { comments: "💬 КОММЕНТАРИИ", bets: "📊 СТАВКИ" },
+    zh: { comments: "💬 评论", bets: "📊 投注" }
+};
+
+// Safety check: ha a 'currentLang' nincs definiálva vagy nem támogatott, alapértelmezetten angol lesz
+const activeLang = (typeof currentLang !== 'undefined' && i18n[currentLang]) ? currentLang : 'en';
+
+// 2. A gombok HTML generálása a te változóiddal
+const buttonsHTML = `
+    <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
+        <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${bet.market_id}')">
+            ${i18n[activeLang].comments} (0)
+        </button>
+        <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${bet.market_id}')">
+            ${i18n[activeLang].bets}
+        </button>
+    </div>
+`;
 
             const card = document.createElement('div');
             card.className = "market-card";
