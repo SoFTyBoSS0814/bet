@@ -251,7 +251,6 @@
     </div>
 </div>
 
-<!-- DEMO / REAL Szűrőgombok -->
 <div class="filter-container">
     <button class="filter-btn active" onclick="window.filterMarkets('ALL', event)">Összes</button>
     <button class="filter-btn real-btn" onclick="window.filterMarkets('REAL', event)">REAL</button>
@@ -270,17 +269,20 @@ window.filterMarkets = function(type, e) {
         e.currentTarget.classList.add('active');
     }
 
-    // 2. A meccsek szűrése az oldalon
+    // 2. A meccsek biztonságos szűrése
     const markets = document.querySelectorAll('.market-group');
     
     markets.forEach(market => {
-        const marketType = market.getAttribute('data-type'); // REAL vagy DEMO
+        const marketType = market.getAttribute('data-type'); // REAL, DEMO vagy null
         
         if (type === 'ALL') {
+            // Ha az Összesre kattintunk, MINDENT mutasson, függetlenül attól, van-e attribútuma!
             market.style.display = ''; 
         } else if (marketType === type) {
+            // Ha megegyezik a típus (REAL vagy DEMO)
             market.style.display = ''; 
         } else {
+            // Minden más esetben elrejtjük
             market.style.display = 'none'; 
         }
     });
