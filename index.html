@@ -251,21 +251,23 @@
     </div>
 </div>
 
+<!-- DEMO / REAL Szűrőgombok -->
 <div class="filter-container">
-    <button class="filter-btn active" onclick="filterMarkets('ALL')">Összes</button>
-    <button class="filter-btn real-btn" onclick="filterMarkets('REAL')">REAL</button>
-    <button class="filter-btn demo-btn" onclick="filterMarkets('DEMO')">DEMO</button>
+    <button class="filter-btn active" onclick="window.filterMarkets('ALL', event)">Összes</button>
+    <button class="filter-btn real-btn" onclick="window.filterMarkets('REAL', event)">REAL</button>
+    <button class="filter-btn demo-btn" onclick="window.filterMarkets('DEMO', event)">DEMO</button>
 </div>
 
 <script>
-function filterMarkets(type) {
+window.filterMarkets = function(type, e) {
+    if (e) e.preventDefault();
+
     // 1. Gombok aktív stílusának váltása
     const buttons = document.querySelectorAll('.filter-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
     
-    // Rárakjuk az aktív osztályt arra a gombra, amire kattintottunk
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('active');
+    if (e && e.currentTarget) {
+        e.currentTarget.classList.add('active');
     }
 
     // 2. A meccsek szűrése az oldalon
@@ -275,16 +277,15 @@ function filterMarkets(type) {
         const marketType = market.getAttribute('data-type'); // REAL vagy DEMO
         
         if (type === 'ALL') {
-            market.style.display = ''; // Alapértelmezett megjelenítés
+            market.style.display = ''; 
         } else if (marketType === type) {
-            market.style.display = ''; // Megjelenítés, ha egyezik
+            market.style.display = ''; 
         } else {
-            market.style.display = 'none'; // Elrejtés, ha nem egyezik
+            market.style.display = 'none'; 
         }
     });
-}
-</script>id="history-list"></div>
-    </div>
+};
+</script>
 
    <!-- MY BETS SZEKCIÓ -->
 <div id="section-mybets" class="section">
