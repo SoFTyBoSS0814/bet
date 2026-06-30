@@ -1,4 +1,3 @@
-<script>
 function filterMarkets(type) {
     // 1. Gombok aktív stílusának váltása
     const buttons = document.querySelectorAll('.filter-btn');
@@ -10,7 +9,6 @@ function filterMarkets(type) {
     }
 
     // 2. A meccsek szűrése az oldalon
-    // A te esetedben a meccsek doboza valószínűleg a 'market-group' osztállyal rendelkezik
     const markets = document.querySelectorAll('.market-group');
     
     markets.forEach(market => {
@@ -25,4 +23,3 @@ function filterMarkets(type) {
         }
     });
 }
-</script>
