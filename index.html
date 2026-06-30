@@ -251,6 +251,13 @@
     </div>
 </div>
 
+
+    <div class="filter-container">
+    <button class="filter-btn active" onclick="filterMarkets('ALL')">Összes</button>
+    <button class="filter-btn real-btn" onclick="filterMarkets('REAL')">REAL</button>
+    <button class="filter-btn demo-btn" onclick="filterMarkets('DEMO')">DEMO</button>
+</div>
+    
 <div class="container">
     <div id="section-markets" class="section active">
         <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
@@ -2164,6 +2171,6 @@ const buttonsHTML = `
             return false;
         }
     };
-</script>
+<script src="filter.js"></script>
 </body>
 </html>
