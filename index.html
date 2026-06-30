@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StakeForge | Liquidity Dashboard</title>
     <link rel="stylesheet" href="mobile.css">
-    <link rel="stylesheet" href="filter.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* A teljes panelt a jobb alsó sarokba rögzítjük */
@@ -251,20 +250,12 @@
     </div>
 </div>
 
-
-   <div class="container">
+<div class="container">
     <div id="section-markets" class="section active">
         <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
             <h2 data-i18n="live_markets">Live Markets</h2>
             <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
         </div>
-        
-        <div class="filter-container">
-            <button class="filter-btn active" onclick="filterMarkets('ALL')">Összes</button>
-            <button class="filter-btn real-btn" onclick="filterMarkets('REAL')">REAL</button>
-            <button class="filter-btn demo-btn" onclick="filterMarkets('DEMO')">DEMO</button>
-        </div>
-
         <div id="market-list" data-i18n="loading">Loading...</div>
     </div>
 
@@ -2172,6 +2163,34 @@ const buttonsHTML = `
             return false;
         }
     };
-<script src="filter.js"></script>
+<script>
+// Globálisan elérhetővé tesszük a függvényt, így a gombok bárhonnan látják
+window.filterMarkets = function(type) {
+    // 1. Gombok aktív stílusának váltása
+    const buttons = document.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    // Rárakjuk az aktív osztályt arra a gombra, amire kattintottunk
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.classList.add('active');
+    }
+
+    // 2. A meccsek biztonságos szűrése az oldalon
+    // Megkeressük a meccseket (ha még nincsenek ott a "Loading..." miatt, nem dob hibát)
+    const markets = document.querySelectorAll('.market-group, .market-card');
+    
+    markets.forEach(market => {
+        const marketType = market.getAttribute('data-type'); // REAL vagy DEMO
+        
+        if (type === 'ALL') {
+            market.style.display = ''; // Az Összes gombnál MINDENT mutatunk, nem lesz üres a lista
+        } else if (marketType === type) {
+            market.style.display = ''; // Megjelenítés, ha egyezik
+        } else {
+            market.style.display = 'none'; // Elrejtés, ha nem egyezik
+        }
+    });
+};
+</script>
 </body>
 </html>
