@@ -252,18 +252,19 @@
 </div>
 
 
-    <div class="filter-container">
-    <button class="filter-btn active" onclick="filterMarkets('ALL')">Összes</button>
-    <button class="filter-btn real-btn" onclick="filterMarkets('REAL')">REAL</button>
-    <button class="filter-btn demo-btn" onclick="filterMarkets('DEMO')">DEMO</button>
-</div>
-    
-<div class="container">
+   <div class="container">
     <div id="section-markets" class="section active">
         <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
             <h2 data-i18n="live_markets">Live Markets</h2>
             <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
         </div>
+        
+        <div class="filter-container">
+            <button class="filter-btn active" onclick="filterMarkets('ALL')">Összes</button>
+            <button class="filter-btn real-btn" onclick="filterMarkets('REAL')">REAL</button>
+            <button class="filter-btn demo-btn" onclick="filterMarkets('DEMO')">DEMO</button>
+        </div>
+
         <div id="market-list" data-i18n="loading">Loading...</div>
     </div>
 
