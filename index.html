@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StakeForge | Liquidity Dashboard</title>
     <link rel="stylesheet" href="mobile.css">
-    <link rel="stylesheet" href="filter.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* A teljes panelt a jobb alsó sarokba rögzítjük */
@@ -251,43 +250,19 @@
     </div>
 </div>
 
-<div class="filter-container">
-    <button class="filter-btn active" onclick="window.filterMarkets('ALL', event)">Összes</button>
-    <button class="filter-btn real-btn" onclick="window.filterMarkets('REAL', event)">REAL</button>
-    <button class="filter-btn demo-btn" onclick="window.filterMarkets('DEMO', event)">DEMO</button>
-</div>
+<div class="container">
+    <div id="section-markets" class="section active">
+        <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
+            <h2 data-i18n="live_markets">Live Markets</h2>
+            <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
+        </div>
+        <div id="market-list" data-i18n="loading">Loading...</div>
+    </div>
 
-<script>
-window.filterMarkets = function(type, e) {
-    if (e) e.preventDefault();
-
-    // 1. Gombok aktív stílusának váltása
-    const buttons = document.querySelectorAll('.filter-btn');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    
-    if (e && e.currentTarget) {
-        e.currentTarget.classList.add('active');
-    }
-
-    // 2. A meccsek biztonságos szűrése
-    const markets = document.querySelectorAll('.market-group');
-    
-    markets.forEach(market => {
-        const marketType = market.getAttribute('data-type'); // REAL, DEMO vagy null
-        
-        if (type === 'ALL') {
-            // Ha az Összesre kattintunk, MINDENT mutasson, függetlenül attól, van-e attribútuma!
-            market.style.display = ''; 
-        } else if (marketType === type) {
-            // Ha megegyezik a típus (REAL vagy DEMO)
-            market.style.display = ''; 
-        } else {
-            // Minden más esetben elrejtjük
-            market.style.display = 'none'; 
-        }
-    });
-};
-</script>
+    <div id="section-history" class="section">
+        <h2 data-i18n="settled_markets_title">Settled Markets</h2>
+        <div id="history-list"></div>
+    </div>
 
    <!-- MY BETS SZEKCIÓ -->
 <div id="section-mybets" class="section">
@@ -2176,8 +2151,6 @@ const buttonsHTML = `
         console.error("Hiba:", err);
     }
 }
-
-    <script src="filter.js"></script>
 </script>
 </body>
 </html>
