@@ -3,7 +3,6 @@ function filterMarkets(type) {
     const buttons = document.querySelectorAll('.filter-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
     
-    // Rárakjuk az aktív osztályt arra a gombra, amire kattintottunk
     if (event && event.currentTarget) {
         event.currentTarget.classList.add('active');
     }
@@ -12,14 +11,14 @@ function filterMarkets(type) {
     const markets = document.querySelectorAll('.market-group');
     
     markets.forEach(market => {
-        const marketType = market.getAttribute('data-type'); // REAL vagy DEMO
+        const marketType = market.getAttribute('data-type');
         
         if (type === 'ALL') {
-            market.style.display = ''; // Alapértelmezett megjelenítés
+            market.style.display = ''; 
         } else if (marketType === type) {
-            market.style.display = ''; // Megjelenítés, ha egyezik
+            market.style.display = ''; 
         } else {
-            market.style.display = 'none'; // Elrejtés, ha nem egyezik
+            market.style.display = 'none'; 
         }
     });
 }
