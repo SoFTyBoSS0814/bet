@@ -251,25 +251,39 @@
     </div>
 </div>
 
-<div class="container">
-    <div id="section-markets" class="section active">
-        <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom:20px;">
-            <h2 data-i18n="live_markets">Live Markets</h2>
-            <button class="btn-create" onclick="openCreateModal()" data-i18n="btn_create">+ Create</button>
-        </div>
+<div class="filter-container">
+    <button class="filter-btn active" onclick="filterMarkets('ALL')">Összes</button>
+    <button class="filter-btn real-btn" onclick="filterMarkets('REAL')">REAL</button>
+    <button class="filter-btn demo-btn" onclick="filterMarkets('DEMO')">DEMO</button>
+</div>
 
-        <div class="filter-container">
-            <button class="filter-btn active" onclick="filterMarkets('ALL')">Összes</button>
-            <button class="filter-btn real-btn" onclick="filterMarkets('REAL')">REAL</button>
-            <button class="filter-btn demo-btn" onclick="filterMarkets('DEMO')">DEMO</button>
-        </div>
+<script>
+function filterMarkets(type) {
+    // 1. Gombok aktív stílusának váltása
+    const buttons = document.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    // Rárakjuk az aktív osztályt arra a gombra, amire kattintottunk
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
 
-        <div id="market-list" data-i18n="loading">Loading...</div>
-    </div>
-
-    <div id="section-history" class="section">
-        <h2 data-i18n="settled_markets_title">Settled Markets</h2>
-        <div id="history-list"></div>
+    // 2. A meccsek szűrése az oldalon
+    const markets = document.querySelectorAll('.market-group');
+    
+    markets.forEach(market => {
+        const marketType = market.getAttribute('data-type'); // REAL vagy DEMO
+        
+        if (type === 'ALL') {
+            market.style.display = ''; // Alapértelmezett megjelenítés
+        } else if (marketType === type) {
+            market.style.display = ''; // Megjelenítés, ha egyezik
+        } else {
+            market.style.display = 'none'; // Elrejtés, ha nem egyezik
+        }
+    });
+}
+</script>id="history-list"></div>
     </div>
 
    <!-- MY BETS SZEKCIÓ -->
