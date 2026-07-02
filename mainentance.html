@@ -1,18 +1,119 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StakeForge | Security Update</title>
+    <style>
+        body {
+            background-color: #0b1014;
+            background-image: radial-gradient(circle at center, #16202a 0%, #0b1014 100%);
+            color: #ffffff;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            border: 1px solid rgba(0, 229, 255, 0.1);
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        /* Pulzáló státusz fény */
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            background-color: #00e5ff;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 15px #00e5ff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(0, 229, 255, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .highlight {
+            color: #00e5ff;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+        }
+
+        .divider {
+            width: 50px;
+            height: 2px;
+            background: #00e5ff;
+            margin: 20px auto;
+            opacity: 0.5;
+        }
+
+        p {
+            color: #6a7682;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin: 0 auto;
+        }
+
+        .main-text {
+            color: #ffffff;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        .discord-text {
+            color: #00e5ff;
+            margin-top: 20px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 30px 20px; }
+            h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
 <body>
 
     <div class="container">
         <div class="status-dot"></div>
         <h1>StakeForge <span class="highlight">Security Update</span></h1>
         <div class="divider"></div>
-        <p style="color: #ffffff; font-weight: 500; margin-bottom: 15px;">
+        
+        <p class="main-text">
             A weboldal biztonsági karbantartás miatt átmenetileg lezárásra került.
         </p>
-        <p style="line-height: 1.6; max-width: 450px; margin: 0 auto;">
+        
+        <p>
             A rendszert ért külső technikai incidens miatt fokozott védelmi intézkedéseket vezetünk be. 
             A felhasználói adatok maximális biztonsága érdekében a munkálatok végéig az oldal zárva tart.
-            <br><br>
-            <span style="color: #00e5ff;">Hivatalos tájékoztatás és részletek a support@stake-forge.com mailcímen érhető el.</span>
+        </p>
+        
+        <p class="discord-text">
+            Hivatalos tájékoztatás és részletek a support@stake-forge.com mailcímen.
         </p>
     </div>
 
 </body>
+</html>
