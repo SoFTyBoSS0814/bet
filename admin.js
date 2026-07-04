@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://ldcrycuoynashsqlosae.supabase.co";
-const SUPABASE_KEY = "sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b"; 
+const SUPABASE_KEY = "sb_publishable_3J5llLxLUfMxOoFbXP0hJQ_4jBXwL4b"; 
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Közös stílus a felugró ablakoknak
