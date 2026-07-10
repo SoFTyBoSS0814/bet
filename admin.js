@@ -41,7 +41,7 @@ async function loadWithdrawals() {
             </div>
             <div>
                 <button class="btn-approve" onclick="window.updateWithdrawal('${w.id}', 'completed')">Jóváhagyás</button>
-                <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Elutasítás</button>
+                <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${parseFloat(w.amount)})">Elutasítás</button>
             </div>
         </div>
     `).join('');
@@ -82,25 +82,6 @@ window.updateWithdrawal = async function(id, status) {
     });
 
     if (result.isConfirmed) {
-        await _supabase.from('withdrawals').update({ status }).eq('id', id);
-        Swal.fire({ ...swalConfig, title: 'Siker!', text: 'Kifizetés jóváhagyva.', icon: 'success' });
-        loadWithdrawals();
-    }
-}
-
-window.updateWithdrawal = async function(id, status) {
-    const result = await Swal.fire({
-        ...swalConfig,
-        title: 'Jóváhagyás?',
-        text: "Biztosan kifizeted ezt az összeget?",
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Igen, mehet!',
-        cancelButtonText: 'Mégse'
-    });
-
-    if (result.isConfirmed) {
-        // HÍVÁS RPC-VEL
         const { error } = await _supabase.rpc('process_admin_withdrawal', { p_wid: id, p_status: status });
         
         if (error) {
@@ -124,7 +105,6 @@ window.rejectWithdrawal = async function(wid, uid, amount) {
     });
 
     if (result.isConfirmed) {
-        // HÍVÁS RPC-VEL (p_uid és p_amount átadásával)
         const { error } = await _supabase.rpc('process_admin_withdrawal', { 
             p_wid: wid, 
             p_status: 'rejected', 
