@@ -41,7 +41,7 @@ async function loadWithdrawals() {
             </div>
             <div>
                 <button class="btn-approve" onclick="window.updateWithdrawal('${w.id}', 'completed')">Jóváhagyás</button>
-                <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${parseFloat(w.amount)})">Elutasítás</button>
+                <button class="btn-reject" onclick="window.rejectWithdrawal('${w.id}', '${w.user_id}', ${w.amount})">Elutasítás</button>
             </div>
         </div>
     `).join('');
@@ -82,14 +82,9 @@ window.updateWithdrawal = async function(id, status) {
     });
 
     if (result.isConfirmed) {
-        const { error } = await _supabase.rpc('process_admin_withdrawal', { p_wid: id, p_status: status });
-        
-        if (error) {
-            Swal.fire({ ...swalConfig, title: 'Hiba!', text: error.message, icon: 'error' });
-        } else {
-            Swal.fire({ ...swalConfig, title: 'Siker!', text: 'Kifizetés jóváhagyva.', icon: 'success' });
-            loadWithdrawals();
-        }
+        await _supabase.from('withdrawals').update({ status }).eq('id', id);
+        Swal.fire({ ...swalConfig, title: 'Siker!', text: 'Kifizetés jóváhagyva.', icon: 'success' });
+        loadWithdrawals();
     }
 }
 
@@ -105,19 +100,11 @@ window.rejectWithdrawal = async function(wid, uid, amount) {
     });
 
     if (result.isConfirmed) {
-        const { error } = await _supabase.rpc('process_admin_withdrawal', { 
-            p_wid: wid, 
-            p_status: 'rejected', 
-            p_uid: uid, 
-            p_amount: amount 
-        });
-
-        if (error) {
-            Swal.fire({ ...swalConfig, title: 'Hiba!', text: error.message, icon: 'error' });
-        } else {
-            Swal.fire({ ...swalConfig, title: 'Elutasítva', text: 'Az összeg visszatérítve.', icon: 'info' });
-            loadData();
-        }
+        const { data: p } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
+        await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
+        await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
+        Swal.fire({ ...swalConfig, title: 'Elutasítva', text: 'Az összeg visszatérítve.', icon: 'info' });
+        loadData();
     }
 }
 
