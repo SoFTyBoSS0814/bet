@@ -88,6 +88,30 @@ window.updateWithdrawal = async function(id, status) {
     }
 }
 
+window.updateWithdrawal = async function(id, status) {
+    const result = await Swal.fire({
+        ...swalConfig,
+        title: 'Jóváhagyás?',
+        text: "Biztosan kifizeted ezt az összeget?",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Igen, mehet!',
+        cancelButtonText: 'Mégse'
+    });
+
+    if (result.isConfirmed) {
+        // HÍVÁS RPC-VEL
+        const { error } = await _supabase.rpc('process_admin_withdrawal', { p_wid: id, p_status: status });
+        
+        if (error) {
+            Swal.fire({ ...swalConfig, title: 'Hiba!', text: error.message, icon: 'error' });
+        } else {
+            Swal.fire({ ...swalConfig, title: 'Siker!', text: 'Kifizetés jóváhagyva.', icon: 'success' });
+            loadWithdrawals();
+        }
+    }
+}
+
 window.rejectWithdrawal = async function(wid, uid, amount) {
     const result = await Swal.fire({
         ...swalConfig,
@@ -100,11 +124,20 @@ window.rejectWithdrawal = async function(wid, uid, amount) {
     });
 
     if (result.isConfirmed) {
-        const { data: p } = await _supabase.from('profiles').select('real_balance').eq('id', uid).single();
-        await _supabase.from('profiles').update({ real_balance: p.real_balance + amount }).eq('id', uid);
-        await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wid);
-        Swal.fire({ ...swalConfig, title: 'Elutasítva', text: 'Az összeg visszatérítve.', icon: 'info' });
-        loadData();
+        // HÍVÁS RPC-VEL (p_uid és p_amount átadásával)
+        const { error } = await _supabase.rpc('process_admin_withdrawal', { 
+            p_wid: wid, 
+            p_status: 'rejected', 
+            p_uid: uid, 
+            p_amount: amount 
+        });
+
+        if (error) {
+            Swal.fire({ ...swalConfig, title: 'Hiba!', text: error.message, icon: 'error' });
+        } else {
+            Swal.fire({ ...swalConfig, title: 'Elutasítva', text: 'Az összeg visszatérítve.', icon: 'info' });
+            loadData();
+        }
     }
 }
 
