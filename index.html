@@ -473,7 +473,7 @@
 
 <script>
     const SB_URL = 'https://ldcrycuoynashsqlosae.supabase.co'; 
-    const SB_KEY = 'sb_publishable_3J5llLxLUfMxOoFbXP0hJQ_4jBXwL4b'; 
+    const SB_KEY = 'sb_publishable_Jdda8r4L3n-CkQPLX4qsPA_A5kRJy1b'; 
     const _supabase = supabase.createClient(SB_URL, SB_KEY);
 
     const i18n = {
@@ -603,28 +603,15 @@
         document.getElementById('lang-switcher').value = currentLang;
     }
 
-  window.onload = async () => {
-    // 1. Ellenőrizzük, van-e bejelentkezett felhasználó
-    const { data: { session } } = await _supabase.auth.getSession();
-    
-    // 2. HA NINCS (Vendég állapot):
-    if (!session) {
-        // Betöltjük a külső fájl tartalmát és lecseréljük vele a teljes oldalt
-        const response = await fetch('guest.html');
-        const guestContent = await response.text();
-        document.body.innerHTML = guestContent;
-        return; // Itt megállunk, nem futtatjuk tovább a játék kódját
-    }
-
-    // 3. HA VAN (Bejelentkezett állapot):
-    // Itt fut az eredeti oldalad kódja
-    updatePageText();
-    await checkIP();
-    await fetchProfile();
-    loadMarkets();
-    setInterval(checkDeadlines, 1000);
-    setInterval(updateRewardUI, 1000);
-};
+    window.onload = async () => {
+        if(!currentUser) { window.location.href="login.html"; return; }
+        updatePageText();
+        await checkIP();
+        await fetchProfile();
+        loadMarkets();
+        setInterval(checkDeadlines, 1000);
+        setInterval(updateRewardUI, 1000);
+    };
 
     async function checkIP() {
         try {
@@ -1490,39 +1477,99 @@ async function cancelAndRefundCurrentMarket() {
 
     if (typeof currentSettleId === 'undefined' || !currentSettleId) {
         if (errDiv) {
-            errDiv.innerText = "Hiba: Nem található a piac azonosítója!";
+            errDiv.innerText = "Hiba: Nem található a piac azonosítója! / Market ID not found!";
             errDiv.style.display = 'block';
         }
         return;
     }
 
+    // --- EGYEDI CANCEL & REFUND MEGERŐSÍTÉS ---
+    // Mivel ennek nincs saját külön ID-jú gombja a HTML-ben, az eseményt kiváltó gomb szövegét módosítjuk dinamikusan
     const refundBtn = event ? event.currentTarget : null;
 
     if (!refundConfirmed) {
         refundConfirmed = true;
-        finalizeConfirmed = false;
+        finalizeConfirmed = false; // Reseteljük a finalize gombot
+        
+        // Visszaállítjuk a finalize gomb eredeti feliratát, ha az lett volna korábban megnyomva
         if (finalizeBtn) finalizeBtn.innerText = "FINALIZE";
 
         if (errDiv) {
             errDiv.innerText = currentLang === 'hu' 
                 ? "⚠️ Biztos törlöd az egész piacot? A fogadók visszakapják a tétet, te pedig a likviditást!" 
-                : "⚠️ Are you sure you want to cancel the whole market?";
+                : "⚠️ Are you sure you want to cancel the whole market? Bettors get their stakes back, you get liquidity back!";
             errDiv.style.display = 'block';
         }
         if (refundBtn && refundBtn.tagName === 'BUTTON') {
             refundBtn.innerText = currentLang === 'hu' ? "BIZTOS? KATTINTS ÚJRA!" : "SURE? CLICK AGAIN!";
         }
-        return;
+        return; // Megállítjuk a futást az első kattintásnál
+    }
+    // -------------------------------------------
+
+    if (finalizeBtn) {
+        finalizeBtn.disabled = true;
+        finalizeBtn.innerText = "Processing...";
+    }
+    if (refundBtn && refundBtn.tagName === 'BUTTON') {
+        refundBtn.disabled = true;
+        refundBtn.innerText = "Processing...";
     }
 
-    if (finalizeBtn) { finalizeBtn.disabled = true; finalizeBtn.innerText = "Processing..."; }
-    if (refundBtn && refundBtn.tagName === 'BUTTON') { refundBtn.disabled = true; refundBtn.innerText = "Processing..."; }
-
     try {
-        // Hívjuk meg a szerveroldali függvényt, ami mindent elintéz
-        const { error } = await _supabase.rpc('delete_market_with_refund', { p_market_id: currentSettleId });
+        const { data: mData, error: mError } = await _supabase
+            .from('markets')
+            .select('*')
+            .eq('id', currentSettleId)
+            .single();
 
-        if (error) throw error;
+        if (mError || !mData) throw new Error("Market not found");
+
+        const field = mData.type === 'REAL' ? 'real_balance' : 'demo_balance';
+
+        const { data: bets, error: betsError } = await _supabase
+            .from('bets')
+            .select('*')
+            .eq('market_id', currentSettleId);
+
+        if (betsError) throw betsError;
+
+        if (bets && bets.length > 0) {
+            for (let bet of bets) {
+                const { data: userProf } = await _supabase
+                    .from('profiles')
+                    .select(field)
+                    .eq('id', bet.user_id)
+                    .maybeSingle();
+
+                if (userProf) {
+                    const currentBalance = parseFloat(userProf[field]) || 0;
+                    const refundAmount = parseFloat(bet.amount) || 0;
+                    await _supabase
+                        .from('profiles')
+                        .update({ [field]: currentBalance + refundAmount })
+                        .eq('id', bet.user_id);
+                }
+            }
+            await _supabase.from('bets').delete().eq('market_id', currentSettleId);
+        }
+
+        const { data: host } = await _supabase
+            .from('profiles')
+            .select('*')
+            .eq('username', mData.creator_name)
+            .single();
+
+        if (host) {
+            const currentHostBalance = parseFloat(host[field]) || 0;
+            const hostRefundAmount = parseFloat(mData.initial_liquidity) || 0;
+            await _supabase
+                .from('profiles')
+                .update({ [field]: currentHostBalance + hostRefundAmount })
+                .eq('id', host.id);
+        }
+
+        await _supabase.from('markets').delete().eq('id', currentSettleId);
 
         refundConfirmed = false;
         location.reload();
@@ -1530,10 +1577,16 @@ async function cancelAndRefundCurrentMarket() {
     } catch (err) {
         console.error("Hiba a törlés során:", err);
         refundConfirmed = false;
-        if (finalizeBtn) { finalizeBtn.disabled = false; finalizeBtn.innerText = "FINALIZE"; }
-        if (refundBtn && refundBtn.tagName === 'BUTTON') { refundBtn.disabled = false; refundBtn.innerText = "CANCEL & REFUND"; }
+        if (finalizeBtn) {
+            finalizeBtn.disabled = false;
+            finalizeBtn.innerText = "FINALIZE";
+        }
+        if (refundBtn && refundBtn.tagName === 'BUTTON') {
+            refundBtn.disabled = false;
+            refundBtn.innerText = "CANCEL & REFUND";
+        }
         if (errDiv) {
-            errDiv.innerText = "Szerver hiba történt a visszatérítésnél!";
+            errDiv.innerText = "Server error during refund process! Please try again.";
             errDiv.style.display = 'block';
         }
     }
@@ -2099,7 +2152,7 @@ const buttonsHTML = `
     }
 }
 
-                   // Jobb klikk tiltása
+               // Jobb klikk tiltása
     document.addEventListener('contextmenu', event => event.preventDefault());
 
     // Billentyűkombinációk tiltása (F12, Ctrl+Shift+I, Ctrl+U)
@@ -2110,7 +2163,6 @@ const buttonsHTML = `
             return false;
         }
     };
-
 </script>
 </body>
 </html>
