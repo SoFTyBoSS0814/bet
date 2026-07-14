@@ -603,29 +603,15 @@
         document.getElementById('lang-switcher').value = currentLang;
     }
 
-window.onload = async () => {
-    // 1. Megpróbáljuk lekérni a session-t (a currentUser lehet, hogy most még üres)
-    const { data: { session } } = await _supabase.auth.getSession();
-    currentUser = session?.user; // Frissítjük a currentUser változódat
-
-    // 2. Ha nincs belépve, nem dobunk ki, csak beállítjuk a "vendég" nézetet
-    if (!currentUser) {
-        document.getElementById('guest-view').style.display = 'block';
-        document.getElementById('user-view').style.display = 'none';
-        return; // Itt megállunk, nem futtatjuk a többi kódot
-    }
-
-    // 3. Ha BE VAGY JELENTKEZVE, akkor jöhet az eredeti logika
-    document.getElementById('guest-view').style.display = 'none';
-    document.getElementById('user-view').style.display = 'block';
-
-    updatePageText();
-    await checkIP();
-    await fetchProfile();
-    loadMarkets();
-    setInterval(checkDeadlines, 1000);
-    setInterval(updateRewardUI, 1000);
-};
+    window.onload = async () => {
+        if(!currentUser) { window.location.href="login.html"; return; }
+        updatePageText();
+        await checkIP();
+        await fetchProfile();
+        loadMarkets();
+        setInterval(checkDeadlines, 1000);
+        setInterval(updateRewardUI, 1000);
+    };
 
     async function checkIP() {
         try {
