@@ -603,24 +603,16 @@
         document.getElementById('lang-switcher').value = currentLang;
     }
 
-// A meglévő window.onload függvényedet cseréld le erre:
-window.onload = async () => {
-    // 1. Session ellenőrzés (nem dobunk el senkit, csak lekérjük az állapotot)
-    const { data: { session } } = await _supabase.auth.getSession();
-    currentUser = session?.user;
-
-    // 2. Piacok betöltése mindenkinek (ezt a függvényt már korábban is hívtad)
-    loadMarkets(); 
-    
-    // 3. Csak a bejelentkezetteknek futtatjuk a háttérfolyamatokat
-    if (currentUser) {
+    window.onload = async () => {
+        if(!currentUser) { window.location.href="login.html"; return; }
         updatePageText();
         await checkIP();
         await fetchProfile();
+        loadMarkets();
         setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
-    }
-};
+    };
+
     async function checkIP() {
         try {
             const res = await fetch('https://ipapi.co/json/');
@@ -1262,28 +1254,21 @@ function openBet(mId, n, o, t, dl) {
     calcWin();
 }
 
-
-// A meglévő placeBet függvényedet pedig ezzel a blokkal kezdd:
 async function placeBet() {
-    // HA NINCS BEJELENTKEZVE, IRÁNY A LOGIN
-    if (!currentUser) {
-        window.location.href = "login.html";
-        return;
-    }
-
-    // A meglévő korlátozás ellenőrzése
     if (window.userIsRestricted) { showRestrictionToast(); return; }
 
     const now = new Date().getTime();
     const deadlineTime = new Date(activeBet.dl).getTime();
 
+    // ALERT HELYETT TOAST ITT IS:
     if (isNaN(deadlineTime) || now > deadlineTime) {
-        showErrorToast("Az esemény már elkezdődött!");
+        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
         setTimeout(() => { location.reload(); }, 2500);
         return;
     }
 
     const btn = document.getElementById('place-bet-btn');
+    // ... a többi kód változatlan ...
     const amt = parseFloat(document.getElementById('bet-amount').value);
     const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
 
