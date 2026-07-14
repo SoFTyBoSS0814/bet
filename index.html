@@ -603,15 +603,16 @@
         document.getElementById('lang-switcher').value = currentLang;
     }
 
-   window.onload = async () => {
-    // 1. Megpróbáljuk lekérni a sessiont, de NEM irányítunk át, ha nincs
+// A meglévő window.onload függvényedet cseréld le erre:
+window.onload = async () => {
+    // 1. Session ellenőrzés (nem dobunk el senkit, csak lekérjük az állapotot)
     const { data: { session } } = await _supabase.auth.getSession();
     currentUser = session?.user;
 
-    // 2. A piacokat mindenki láthatja:
+    // 2. Piacok betöltése mindenkinek (ezt a függvényt már korábban is hívtad)
     loadMarkets(); 
     
-    // 3. Csak a bejelentkezetteknek szükséges funkciókat futtatjuk:
+    // 3. Csak a bejelentkezetteknek futtatjuk a háttérfolyamatokat
     if (currentUser) {
         updatePageText();
         await checkIP();
@@ -1261,24 +1262,6 @@ function openBet(mId, n, o, t, dl) {
     calcWin();
 }
 
-// A meglévő window.onload függvényedet cseréld le erre:
-window.onload = async () => {
-    // 1. Session ellenőrzés (nem dobunk el senkit, csak lekérjük az állapotot)
-    const { data: { session } } = await _supabase.auth.getSession();
-    currentUser = session?.user;
-
-    // 2. Piacok betöltése mindenkinek (ezt a függvényt már korábban is hívtad)
-    loadMarkets(); 
-    
-    // 3. Csak a bejelentkezetteknek futtatjuk a háttérfolyamatokat
-    if (currentUser) {
-        updatePageText();
-        await checkIP();
-        await fetchProfile();
-        setInterval(checkDeadlines, 1000);
-        setInterval(updateRewardUI, 1000);
-    }
-};
 
 // A meglévő placeBet függvényedet pedig ezzel a blokkal kezdd:
 async function placeBet() {
