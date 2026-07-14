@@ -603,16 +603,23 @@
         document.getElementById('lang-switcher').value = currentLang;
     }
 
-    window.onload = async () => {
-        if(!currentUser) { window.location.href="login.html"; return; }
+   window.onload = async () => {
+    // 1. Megpróbáljuk lekérni a sessiont, de NEM irányítunk át, ha nincs
+    const { data: { session } } = await _supabase.auth.getSession();
+    currentUser = session?.user;
+
+    // 2. A piacokat mindenki láthatja:
+    loadMarkets(); 
+    
+    // 3. Csak a bejelentkezetteknek szükséges funkciókat futtatjuk:
+    if (currentUser) {
         updatePageText();
         await checkIP();
         await fetchProfile();
-        loadMarkets();
         setInterval(checkDeadlines, 1000);
         setInterval(updateRewardUI, 1000);
-    };
-
+    }
+};
     async function checkIP() {
         try {
             const res = await fetch('https://ipapi.co/json/');
@@ -1254,21 +1261,46 @@ function openBet(mId, n, o, t, dl) {
     calcWin();
 }
 
+// A meglévő window.onload függvényedet cseréld le erre:
+window.onload = async () => {
+    // 1. Session ellenőrzés (nem dobunk el senkit, csak lekérjük az állapotot)
+    const { data: { session } } = await _supabase.auth.getSession();
+    currentUser = session?.user;
+
+    // 2. Piacok betöltése mindenkinek (ezt a függvényt már korábban is hívtad)
+    loadMarkets(); 
+    
+    // 3. Csak a bejelentkezetteknek futtatjuk a háttérfolyamatokat
+    if (currentUser) {
+        updatePageText();
+        await checkIP();
+        await fetchProfile();
+        setInterval(checkDeadlines, 1000);
+        setInterval(updateRewardUI, 1000);
+    }
+};
+
+// A meglévő placeBet függvényedet pedig ezzel a blokkal kezdd:
 async function placeBet() {
+    // HA NINCS BEJELENTKEZVE, IRÁNY A LOGIN
+    if (!currentUser) {
+        window.location.href = "login.html";
+        return;
+    }
+
+    // A meglévő korlátozás ellenőrzése
     if (window.userIsRestricted) { showRestrictionToast(); return; }
 
     const now = new Date().getTime();
     const deadlineTime = new Date(activeBet.dl).getTime();
 
-    // ALERT HELYETT TOAST ITT IS:
     if (isNaN(deadlineTime) || now > deadlineTime) {
-        showErrorToast("Az esemény már elkezdődött!"); // <--- Átírva
+        showErrorToast("Az esemény már elkezdődött!");
         setTimeout(() => { location.reload(); }, 2500);
         return;
     }
 
     const btn = document.getElementById('place-bet-btn');
-    // ... a többi kód változatlan ...
     const amt = parseFloat(document.getElementById('bet-amount').value);
     const f = activeBet.t === 'REAL' ? 'real_balance' : 'demo_balance';
 
