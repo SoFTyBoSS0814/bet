@@ -603,15 +603,28 @@
         document.getElementById('lang-switcher').value = currentLang;
     }
 
-    window.onload = async () => {
-        if(!currentUser) { window.location.href="login.html"; return; }
-        updatePageText();
-        await checkIP();
-        await fetchProfile();
-        loadMarkets();
-        setInterval(checkDeadlines, 1000);
-        setInterval(updateRewardUI, 1000);
-    };
+  window.onload = async () => {
+    // 1. Ellenőrizzük, van-e bejelentkezett felhasználó
+    const { data: { session } } = await _supabase.auth.getSession();
+    
+    // 2. HA NINCS (Vendég állapot):
+    if (!session) {
+        // Betöltjük a külső fájl tartalmát és lecseréljük vele a teljes oldalt
+        const response = await fetch('guest.html');
+        const guestContent = await response.text();
+        document.body.innerHTML = guestContent;
+        return; // Itt megállunk, nem futtatjuk tovább a játék kódját
+    }
+
+    // 3. HA VAN (Bejelentkezett állapot):
+    // Itt fut az eredeti oldalad kódja
+    updatePageText();
+    await checkIP();
+    await fetchProfile();
+    loadMarkets();
+    setInterval(checkDeadlines, 1000);
+    setInterval(updateRewardUI, 1000);
+};
 
     async function checkIP() {
         try {
