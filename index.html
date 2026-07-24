@@ -1317,21 +1317,26 @@ async function placeBet() {
         if(btn) { btn.disabled = false; btn.innerText = "PLACE BET"; }
     }
 }
-    async function openSettle(mId, title) {
-        const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
-        currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
-        document.getElementById('settle-title').innerText = "Settle: " + title;
-        let h = '';
-        currentSettleGroups.forEach((g, gi) => {
-            h += `<div style="margin-top:15px"><small>${g.title}</small>`;
-            g.outcomes.forEach((o, oi) => {
-                h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
-                <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0"><option value="pending">Pending</option><option value="win">WINNER</option><option value="loss">LOSS</option></select></div>`;
-            });
-            h += `</div>`;
+  async function openSettle(mId, title) {
+    const { data } = await _supabase.from('markets').select('*').eq('id', mId).single();
+    currentSettleId = mId; currentSettleGroups = JSON.parse(data.note);
+    document.getElementById('settle-title').innerText = "Settle: " + title;
+    let h = '';
+    currentSettleGroups.forEach((g, gi) => {
+        h += `<div style="margin-top:15px"><small>${g.title}</small>`;
+        g.outcomes.forEach((o, oi) => {
+            // Javítva: Az értékek tiszták legyenek (win / loss), alapértelmezettként pedig ne engedjünk üresen hagyni vagy félreértelmezni
+            h += `<div style="display:flex; justify-content:space-between; margin-top:5px"><span>${o.n}</span>
+            <select class="settle-select" data-gi="${gi}" data-oi="${oi}" style="width:120px; margin:0">
+                <option value="pending" disabled selected>Válassz...</option>
+                <option value="win">WINNER</option>
+                <option value="loss">LOSS</option>
+            </select></div>`;
         });
-        document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
-    }
+        h += `</div>`;
+    });
+    document.getElementById('settle-area').innerHTML = h; document.getElementById('settleModal').classList.remove('hidden');
+}
 
 // Segédváltozók a megerősítések nyomon követésére (Globális szinten)
 let finalizeConfirmed = false;
@@ -1345,14 +1350,27 @@ async function finalSubmitSettle() {
     const btn = document.getElementById('finalize-btn');
     if (errDiv) errDiv.style.display = 'none';
 
-    // Első körös ellenőrzések (választások megléte)
+    // Első körös ellenőrzések (választások megléte és PENDING kiszűrése)
     const selects = document.querySelectorAll('.settle-select');
     selects.forEach(s => {
         const gi = s.dataset.gi, oi = s.dataset.oi;
         currentSettleGroups[gi].outcomes[oi].status = s.value;
     });
 
+    // SZIGORÚ VALIDÁCIÓ: Ha bármelyik kimenetelen 'pending' maradt, hiba!
     for (let group of currentSettleGroups) {
+        for (let o of group.outcomes) {
+            if (o.status === 'pending' || !o.status) {
+                if (errDiv) {
+                    errDiv.innerText = currentLang === 'hu' 
+                        ? "⚠️ Minden kimenetelt ki kell értékelni (WINNER vagy LOSS)!" 
+                        : "⚠️ All outcomes must be settled (WINNER or LOSS)!";
+                    errDiv.style.display = 'block';
+                }
+                return;
+            }
+        }
+        
         if (!group.outcomes.some(o => o.status === 'win') || !group.outcomes.some(o => o.status === 'loss')) {
             if (errDiv) {
                 errDiv.innerText = i18n[currentLang].win_loss_err;
@@ -1466,7 +1484,6 @@ async function finalSubmitSettle() {
         }
     }
 }
-
 // =========================================================================
 // 2. PIAC TELJES TÖRLÉSE ÉS VISSZATÉRÍTÉS (PROFI MEGERŐSÍTÉSSEL)
 // =========================================================================
