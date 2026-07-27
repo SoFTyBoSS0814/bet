@@ -4,56 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>StakeForge | Liquidity Dashboard</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/jpeg" href="stakeforgelogo.jpg">
     <link rel="stylesheet" href="mobile.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Fejléc stílusok a logóhoz */
-        header {
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #121824;
-            border-bottom: 1px solid #1f293d;
-        }
-        .logo {
-            height: 45px;
-            width: auto;
-            border-radius: 50%;
-            margin-right: 15px;
-        }
-        .site-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #ffffff;
-            font-family: sans-serif;
-        }
-
         /* A teljes panelt a jobb alsó sarokba rögzítjük */
-        .betslip-panel {
-            position: fixed; /* Ez rögzíti a képernyőhöz képest */
-            bottom: 20px;    /* 20 pixelre az aljától */
-            right: 20px;     /* 20 pixelre a jobb szélétől */
-            width: 350px;    /* Fix szélesség, hogy ne nyúljon el */
-            background: #0f151b; /* Mély sötét háttér */
-            border: 1px solid #2c3e50;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            z-index: 10000;  /* Hogy minden felett legyen */
-            color: white;
-            font-family: sans-serif;
-            overflow: hidden;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Fejléc a logóval -->
-    <header>
-        <img src="stakeforgelogo.jpg" alt="StakeForge Logo" class="logo">
-        <span class="site-title">StakeForge | Liquidity Dashboard</span>
-    </header>
+.betslip-panel {
+    position: fixed; /* Ez rögzíti a képernyőhöz képest */
+    bottom: 20px;    /* 20 pixelre az aljától */
+    right: 20px;     /* 20 pixelre a jobb szélétől */
+    width: 350px;    /* Fix szélesség, hogy ne nyúljon el */
+    background: #0f151b; /* Mély sötét háttér */
+    border: 1px solid #2c3e50;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    z-index: 10000;  /* Hogy minden felett legyen */
+    color: white;
+    font-family: sans-serif;
+    overflow: hidden;
+}
 
 /* Ha rejtve van */
 .betslip-panel.hidden {
