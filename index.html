@@ -646,7 +646,7 @@ async function fetchProfile() {
         document.getElementById("w-real").innerText = data.real_balance.toFixed(2);
         document.getElementById("w-demo").innerText = data.demo_balance.toFixed(2);
         document.getElementById("acc-username").innerText = currentUser.username;
-        document.getElementById("acc-email").innerText = currentUser.email || "N/A";
+        document.getElementById("acc-email").innerText = data.email || "N/A";
         document.getElementById("acc-id").innerText = currentUser.id;
 
         // --- ADMINPANEL ---
