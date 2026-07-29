@@ -337,62 +337,62 @@
 
         <button class="btn-bet" onclick="logout()" style="color:var(--danger); border-color:var(--danger); font-weight:bold; width:100%;" data-i18n="logout">LOG OUT</button>
 
-       <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
+<div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center;">
     <p style="margin:0; color:#94a3b8; font-size: 14px; line-height: 1.5;">
         You can reach us at: <br>
         <span style="color:var(--primary); font-weight: bold; font-size: 16px;">support@stake-forge.com</span>
     </p>
 </div>
 
-    <div id="section-users" class="section">
+<div id="section-users" class="section">
     <div class="market-card" style="max-width:800px; margin:auto;">
         <h2 style="text-align:center; margin-bottom:20px;" data-i18n="users_list">Community</h2>
         
-      <div style="display:flex; justify-content:center; gap:12px; margin-bottom:30px;">
-    <button class="lang-btn" onclick="loadUsers('all')" data-i18n="browse" style="
-        flex: 1;
-        background-color: #213743;
-        color: #00e7ff;
-        border: 1px solid #2f4553;
-        padding: 14px;
-        border-radius: 6px;
-        font-weight: bold;
-        text-transform: uppercase;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    " onmouseover="this.style.backgroundColor='#2f4553'; this.style.color='#ffffff'; this.style.borderColor='#00e7ff';" 
-       onmouseout="this.style.backgroundColor='#213743'; this.style.color='#00e7ff'; this.style.borderColor='#2f4553';">
-        Böngészés
-    </button>
+        <div style="display:flex; justify-content:center; gap:12px; margin-bottom:30px;">
+            <button class="lang-btn" onclick="loadUsers('all')" data-i18n="browse" style="
+                flex: 1;
+                background-color: #213743;
+                color: #00e7ff;
+                border: 1px solid #2f4553;
+                padding: 14px;
+                border-radius: 6px;
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            " onmouseover="this.style.backgroundColor='#2f4553'; this.style.color='#ffffff'; this.style.borderColor='#00e7ff';" 
+               onmouseout="this.style.backgroundColor='#213743'; this.style.color='#00e7ff'; this.style.borderColor='#2f4553';">
+                Böngészés
+            </button>
 
-    <button class="lang-btn" onclick="loadUsers('newest')" data-i18n="newest" style="
-        flex: 1;
-        background-color: #213743;
-        color: #00e7ff;
-        border: 1px solid #2f4553;
-        padding: 14px;
-        border-radius: 6px;
-        font-weight: bold;
-        text-transform: uppercase;
-        font-size: 13px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    " onmouseover="this.style.backgroundColor='#2f4553'; this.style.color='#ffffff'; this.style.borderColor='#00e7ff';" 
-       onmouseout="this.style.backgroundColor='#213743'; this.style.color='#00e7ff'; this.style.borderColor='#2f4553';">
-        Legújabb
-    </button>
-</div>
+            <button class="lang-btn" onclick="loadUsers('newest')" data-i18n="newest" style="
+                flex: 1;
+                background-color: #213743;
+                color: #00e7ff;
+                border: 1px solid #2f4553;
+                padding: 14px;
+                border-radius: 6px;
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            " onmouseover="this.style.backgroundColor='#2f4553'; this.style.color='#ffffff'; this.style.borderColor='#00e7ff';" 
+               onmouseout="this.style.backgroundColor='#213743'; this.style.color='#00e7ff'; this.style.borderColor='#2f4553';">
+                Legújabb
+            </button>
+        </div>
 
         <div id="user-list-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
-            <p style="text-align:center; grid-column: 1/-1; color:#666; padding: 20px;">
+            <p style="text-align:center; grid-column: 1/-1; color:#94a3b8; padding: 20px; font-size: 14px;">
+                Válassz a fenti opciók közül a felhasználók betöltéséhez...
             </p>
         </div>
     </div>
 </div>
-
 
 <div id="betModal" class="betslip-panel hidden" style="background: #15171a; border-radius: 12px; border: 1px solid #2d2f34; overflow: hidden; font-family: 'Inter', sans-serif; box-shadow: 0 10px 40px rgba(0,0,0,0.6); width: 300px;">
     
