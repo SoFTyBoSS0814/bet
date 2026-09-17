@@ -2180,6 +2180,30 @@ const buttonsHTML = `
             return false;
         }
     };
+
+    <!-- A te meglévő HTML / script kódjaid... -->
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+          const urlParams = new URLSearchParams(window.location.search);
+          const targetMarketId = urlParams.get('marketid');
+
+          if (targetMarketId && typeof supabase !== 'undefined') {
+              const { data: market, error } = await supabase
+                  .from('markets')
+                  .select('*')
+                  .eq('marketid', targetMarketId)
+                  .single();
+
+              if (market && !error) {
+                  console.log("Megvan a piac:", market);
+                  // Ide jöhet majd az a rész, amivel megjeleníted a piacon a usert
+              }
+          }
+      });
+    </script>
+</body>
+</html>
 </script>
 </body>
 </html>
