@@ -862,7 +862,20 @@ async function loadMarkets() {
             document.body.appendChild(modalDiv);
         }
 
-        const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        // --- BEILLESZTETT LINK SZŰRŐ LOGIKA ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetMarketId = urlParams.get('marketid');
+
+        let query = _supabase.from('markets').select('*');
+        if (targetMarketId) {
+            query = query.eq('marketid', targetMarketId);
+        } else {
+            query = query.order('created_at', { ascending: false });
+        }
+
+        const { data: markets, error } = await query;
+        // ---------------------------------------
+
         const { data: allComments } = await _supabase.from('comments').select('market_id');
         
         if (error) throw error;
@@ -987,7 +1000,6 @@ if (activeMarkets.length === 0) {
         console.error(e);
     }
 }
-
 function closeSFModal() { 
     document.getElementById('infoModal').style.display = "none"; 
 }
