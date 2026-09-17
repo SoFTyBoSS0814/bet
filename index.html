@@ -2170,6 +2170,7 @@ const buttonsHTML = `
 }
 
 <!-- Védelmi szkriptek (jobb klikk és billentyűkombinációk tiltása) -->
+<!-- Védelmi szkriptek (jobb klikk és billentyűkombinációk tiltása) -->
     <script>
         // Jobb klikk tiltása
         document.addEventListener('contextmenu', event => event.preventDefault());
@@ -2186,23 +2187,22 @@ const buttonsHTML = `
 
     <!-- Email alapú marketid deep-link kezelő szkript -->
     <script>
-      document.addEventListener("DOMContentLoaded", async () => {
-          const urlParams = new URLSearchParams(window.location.search);
-          const targetMarketId = urlParams.get('marketid');
+        document.addEventListener("DOMContentLoaded", async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetMarketId = urlParams.get('marketid');
 
-          if (targetMarketId && typeof supabase !== 'undefined') {
-              const { data: market, error } = await supabase
-                  .from('markets')
-                  .select('*')
-                  .eq('marketid', targetMarketId)
-                  .single();
+            if (targetMarketId && typeof supabase !== 'undefined') {
+                const { data: market, error } = await supabase
+                    .from('markets')
+                    .select('*')
+                    .eq('marketid', targetMarketId)
+                    .single();
 
-              if (market && !error) {
-                  console.log("Megvan a piac:", market);
-                  // Ide jöhet majd a megjelenítési logika, ha szükséges
-              }
-          }
-      });
+                if (market && !error) {
+                    console.log("Megvan a piac:", market);
+                }
+            }
+        });
     </script>
 </body>
 </html>
