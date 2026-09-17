@@ -2169,40 +2169,17 @@ const buttonsHTML = `
     }
 }
 
-<!-- Védelmi szkriptek (jobb klikk és billentyűkombinációk tiltása) -->
-<!-- Védelmi szkriptek (jobb klikk és billentyűkombinációk tiltása) -->
-    <script>
-        // Jobb klikk tiltása
-        document.addEventListener('contextmenu', event => event.preventDefault());
+                   // Jobb klikk tiltása
+    document.addEventListener('contextmenu', event => event.preventDefault());
 
-        // Billentyűkombinációk tiltása (F12, Ctrl+Shift+I, Ctrl+U, stb.)
-        document.onkeydown = function(e) {
-            if (e.keyCode == 123 || 
-                (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) || 
-                (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
-                return false;
-            }
-        };
-    </script>
-
-    <!-- Email alapú marketid deep-link kezelő szkript -->
-    <script>
-        document.addEventListener("DOMContentLoaded", async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetMarketId = urlParams.get('marketid');
-
-            if (targetMarketId && typeof supabase !== 'undefined') {
-                const { data: market, error } = await supabase
-                    .from('markets')
-                    .select('*')
-                    .eq('marketid', targetMarketId)
-                    .single();
-
-                if (market && !error) {
-                    console.log("Megvan a piac:", market);
-                }
-            }
-        });
-    </script>
+    // Billentyűkombinációk tiltása (F12, Ctrl+Shift+I, Ctrl+U)
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123 || 
+            (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) || 
+            (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0))) {
+            return false;
+        }
+    };
+</script>
 </body>
 </html>
