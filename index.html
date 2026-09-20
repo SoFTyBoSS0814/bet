@@ -862,7 +862,18 @@ async function loadMarkets() {
             document.body.appendChild(modalDiv);
         }
 
-        const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        // --- Címsorból az 'id' szűrés kezelése (ha egyedi linkről jöttek) ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetId = urlParams.get('id');
+
+        let query = _supabase.from('markets').select('*');
+        if (targetId) {
+            query = query.eq('id', targetId);
+        } else {
+            query = query.order('created_at', { ascending: false });
+        }
+
+        const { data: markets, error } = await query;
         const { data: allComments } = await _supabase.from('comments').select('market_id');
         
         if (error) throw error;
@@ -879,14 +890,23 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
-        // --- ÚJ RÉSZ: Aktív piacok ellenőrzése ---
+        // --- Ha egyedi linkről jött, mutassunk egy "Vissza az összeshez" sávot ---
+        if (targetId) {
+            const backBanner = document.createElement('div');
+            backBanner.style.cssText = "background:rgba(0,209,255,0.1); border:1px solid #00d1ff; padding:10px 15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; color:white; font-size:13px;";
+            backBanner.innerHTML = `
+                <span>🔍 Egyedi piac megtekintése</span>
+                <a href="${window.location.pathname}" style="background:#00d1ff; color:#000; padding:6px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:11px;">Összes piac mutatása</a>
+            `;
+            mList.appendChild(backBanner);
+        }
+
+        // --- Aktív piacok ellenőrzése ---
         const activeMarkets = markets.filter(m => m.status === 'active');
 
-if (activeMarkets.length === 0) {
-            // Lekérjük az aktuális nyelvet (ha nincs, fallback a magyarra)
+        if (activeMarkets.length === 0 && !targetId) {
             const currentLang = window.currentLang || localStorage.getItem('lang') || 'hu';
             
-            // Nyelvi szótár a hiányzó állapothoz
             const localDict = {
                 hu: { title: "Jelenleg nincs aktív piac", desc: "Legyél te az első, aki indít egyet!", btn: "Készíts egyet!" },
                 en: { title: "No active markets at the moment", desc: "Be the first to start one!", btn: "Create one!" },
@@ -895,10 +915,9 @@ if (activeMarkets.length === 0) {
                 zh: { title: "目前没有活跃的市场", desc: "成为第一个启动它的人！", btn: "创建一个！" }
             };
 
-            // Kiválasztjuk a megfelelő fordítást, vagy ha nincs, a magyart
             const text = localDict[currentLang] || localDict.hu;
 
-            mList.innerHTML = `
+            mList.innerHTML += `
                 <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
                     <div style="font-size:40px; margin-bottom:15px; opacity:0.6;">🏟️</div>
                     <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">${text.title}</h3>
@@ -913,7 +932,6 @@ if (activeMarkets.length === 0) {
             `;
         }
 
-        // Az eredeti loop mehet tovább a rendereléshez
         markets.forEach(m => {
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
@@ -925,10 +943,12 @@ if (activeMarkets.length === 0) {
             const card = document.createElement('div');
             card.className = 'market-card';
 
+            // --- Itt adtuk hozzá a harmadik, "🔗 LINK" gombot, ami a m.id-t használja ---
             const buttonsHTML = `
-                <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
-                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
-                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
+                <div style="display: flex; gap: 8px; margin: 15px 0; justify-content: center;">
+                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 (${cCount})</button>
+                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
+                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,255,204,0.05); color:#00ffcc; border-radius:6px; font-size:11px; font-weight:bold;" onclick="copyMarketLink('${m.id}')">🔗 LINK</button>
                 </div>
             `;
 
@@ -973,8 +993,7 @@ if (activeMarkets.length === 0) {
                     ${buttonsHTML}
                     <div style="margin-top:10px; background:rgba(0,0,0,0.15); padding:10px; border-radius:8px;">
                     ${groups.map(g => `<div style="margin-bottom:10px;">
-                        <small style="color:var(--primary); font-size:10px; text-transform:uppercase;">${g.title}</small>
-                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}">
+                        <small style="color:var(--primary); font-size:10px; text-transform:uppercase;">${g.title}</small>${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}">
                             <span>${o.n}</span>
                             <b style="text-transform:uppercase;">${o.status}</b>
                         </div>`).join('')}
@@ -986,6 +1005,16 @@ if (activeMarkets.length === 0) {
     } catch (e) {
         console.error(e);
     }
+}
+
+// --- Segédfüggvény a vágólapra másoláshoz (ezt tedd be a script blokk aljára) ---
+function copyMarketLink(marketId) {
+    const fullLink = window.location.origin + window.location.pathname + '?id=' + marketId;
+    navigator.clipboard.writeText(fullLink).then(() => {
+        alert('A piac közvetlen linkje a vágólapra másolva!\n\n' + fullLink);
+    }).catch(err => {
+        console.error('Hiba a másolás során: ', err);
+    });
 }
 
 function closeSFModal() { 
