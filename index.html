@@ -865,6 +865,7 @@ async function loadMarkets() {
         const urlParams = new URLSearchParams(window.location.search);
         const targetId = urlParams.get('id');
 
+        // Ha egyedi ID van, lekérjük azt, különben az összeset rendezve
         let query = _supabase.from('markets').select('*');
         if (targetId) {
             query = query.eq('id', targetId);
@@ -873,6 +874,14 @@ async function loadMarkets() {
         }
 
         const { data: markets, error } = await query;
+        
+        // Ha egyedi linken vagyunk, lekérjük a settled (lezárt) piacokat is külön, hogy a History ne legyen üres!
+        let historyMarkets = [];
+        if (targetId) {
+            const { data: settledData } = await _supabase.from('markets').select('*').eq('status', 'settled');
+            historyMarkets = settledData || [];
+        }
+
         const { data: allComments } = await _supabase.from('comments').select('market_id');
         
         if (error) throw error;
@@ -889,11 +898,31 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
+        // --- Ha egyedi linkről jött, rakjunk ki egy kulturált visszatérési lehetőséget a fejlécbe ---
+        if (targetId) {
+            const backBar = document.createElement('div');
+            backBar.style.cssText = "background:rgba(0,209,255,0.08); border:1px solid #00d1ff; padding:12px 18px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; color:white; font-size:13px;";
+            backBar.innerHTML = `
+                <span>🔍 Egyedi piac szűrés aktív</span>
+                <button onclick="resetToHome()" style="background:#00d1ff; color:#000; border:none; padding:6px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; text-transform:uppercase;">← Összes piac mutatása</button>
+            `;
+            mList.appendChild(backBar);
+        }
+
+        // Összevonjuk a megjelenítendő listákat, ha van targetId (aktív + settled a history-hoz)
+        let displayMarkets = markets;
+        if (targetId && historyMarkets.length > 0) {
+            // Elkerüljük a duplikációt, ha az aktív piac esetleg settled lenne
+            const existingIds = new Set(markets.map(m => m.id));
+            historyMarkets.forEach(hm => {
+                if (!existingIds.has(hm.id)) markets.push(hm);
+            });
+        }
+
         const activeMarkets = markets.filter(m => m.status === 'active');
 
         if (activeMarkets.length === 0 && !targetId) {
             const currentLang = window.currentLang || localStorage.getItem('lang') || 'hu';
-            
             const localDict = {
                 hu: { title: "Jelenleg nincs aktív piac", desc: "Legyél te az első, aki indít egyet!", btn: "Készíts egyet!" },
                 en: { title: "No active markets at the moment", desc: "Be the first to start one!", btn: "Create one!" },
@@ -901,7 +930,6 @@ async function loadMarkets() {
                 de: { title: "Derzeit keine aktiven Märkte", desc: "Sei der Erste, der einen startet!", btn: "Erstellen!" },
                 zh: { title: "目前没有活跃的市场", desc: "成为第一个启动它的人！", btn: "创建一个！" }
             };
-
             const text = localDict[currentLang] || localDict.hu;
 
             mList.innerHTML += `
@@ -910,7 +938,7 @@ async function loadMarkets() {
                     <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">${text.title}</h3>
                     <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">${text.desc}</p>
                     <button onclick="document.querySelector('.btn-create')?.click()" 
-                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;">
+                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px;">
                         ${text.btn}
                     </button>
                 </div>
@@ -937,6 +965,9 @@ async function loadMarkets() {
             `;
 
             if(m.status === 'active') {
+                // Ha van targetId, de ez a piac nem az a specifikus piac, akkor skippeljük a főlistából (hogy csak a célpiact látszódjon fókuszban)
+                if (targetId && m.id !== targetId) return;
+
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
@@ -1027,7 +1058,6 @@ function showToast(message) {
         z-index: 10000;
         font-size: 13px;
         font-weight: bold;
-        box-ism: 0 5px 15px rgba(0,255,204,0.2);
         box-shadow: 0 5px 15px rgba(0,255,204,0.2);
         animation: fadeInOut 3s forwards;
     `;
