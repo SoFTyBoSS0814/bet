@@ -862,14 +862,11 @@ async function loadMarkets() {
             document.body.appendChild(modalDiv);
         }
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const targetId = urlParams.get('id');
-
-        // Lekérjük az összes piacot
         const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        const { data: allComments } = await _supabase.from('comments').select('market_id');
+        
         if (error) throw error;
 
-        const { data: allComments } = await _supabase.from('comments').select('market_id');
         const commentCounts = {};
         (allComments || []).forEach(c => {
             commentCounts[c.market_id] = (commentCounts[c.market_id] || 0) + 1;
@@ -882,33 +879,14 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
-        // --- Visszatérési sáv létrehozása, ha egyedi link van ---
-        const createBackBar = () => {
-            const backBar = document.createElement('div');
-            backBar.style.cssText = "background:rgba(0,209,255,0.08); border:1px solid #00d1ff; padding:12px 18px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; color:white; font-size:13px; grid-column: 1 / -1;";
-            backBar.innerHTML = `
-                <span>🔍 Egyedi piac szűrés aktív</span>
-                <button onclick="resetToHome()" style="background:#00d1ff; color:#000; border:none; padding:6px 14px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:11px; text-transform:uppercase;">← Összes piac mutatása</button>
-            `;
-            return backBar;
-        };
-
-        if (targetId) {
-            // Megkeressük, hogy a célpiac aktív vagy settled
-            const targetMarket = markets.find(m => m.id === targetId);
-            if (targetMarket && targetMarket.status !== 'active') {
-                // Ha settled, akkor a history listába rakjuk a visszatérő sávot
-                hList.appendChild(createBackBar());
-            } else {
-                // Ha aktív, akkor a live listába rakjuk
-                mList.appendChild(createBackBar());
-            }
-        }
-
+        // --- ÚJ RÉSZ: Aktív piacok ellenőrzése ---
         const activeMarkets = markets.filter(m => m.status === 'active');
 
-        if (activeMarkets.length === 0 && !targetId) {
+if (activeMarkets.length === 0) {
+            // Lekérjük az aktuális nyelvet (ha nincs, fallback a magyarra)
             const currentLang = window.currentLang || localStorage.getItem('lang') || 'hu';
+            
+            // Nyelvi szótár a hiányzó állapothoz
             const localDict = {
                 hu: { title: "Jelenleg nincs aktív piac", desc: "Legyél te az első, aki indít egyet!", btn: "Készíts egyet!" },
                 en: { title: "No active markets at the moment", desc: "Be the first to start one!", btn: "Create one!" },
@@ -916,25 +894,27 @@ async function loadMarkets() {
                 de: { title: "Derzeit keine aktiven Märkte", desc: "Sei der Erste, der einen startet!", btn: "Erstellen!" },
                 zh: { title: "目前没有活跃的市场", desc: "成为第一个启动它的人！", btn: "创建一个！" }
             };
+
+            // Kiválasztjuk a megfelelő fordítást, vagy ha nincs, a magyart
             const text = localDict[currentLang] || localDict.hu;
 
-            mList.innerHTML += `
+            mList.innerHTML = `
                 <div style="text-align:center; padding:40px 20px; background:rgba(0,209,255,0.03); border:1px dashed #334756; border-radius:12px; margin:20px 0;">
                     <div style="font-size:40px; margin-bottom:15px; opacity:0.6;">🏟️</div>
                     <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">${text.title}</h3>
                     <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">${text.desc}</p>
                     <button onclick="document.querySelector('.btn-create')?.click()" 
-                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px;">
+                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;"
+                        onmouseover="this.style.background='#00b3e6'; this.style.transform='translateY(-1px)'" 
+                        onmouseout="this.style.background='#00ccff'; this.style.transform='translateY(0)'">
                         ${text.btn}
                     </button>
                 </div>
             `;
         }
 
+        // Az eredeti loop mehet tovább a rendereléshez
         markets.forEach(m => {
-            // Ha van targetId, és ez nem az a piac, akkor skippeljük
-            if (targetId && m.id !== targetId) return;
-
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
             const symbol = m.type === 'REAL' ? '€' : 'DEMO';
@@ -946,10 +926,9 @@ async function loadMarkets() {
             card.className = 'market-card';
 
             const buttonsHTML = `
-                <div style="display: flex; gap: 8px; margin: 15px 0; justify-content: center;">
-                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
-                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
-                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,255,204,0.05); color:#00ffcc; border-radius:6px; font-size:11px; font-weight:bold;" onclick="copyMarketLink('${m.id}')">🔗 LINK</button>
+                <div style="display: flex; gap: 10px; margin: 15px 0; justify-content: center;">
+                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
+                    <button type="button" style="flex:1; max-width:150px; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
                 </div>
             `;
 
@@ -994,14 +973,13 @@ async function loadMarkets() {
                     ${buttonsHTML}
                     <div style="margin-top:10px; background:rgba(0,0,0,0.15); padding:10px; border-radius:8px;">
                     ${groups.map(g => `<div style="margin-bottom:10px;">
-                        <small style="color:var(--primary); font-size:10px; text-transform:uppercase;">${g.title}</small>${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}">
+                        <small style="color:var(--primary); font-size:10px; text-transform:uppercase;">${g.title}</small>
+                        ${g.outcomes.map(o => `<div class="history-item ${o.status==='win'?'winner-row':o.status==='loss'?'loss-row':''}">
                             <span>${o.n}</span>
                             <b style="text-transform:uppercase;">${o.status}</b>
                         </div>`).join('')}
                     </div>`).join('')}
                     </div>`;
-                
-                // Ha ez egy lezárt piac, akkor a history listába tesszük (függetlenül attól, hogy egyedi link vagy sem)
                 hList.appendChild(card);
             }
         });
@@ -1009,6 +987,7 @@ async function loadMarkets() {
         console.error(e);
     }
 }
+
 function closeSFModal() { 
     document.getElementById('infoModal').style.display = "none"; 
 }
