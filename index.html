@@ -889,8 +889,6 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
-        // (Banner teljesen eltávolítva, tiszta marad a felület)
-
         const activeMarkets = markets.filter(m => m.status === 'active');
 
         if (activeMarkets.length === 0 && !targetId) {
@@ -930,7 +928,6 @@ async function loadMarkets() {
             const card = document.createElement('div');
             card.className = 'market-card';
 
-            // --- Itt javítva: Ismét ott a "KOMMENTEK" szöveg a gombon ---
             const buttonsHTML = `
                 <div style="display: flex; gap: 8px; margin: 15px 0; justify-content: center;">
                     <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
@@ -994,15 +991,53 @@ async function loadMarkets() {
     }
 }
 
-// Másoló segédfüggvény
+// --- Visszatérés a főoldalra (tiszta URL-lel) ---
+function resetToHome() {
+    window.location.href = window.location.pathname;
+}
+
+// --- Jobb alsó sarkos infoboxos linkmásolás ---
 function copyMarketLink(marketId) {
     const cleanUrl = window.location.origin + window.location.pathname;
     const fullLink = cleanUrl + '?id=' + marketId;
+    
     navigator.clipboard.writeText(fullLink).then(() => {
-        alert('A piac közvetlen linkje a vágólapra másolva!\n\n' + fullLink);
+        showToast("A piac közvetlen linkje a vágólapra másolva!");
     }).catch(err => {
         console.error('Hiba a másolás során: ', err);
     });
+}
+
+// --- Segédfüggvény a jobb alsó sarkos toast üzenethez ---
+function showToast(message) {
+    const existingToast = document.getElementById('toastNotification');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'toastNotification';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        background: #0b1218;
+        color: #00ffcc;
+        border: 1px solid #00ffcc;
+        padding: 12px 20px;
+        border-radius: 8px;
+        z-index: 10000;
+        font-size: 13px;
+        font-weight: bold;
+        box-ism: 0 5px 15px rgba(0,255,204,0.2);
+        box-shadow: 0 5px 15px rgba(0,255,204,0.2);
+        animation: fadeInOut 3s forwards;
+    `;
+    toast.innerHTML = `🔗 ${message}`;
+    
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 
 function closeSFModal() { 
