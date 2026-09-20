@@ -862,7 +862,6 @@ async function loadMarkets() {
             document.body.appendChild(modalDiv);
         }
 
-        // --- Címsorból az 'id' szűrés kezelése (ha egyedi linkről jöttek) ---
         const urlParams = new URLSearchParams(window.location.search);
         const targetId = urlParams.get('id');
 
@@ -890,18 +889,8 @@ async function loadMarkets() {
         if (!mList || !hList) return;
         mList.innerHTML = ""; hList.innerHTML = "";
 
-        // --- Ha egyedi linkről jött, mutassunk egy "Vissza az összeshez" sávot ---
-        if (targetId) {
-            const backBanner = document.createElement('div');
-            backBanner.style.cssText = "background:rgba(0,209,255,0.1); border:1px solid #00d1ff; padding:10px 15px; border-radius:8px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; color:white; font-size:13px;";
-            backBanner.innerHTML = `
-                <span>🔍 Egyedi piac megtekintése</span>
-                <a href="${window.location.pathname}" style="background:#00d1ff; color:#000; padding:6px 12px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:11px;">Összes piac mutatása</a>
-            `;
-            mList.appendChild(backBanner);
-        }
+        // (Banner teljesen eltávolítva, tiszta marad a felület)
 
-        // --- Aktív piacok ellenőrzése ---
         const activeMarkets = markets.filter(m => m.status === 'active');
 
         if (activeMarkets.length === 0 && !targetId) {
@@ -923,9 +912,7 @@ async function loadMarkets() {
                     <h3 style="color:#fff; margin:0 0 10px 0; font-size:16px;">${text.title}</h3>
                     <p style="color:#6e7681; font-size:13px; margin-bottom:20px;">${text.desc}</p>
                     <button onclick="document.querySelector('.btn-create')?.click()" 
-                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;"
-                        onmouseover="this.style.background='#00b3e6'; this.style.transform='translateY(-1px)'" 
-                        onmouseout="this.style.background='#00ccff'; this.style.transform='translateY(0)'">
+                        style="background:#00ccff; color:#000; border:none; padding:10px 20px; border-radius:6px; font-weight:800; cursor:pointer; text-transform:uppercase; font-size:12px; transition:0.2s;">
                         ${text.btn}
                     </button>
                 </div>
@@ -943,10 +930,10 @@ async function loadMarkets() {
             const card = document.createElement('div');
             card.className = 'market-card';
 
-            // --- Itt adtuk hozzá a harmadik, "🔗 LINK" gombot, ami a m.id-t használja ---
+            // --- Itt javítva: Ismét ott a "KOMMENTEK" szöveg a gombon ---
             const buttonsHTML = `
                 <div style="display: flex; gap: 8px; margin: 15px 0; justify-content: center;">
-                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 (${cCount})</button>
+                    <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openComments('${m.id}')">💬 KOMMENTEK (${cCount})</button>
                     <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,209,255,0.05); color:#00d1ff; border-radius:6px; font-size:11px; font-weight:bold;" onclick="openBets('${m.id}')">📊 FOGADÁSOK</button>
                     <button type="button" style="flex:1; cursor:pointer; padding:8px; border:1px solid #334756; background:rgba(0,255,204,0.05); color:#00ffcc; border-radius:6px; font-size:11px; font-weight:bold;" onclick="copyMarketLink('${m.id}')">🔗 LINK</button>
                 </div>
@@ -1007,9 +994,10 @@ async function loadMarkets() {
     }
 }
 
-// --- Segédfüggvény a vágólapra másoláshoz (ezt tedd be a script blokk aljára) ---
+// Másoló segédfüggvény
 function copyMarketLink(marketId) {
-    const fullLink = window.location.origin + window.location.pathname + '?id=' + marketId;
+    const cleanUrl = window.location.origin + window.location.pathname;
+    const fullLink = cleanUrl + '?id=' + marketId;
     navigator.clipboard.writeText(fullLink).then(() => {
         alert('A piac közvetlen linkje a vágólapra másolva!\n\n' + fullLink);
     }).catch(err => {
