@@ -865,10 +865,9 @@ async function loadMarkets() {
         const urlParams = new URLSearchParams(window.location.search);
         const targetId = urlParams.get('id');
 
-        // Mindig az összes piacot lekérjük, hogy a listák és a history is kitöltődjön
-        const { data: allData, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
+        // Mindig az összes piacot lekérjük, hogy a History és a Live listák is feltöltődjenek
+        const { data: markets, error } = await _supabase.from('markets').select('*').order('created_at', { ascending: false });
         if (error) throw error;
-        const markets = allData || [];
 
         const { data: allComments } = await _supabase.from('comments').select('market_id');
         const commentCounts = {};
@@ -895,7 +894,9 @@ async function loadMarkets() {
         }
 
         const activeMarkets = markets.filter(m => m.status === 'active');
-        if (activeMarkets.length === 0 && !targetId) {
+        const visibleActive = targetId ? activeMarkets.filter(m => m.id === targetId) : activeMarkets;
+
+        if (visibleActive.length === 0 && !targetId) {
             const currentLang = window.currentLang || localStorage.getItem('lang') || 'hu';
             const localDict = {
                 hu: { title: "Jelenleg nincs aktív piac", desc: "Legyél te az első, aki indít egyet!", btn: "Készíts egyet!" },
@@ -920,8 +921,11 @@ async function loadMarkets() {
         }
 
         markets.forEach(m => {
-            // Ha van targetId, de ez nem az a piac, akkor ha nincs szűrés nélkül, skippeljük
-            if (targetId && m.id !== targetId) return;
+            // Ha egyedi ID van megadva, de ez a piac nem az (és nem is az aktív szűrés miatt kell), akkor csak a History-ból hagyjuk ki, kivéve ha az a célpont
+            if (targetId && m.id !== targetId) {
+                // Ha settled piacról van szó, hagyjuk, hogy betöltődjön a history-ba, így a history mindig teljes marad!
+                if (m.status === 'active') return;
+            }
 
             const groups = JSON.parse(m.note || "[]");
             const typeColor = m.type === 'DEMO' ? 'var(--demo)' : 'var(--primary)';
@@ -942,6 +946,7 @@ async function loadMarkets() {
             `;
 
             if(m.status === 'active') {
+                if (targetId && m.id !== targetId) return;
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                         <div>
@@ -963,6 +968,7 @@ async function loadMarkets() {
                     </div>`).join('')}`;
                 mList.appendChild(card);
             } else {
+                // Ha egyedi ID van, de az egy lezárt piac, akkor azt a mList-be (vagy a fő nézetbe) rakjuk, a többi lezárt pedig megy a hList-be
                 const sDate = m.start_time ? new Date(m.start_time) : new Date(m.created_at);
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -989,10 +995,12 @@ async function loadMarkets() {
                     </div>`).join('')}
                     </div>`;
                 
-                // Ha egyedi link miatt nézzük a settled piacot, akkor is a mList-be kerül (a Live Markets alá, a visszatérő sáv mellé), különben a history listába
-                if (targetId) {
+                if (targetId && m.id === targetId) {
                     mList.appendChild(card);
+                } else if (!targetId) {
+                    hList.appendChild(card);
                 } else {
+                    // Ha van targetId, de ez egy másik lezárt piac, azt is beletesszük a history-ba, hogy ne legyen üres!
                     hList.appendChild(card);
                 }
             }
